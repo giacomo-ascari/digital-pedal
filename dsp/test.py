@@ -1,20 +1,45 @@
-from lib2to3.refactor import get_all_fix_names
 from scipy.io import wavfile
 import wave, struct, math, random
+from matplotlib import pyplot as plt
+import numpy as np
 
 def main():
     samples = read("sound-in.wav")
     print("Read completed")
-    distortion_hard(samples)
+
+    gain(samples, 4)
+    hard_clip(samples, 32767)
+    #soft_clip(samples, 32767, 24000)
     print("DSP completed")
+    
+    plt.title("yeehaw") 
+    plt.xlabel("time") 
+    plt.ylabel("sample") 
+    plt.plot(samples[int(48000*9):int(48000*9.1)], "ob") 
+    plt.show()
+
     write(samples, "sound-out.wav")
     print("Write completed")
 
-def distortion_hard(samples):
+def gain(samples, g):
     for i in range(len(samples)):
-        samples[i] *= 4 # gain
-        samples[i] = min(32767, samples[i]) #clipping
-        samples[i] = max(-32767, samples[i]) #clipping
+        samples[i] *= g
+
+def hard_clip(samples, thr):
+    for i in range(len(samples)):
+        samples[i] = min(thr, samples[i])
+        samples[i] = max(-thr-1, samples[i])
+
+def soft_clip(samples, thr, mid):
+    for i in range(len(samples)):
+        if abs(samples[i] * gain) <= mid:
+            samples[i] *= gain
+        else:
+            if samples[i] > 0:
+                samples[i] = mid + (thr - mid) * (math.exp(-samples[i]*gain)-1)
+            else:
+                samples[i] *= gain
+            #    samples[i] = -(mid + (thr - mid) * (math.exp(-abs(samples[i])*gain)-1))
 
 def read(filename):
     samples = []
