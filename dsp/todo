@@ -1,0 +1,21 @@
+Amplitude base:
+- overdrive/distortion/fuzz
+- bit-crushing
+Time based:
+- delay/echo
+- reverb
+- phaser
+- octaver
+
+amplitude
+- gain
+  - DISTORTION (moderate)
+    - soft clipping
+    - hard clipping
+  - OVERDRIVE (extreme)
+    - hard clipping
+  - FUZZ (extreme)
+- quantization
+  - BITCRUSHER
+    - resolution
+    - bandwidth
