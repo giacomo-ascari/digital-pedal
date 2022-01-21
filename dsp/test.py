@@ -10,26 +10,24 @@ def main():
     
     raw_samples = copy.copy(samples)
 
-    # DISTORTION
+    # DISTORTION (gain)
     '''gain(samples, 4)
-    soft_clip(samples, 32767, 24000)
-    gain(samples, 0.8)'''
+    soft_clip(samples, 32767, 24000)'''
     
     # BITCRUSHER (rate)
     '''low_pass_filter(samples, 2)
     scale_rate(samples, 8)'''
 
     # BITCRUSHER (resolution)
-    low_pass_filter(samples, 2)
-    scale_resolution(samples, 2048)
+    '''low_pass_filter(samples, 2)
+    scale_resolution(samples, 2048)'''
 
     # FUZZ
     '''gain(samples, 8)
     hard_clip(samples, 32767)
     overlap_freq(samples, 32767, 2000, 3.14159 * 4)
     hard_clip(samples, 32767)
-    low_pass_filter(samples, 2)
-    gain(samples, 0.8)'''
+    low_pass_filter(samples, 2)'''
 
     # TREMOLO
     '''multiply_lfo(samples, 440, 0.3)'''
@@ -66,19 +64,6 @@ def overlap_freq(samples, thr, height, width):
             samples[i] = samples[i] + math.sin((i + period)/width)*height - height
         elif samples[i] == -thr-1:
             samples[i] = samples[i] + math.sin((i + period)/width)*height + height
-        
-
-def calc_periods(samples):
-    f = []
-    last_rising = 0
-    last_freq = 0
-    f.append(0)
-    for i in range(1, len(samples)):
-        if samples[i-1] <= 0 and samples[i] > 0:
-            last_freq = i - last_rising
-            last_rising = i
-        f.append(last_freq)
-    return f
 
 def low_pass_filter(samples, b):
     for i in range(b-1, len(samples)):

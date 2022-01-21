@@ -2,50 +2,55 @@
 This project aims at the creation of a multi-effect stompbox.
 ```
         ┌─┐_┌───┐    ┌─────┐    ┌───────┐    ┌─────┐       /│   \
-┌┴┴┐════┴═════  │ -→ │ ADC │ -→ │  MCU  │ -→ │ DAC │ -→ ┌─┤ │  \ \
-└┬┬┘════┬═════  │    │     │    │ [DSP] │    │     │    └─┤ │  / /
+┌┴┴┐════┴═════  │    │ ADC │    │  MCU  │    │ DAC │    ┌─┤ │  \ \
+└┬┬┘════┬═════  │ -→ │     │ -→ │ [DSP] │ -→ │     │ -→ └─┤ │  / /
         └─┘‾└───┘    └─────┘    └───────┘    └─────┘       \│   /
                      └─────────────────────────────┘
-                               DIGITAL-PEDAL
+                              DIGITAL-PEDAL
 ```
 ## Amplitude based pedals
 
 ### Distortion
 ```
-- gain
-- soft_clip
+- gain (gain intensity)
+- soft_clip (clip threshold, soft threshold, softener)
+- mix (balance)
 ```
 
 ### Fuzz
 ```
-- gain
-- hardclip
-- overlap_lastfrequency
+- gain (gain intensity)
+- hardclip (clip threshold)
+- overlap_lastfrequency (height, speed)
+- mix (balance)
 ```
 
 ### Bitcrusher (resolution)
 ```
-- scale_resolution
+- reduce_resolution (reduction intensity)
+- mix (balance)
 ```
 
 ### Bitcrusher (rate)
 ```
-- scale_rate
+- reduce_rate (reduction intensity)
+- mix (balance)
 ```
 
 ### Tremolo
 ```
-- multiply_by_LFO
+- multiply_by_LFO (speed)
+- mix (balance)
 ```
 
 ### LPF
 ```
-- low_pass_filter
+- low_pass_filter (width)
 ```
 
 ### Amplifier
 ```
-- gain
+- gain (gain intensity)
 ```
 
 ## Time based pedals
