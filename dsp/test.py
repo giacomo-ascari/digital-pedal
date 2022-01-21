@@ -9,26 +9,30 @@ def main():
     print("Read completed")
     
     raw_samples = copy.copy(samples)
-    periods = calc_periods(raw_samples)
 
     # DISTORTION
-    #gain(samples, 4)
-    #soft_clip(samples, 32767, 24000)
+    '''gain(samples, 4)
+    soft_clip(samples, 32767, 24000)
+    gain(samples, 0.8)'''
     
     # BITCRUSHER (rate)
-    #low_pass_filter(samples, 2)
-    #scale_rate(samples, 8)
+    '''low_pass_filter(samples, 2)
+    scale_rate(samples, 8)'''
 
     # BITCRUSHER (resolution)
-    #low_pass_filter(samples, 2)
-    #scale_resolution(samples, 4096)
+    low_pass_filter(samples, 2)
+    scale_resolution(samples, 2048)
 
     # FUZZ
-    #gain(samples, 8)
-    #hard_clip(samples, 32767)
-    #overlap_freq(samples, periods, 32767, 2000, 3.14159 * 4)
-    #low_pass_filter(samples, 4)
-    #soft_clip(samples, 32767, 28000)
+    '''gain(samples, 8)
+    hard_clip(samples, 32767)
+    overlap_freq(samples, 32767, 2000, 3.14159 * 4)
+    hard_clip(samples, 32767)
+    low_pass_filter(samples, 2)
+    gain(samples, 0.8)'''
+
+    # TREMOLO
+    '''multiply_lfo(samples, 440, 0.3)'''
 
     print("DSP completed")
 
@@ -39,19 +43,29 @@ def main():
     plt.xlabel("time") 
     plt.ylabel("sample") 
     plt.plot(raw_samples[int(48000*9):int(48000*9.1)], "b") 
-    plt.plot(samples[int(48000*9):int(48000*9.1)], "r") 
-    plt.plot(periods[int(48000*9):int(48000*9.1)], "g") 
+    plt.plot(samples[int(48000*9):int(48000*9.1)], "r")
     plt.show()
 
-def overlap_freq(samples, periods, thr, height, width):
-    last_corner = 0
+def multiply_lfo(samples, freq, a):
+    f = []
+    for i in range(len(samples)):
+        f.append(math.sin(i * 1 / (3.14159 * 2 * (48000 / freq))))
+    for i in range(len(samples)):
+        samples[i] *= a * f[i] + (1-a)
+        f[i] *= 5000
+
+def overlap_freq(samples, thr, height, width):
+    last_rising = [0, 0]
     for i in range(1, len(samples)):
-        if samples[i-1] < thr and samples[i] == thr or samples[i-1] >= -thr and samples[i] == -thr-1:
-            last_corner = i
+
+        if samples[i-1] <= 0 and samples[i] > 0:
+            last_rising[0] = last_rising[1]
+            last_rising[1] = i
+            period = last_rising[1] - last_rising[0]
         if samples[i] == thr:
-            samples[i] = samples[i] + math.sin((i + periods[last_corner])/width)*height - height
+            samples[i] = samples[i] + math.sin((i + period)/width)*height - height
         elif samples[i] == -thr-1:
-            samples[i] = samples[i] + math.sin((i + periods[last_corner])/width)*height + height
+            samples[i] = samples[i] + math.sin((i + period)/width)*height + height
         
 
 def calc_periods(samples):
