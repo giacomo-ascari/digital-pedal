@@ -21,9 +21,9 @@ float low_pass_filter(int16_t *in, int i, int width);
 int main(int argc, char** argv) {
 
     // INPUT
-    for (int16_t i = 1; i < min(argc, MAX_SAMPLES_COUNT+1); i++) {
-        raw_samples[i-1] = atoi(argv[i]);
-        samples_count++;
+    scanf("%d", &samples_count);
+    for (int16_t i = 0; i < samples_count; i++) {
+        scanf("%d", &raw_samples[i]);
     }
 
     // DSP
@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
 
         float x = raw_samples[i];
 
+
+        out_samples[i] = x;
 
     }
 
