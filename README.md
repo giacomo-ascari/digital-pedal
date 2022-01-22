@@ -16,20 +16,21 @@ ADC? Still don't know.
 DAC? Probably one already on the STM32F4 MCU.
 
 ## Pedals
-|           Name          |             DSP             | Amplitude | Time/ frequency | Implemented |
-|:-----------------------:|:---------------------------:|:---------:|:---------------:|:-----------:|
-| Overdrive               | Gain > soft clip            |     X     |                 |      X      |
-| Fuzz                    | Gain > hard clip > sum wave |     X     |                 |      X      |
-| Bitcrusher (resolution) | Reduce sample resolution    |     X     |                 |      X      |
-| Bitcrusher (rate)       | Reduce sampling rate        |           |        X        |      X      |
-| Tremolo                 | Multiply by LFO             |     X     |                 |      X      |
-| Low pass filter         |                             |           |        X        |      X      |
-| Amplifier               | Gain                        |     X     |                 |      X      |
-| Balancer                | Mixer                       |     X     |                 |      X      |
-| Compressor              |                             |     X     |        X        |             |
-| Delay/echo              |                             |           |        X        |             |
-| Vibrato                 |                             |           |        X        |             |
-| Phaser                  |                             |           |        X        |             |
-| Reverb                  |                             |           |        X        |             |
-| Octaver                 |                             |           |        X        |             |
-| Chorus                  |                             |           |        X        |             |
+|           Name          | Family         |             DSP             | Amplitude | Time/ frequency | Implemented |
+|:-----------------------:|----------------|:---------------------------:|:---------:|:---------------:|:-----------:|
+| Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
+| Fuzz                    | Distortion     | Gain > hard clip > sum wave |     X     |                 |      X      |
+| Bitcrusher (resolution) | Distortion     | Reduce sample resolution    |     X     |                 |      X      |
+| Bitcrusher (rate)       | Distortion     | Reduce sampling rate        |           |        X        |      X      |
+| Tremolo                 | Distortion     | Multiply by LFO             |     X     |                 |      X      |
+| Low pass filter         | Filter         | Low pass filter             |           |        X        |      X      |
+| Wah wah                 | Filter         |                             |           |        X        |             |
+| Compressor              | Compression    |                             |     X     |        X        |             |
+| Equalizer               | Equalisation   |                             |     X     |        X        |             |
+| Delay/echo              | Delay Lines    |                             |           |        X        |             |
+| Vibrato                 | Distortion     |                             |           |        X        |             |
+| Flanger                 | Flangers       |                             |           |                 |             |
+| Phaser                  | Phasers        |                             |           |        X        |             |
+| Octaver                 | Pitch Shifting |                             |           |        X        |             |
+| Chorus                  | Chorus         |                             |           |        X        |             |
+
