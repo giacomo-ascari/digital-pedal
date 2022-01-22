@@ -20,7 +20,7 @@ def main():
     samples = read("sound-in.wav")
     print("Reading completed")
    
-    proc_samples = process(samples, "distortion")
+    proc_samples = process(samples, "dst")
     print("Processing completed")
 
     write(proc_samples, "sound-out.wav")

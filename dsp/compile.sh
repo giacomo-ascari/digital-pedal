@@ -1,1 +1,1 @@
-gcc main.c -o out
+gcc -o out dsp.c main.c

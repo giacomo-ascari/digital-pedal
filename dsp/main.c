@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "dsp.h"
 
@@ -24,8 +25,11 @@ int main(int argc, char** argv) {
         fscanf(raw_file, "%hd", &raw_samples[i]);
 
         // digital signal processing
-        float x = raw_samples[i];
-        out_samples[i] = x;
+        if (strcmp(argv[1], "dst") == 0) {
+            out_samples[i] = distortion(raw_samples[i], 4, 32768-1, 25000, 5, 1);
+        } else {
+            out_samples[i] = rand() % 64000 - 32000;
+        }
 
         // send processed data to stdout
         fprintf(out_file, "%hd\n", out_samples[i]);
