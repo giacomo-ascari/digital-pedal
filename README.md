@@ -1,4 +1,4 @@
-# DIGITAL PEDAL
+# DIGITAL PEDAL - G33KY-TOAD
 This project aims at the creation of a multi-effect stompbox.
 ```
         ┌─┐_┌───┐    ┌─────┐    ┌───────┐    ┌─────┐       /│   \
