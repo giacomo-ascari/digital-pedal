@@ -11,7 +11,7 @@ This project aims at the creation of a multi-effect stompbox.
 ```
 
 ## Hardware
-The system will have a STM32F407VTG6 at it's core, with its 168Mhz clock and 192kB of memory.
+The system will have a STM32F407VGT6 at it's core, with its 168Mhz clock and 192kB of memory.
 ADC? Still don't know.
 DAC? Probably one already on the STM32F4 MCU.
 
