@@ -6,7 +6,8 @@ This project aims at the creation of a multi-effect stompbox.
 └┬┬┘════┬═════  │ -> │     │ -> │ [DSP] │ -> │     │ -> └─┤ │  / /
         └─┘‾└───┘    └─────┘    └───────┘    └─────┘       \│   /
                      └─────────────────────────────┘
-                              DIGITAL-PEDAL
+                                G33KY-TOAD
+                             [DIGITAL-PEDAL]
 ```
 
 ## Hardware
@@ -14,65 +15,21 @@ The system will have a STM32F407VTG6 at it's core, with its 168Mhz clock and 192
 ADC? Still don't know.
 DAC? Probably one already on the STM32F4 MCU.
 
-## Amplitude based pedals
-
-- ### Distortion/Overdrive
-```
-- gain (gain intensity)
-- soft_clip (clip threshold, soft threshold, softener)
-- mix (balance)
-```
-
-- ### Fuzz
-```
-- gain (gain intensity)
-- hardclip (clip threshold)
-- overlap_lastfrequency (height, speed)
-- mix (balance)
-```
-
-- ### Bitcrusher (resolution)
-```
-- reduce_resolution (reduction intensity)
-- mix (balance)
-```
-
-- ### Bitcrusher (rate)
-```
-- reduce_rate (reduction intensity)
-- mix (balance)
-```
-
-- ### Tremolo
-```
-- multiply_by_lfo (speed)
-- mix (balance)
-```
-
-- ### LPF
-```
-- low_pass_filter (width)
-```
-
-- ### Amplifier
-```
-- gain (gain intensity)
-```
-
-## Time based pedals
-Probably won't ever be implemented. I need more memoryyyyy.
-
-- ### Delay
-
-- ### Echo
-
-- ### Phaser
-
-- ### Reverb
-
-- ### Octaver
-
-- ### Chorus
-
-## NOTES
-Hardclipper is always present at the end of the DSP, in order to make sure that the DAC receives admitabble values.
+## Pedals
+|           Name          |             DSP             | Amplitude | Time/ frequency | Implemented |
+|:-----------------------:|:---------------------------:|:---------:|:---------------:|:-----------:|
+| Overdrive               | Gain > soft clip            |     X     |                 |      X      |
+| Fuzz                    | Gain > hard clip > sum wave |     X     |                 |      X      |
+| Bitcrusher (resolution) | Reduce sample resolution    |     X     |                 |      X      |
+| Bitcrusher (rate)       | Reduce sampling rate        |           |        X        |      X      |
+| Tremolo                 | Multiply by LFO             |     X     |                 |      X      |
+| Low pass filter         |                             |           |        X        |      X      |
+| Amplifier               | Gain                        |     X     |                 |      X      |
+| Balancer                | Mixer                       |     X     |                 |      X      |
+| Compressor              |                             |     X     |        X        |             |
+| Delay/echo              |                             |           |        X        |             |
+| Vibrato                 |                             |           |        X        |             |
+| Phaser                  |                             |           |        X        |             |
+| Reverb                  |                             |           |        X        |             |
+| Octaver                 |                             |           |        X        |             |
+| Chorus                  |                             |           |        X        |             |
