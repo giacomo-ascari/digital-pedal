@@ -21,8 +21,8 @@ DAC? Probably one already on the STM32F4 MCU.
 | Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
 | Fuzz                    | Distortion     | Gain > hard clip > sum wave |     X     |                 |      X      |
 | Bitcrusher (resolution) | Distortion     | Reduce sample resolution    |     X     |                 |      X      |
-| Bitcrusher (rate)       | Distortion     | Reduce sampling rate        |           |        X        |      X      |
-| Tremolo                 | Distortion     | Multiply by LFO             |     X     |                 |      X      |
+| Bitcrusher (rate)       | Distortion     | Reduce sampling rate        |           |        X        |             |
+| Tremolo                 | Distortion     | Multiply by wave            |     X     |                 |      X      |
 | Low pass filter         | Filter         | Low pass filter             |           |        X        |      X      |
 | Wah wah                 | Filter         |                             |           |        X        |             |
 | Compressor              | Compression    |                             |     X     |        X        |             |

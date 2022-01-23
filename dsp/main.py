@@ -4,11 +4,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 import subprocess
 
-def process(samples, t):
+def process(samples, types):
     with open("samples-in.tmp", "w") as f:
         for s in samples:
             f.write(str(s) + "\n")
-    subprocess.run(['./out', t, "samples-in.tmp", "samples-out.tmp"])
+    subprocess.run(['/bin/sh', './compile.sh'])
+    args = ['./out', "samples-in.tmp", "samples-out.tmp"]
+    for t in types:
+        args.append(t)
+    subprocess.run(args)
     proc_samples = []
     with open("samples-out.tmp", "r") as f:
         for line in f.readlines():
@@ -19,19 +23,23 @@ def main():
 
     samples = read("sound-in.wav")
     print("Reading completed")
-   
-    proc_samples = process(samples, "dst")
+    
+    proc_samples = process(samples, ["brs", "lpf"])
     print("Processing completed")
 
     write(proc_samples, "sound-out.wav")
     print("Write completed")
 
-    interval_lower, interval_upper = int(48000*9), int(48000*9.1)
+    interval_lower, interval_upper = int(48000*9), int(48000*9.2)
+    #interval_lower, interval_upper = int(48000*5), int(48000*15)
     plt.title("yeehaw") 
     plt.xlabel("time") 
     plt.ylabel("sample")
-    plt.plot(samples[interval_lower:interval_upper], "b")
-    plt.plot(proc_samples[interval_lower:interval_upper], "r")
+    plt.axhline(y=0, color='lightgrey')
+    plt.axhline(y=32767, color='lightgrey')
+    plt.axhline(y=-32768, color='lightgrey')
+    plt.plot(samples[interval_lower:interval_upper], label="Raw")
+    plt.plot(proc_samples[interval_lower:interval_upper])
     plt.show()
 
 def read(filename):
