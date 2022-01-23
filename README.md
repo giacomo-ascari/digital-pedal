@@ -9,6 +9,9 @@ This project aims at the creation of a multi-effect stompbox.
                                 G33KY-TOAD
                              [DIGITAL-PEDAL]
 ```
+<p align="center">
+  <img src="https://github.com/giacomo-ascari/digital-pedal/blob/main/logo360x.png?raw=true" />
+</p>
 
 ## Hardware
 The system will have a STM32F407VGT6 at it's core, with its 168Mhz clock and 192kB of memory.
