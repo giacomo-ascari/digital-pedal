@@ -16,8 +16,11 @@ ADC? Still don't know.
 DAC? Probably one already on the STM32F4 MCU.
 
 ## Pedals
-|           Name          | Family         |             DSP             | Amplitude | Time/ frequency | Implemented |
-|:-----------------------:|----------------|:---------------------------:|:---------:|:---------------:|:-----------:|
+|           Name          |     Family     |             DSP             | Amplitude | Time/ frequency | Implemented |
+|:-----------------------:|:--------------:|:---------------------------:|:---------:|:---------------:|:-----------:|
+| Bypass                  | Utilities      | Bypass signal (default)     |           |                 |             |
+| Amplifier               | Utilities      | Gain > hard clip            |     X     |                 |             |
+| Dynamic amplifier       | Utilities      | Gain > hard clip            |     X     |        X        |             |
 | Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
 | Fuzz                    | Distortion     | Gain > hard clip > sum wave |     X     |                 |      X      |
 | Bitcrusher (resolution) | Distortion     | Reduce sample resolution    |     X     |                 |      X      |
@@ -33,4 +36,3 @@ DAC? Probably one already on the STM32F4 MCU.
 | Phaser                  | Phasers        |                             |           |        X        |             |
 | Octaver                 | Pitch Shifting |                             |           |        X        |             |
 | Chorus                  | Chorus         |                             |           |        X        |             |
-
