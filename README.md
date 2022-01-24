@@ -22,7 +22,7 @@ DAC? Probably one already on the STM32F4 MCU.
 |           Name          |     Family     |             DSP             | Amplitude | Time/ frequency | Implemented |
 |:-----------------------:|:--------------:|:---------------------------:|:---------:|:---------------:|:-----------:|
 | Bypass                  | Utilities      | Bypass signal (default)     |           |                 |      X      |
-| Amplifier               | Utilities      | Gain > hard clip            |     X     |                 |             |
+| Amplifier               | Utilities      | Gain > hard clip            |     X     |                 |      X      |
 | Dynamic amplifier       | Utilities      | Gain > hard clip            |     X     |        X        |             |
 | Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
 | Fuzz                    | Distortion     | Gain > hard clip > sum wave |     X     |                 |      X      |
