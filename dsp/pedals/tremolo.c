@@ -15,9 +15,9 @@ tremolo_pedal_t *tremolo_pedal_init() {
 void tremolo_pedal_destroy(tremolo_pedal_t *p_pd) {
     free(p_pd);
 }
-float tremolo(float in, float speed, float balance) {
+float tremolo(float in, tremolo_pedal_t *p_pd) {
     static u_int32_t i = 0;
-    float out = in * wave_gen('s', i++, 1, speed);
-    out = mix(out, in, balance);
+    float out = in * wave_gen('s', i++, 1, p_pd->speed.value);
+    out = mix(out, in, p_pd->balance.value);
     return out;
 }

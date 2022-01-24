@@ -41,6 +41,8 @@ int main(int argc, char** argv)
         samples_index++;
     }
 
+    pedalboard_destroy(p_pedalboard);
+
     fclose(raw_file);
     fclose(out_file);
 

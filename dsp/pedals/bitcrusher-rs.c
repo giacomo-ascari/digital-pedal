@@ -15,9 +15,9 @@ bitcrusher_rs_pedal_t *bitcrusher_rs_pedal_init() {
 void bitcrusher_rs_pedal_destroy(bitcrusher_rs_pedal_t *p_pd) {
     free(p_pd);
 }
-float bitcrusher_rs(float in, float reduction_intensity, float balance) {
-    int16_t _out = (float)in / reduction_intensity;
-    float out = (float)_out * reduction_intensity;
-    out = mix(out, in, balance);
+float bitcrusher_rs(float in, bitcrusher_rs_pedal_t *p_pd) {
+    int16_t _out = (float)in / p_pd->reduction_intensity.value;
+    float out = (float)_out * p_pd->reduction_intensity.value;
+    out = mix(out, in, p_pd->balance.value);
     return out;
 }

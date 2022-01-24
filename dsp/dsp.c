@@ -9,7 +9,11 @@
 abstract_pedal_t *abstract_pedal_init(enum pedal_types type) {
     abstract_pedal_t *p_pd = malloc(sizeof(abstract_pedal_t));
     p_pd->type = type;
-    if (p_pd->type == OVERDRIVE) {
+    if (p_pd->type == BYPASS) {
+        p_pd->pedal = bypass_pedal_init();
+    } else if (p_pd->type == AMPLIFIER) {
+        p_pd->pedal = amplifier_pedal_init();
+    } else if (p_pd->type == OVERDRIVE) {
         p_pd->pedal = overdrive_pedal_init();
     } else if (type == FUZZ) {
         p_pd->pedal = fuzz_pedal_init();
@@ -24,7 +28,11 @@ abstract_pedal_t *abstract_pedal_init(enum pedal_types type) {
 }
 
 void abstract_pedal_destroy(abstract_pedal_t *p_pd) {
-    if (p_pd->type == OVERDRIVE) {
+    if (p_pd->type == BYPASS) {
+        bypass_pedal_destroy(p_pd->pedal);
+    } else if (p_pd->type == AMPLIFIER) {
+        amplifier_pedal_destroy(p_pd->pedal);
+    } else if (p_pd->type == OVERDRIVE) {
         overdrive_pedal_destroy(p_pd->pedal);
     } else if (p_pd->type == FUZZ) {
         fuzz_pedal_destroy(p_pd->pedal);
@@ -39,44 +47,35 @@ void abstract_pedal_destroy(abstract_pedal_t *p_pd) {
 }
 
 float abstract_pedal_process(abstract_pedal_t *p_pd, float in) {
-    if (p_pd->type == OVERDRIVE) {
+    if (p_pd->type == BYPASS) {
+        bypass_pedal_t *pedal = p_pd->pedal;
+        return bypass(in, pedal);
+    } else if (p_pd->type == AMPLIFIER) {
+        amplifier_pedal_t *pedal = p_pd->pedal;
+        return amplifier(in, pedal);
+    } else if (p_pd->type == OVERDRIVE) {
         overdrive_pedal_t *pedal = p_pd->pedal;
-        return overdrive(in,
-            pedal->gain_intensity.value,
-            pedal->clip_threshold.value,
-            pedal->soft_threshold.value,
-            pedal->softener.value,
-            pedal->balance.value);
+        return overdrive(in, pedal);
     } else if (p_pd->type == FUZZ) {
         fuzz_pedal_t *pedal = p_pd->pedal;
-        return fuzz(in,
-            pedal->gain_intensity.value,
-            pedal->clip_threshold.value,
-            pedal->height.value,
-            pedal->speed.value,
-            pedal->balance.value);
+        return fuzz(in, pedal);
     } else if (p_pd->type == BITCRUSHER_RS) {
         bitcrusher_rs_pedal_t *pedal = p_pd->pedal;
-        return bitcrusher_rs(in,
-            pedal->reduction_intensity.value,
-            pedal->balance.value);
+        return bitcrusher_rs(in, pedal);
     } else if (p_pd->type == TREMOLO) {
         tremolo_pedal_t *pedal = p_pd->pedal;
-        return tremolo(in,
-            pedal->speed.value,
-            pedal->balance.value);
+        return tremolo(in, pedal);
     } else if (p_pd->type == LPF) {
         low_pass_filter_pedal_t *pedal = p_pd->pedal;
-        return low_pass_filter(in,
-            pedal->width.value,
-            pedal->balance.value);
+        return low_pass_filter(in, pedal);
     }
     return in;
 }
 
 enum pedal_types pedal_type_parse(char *type_str) {
     enum pedal_types type;
-    if (strcmp(type_str, "ovr") == 0) type = OVERDRIVE;
+    if (strcmp(type_str, "bps") == 0) type = BYPASS;
+    else if (strcmp(type_str, "ovr") == 0) type = OVERDRIVE;
     else if (strcmp(type_str, "fzz") == 0) type = FUZZ;
     else if (strcmp(type_str, "brs") == 0) type = BITCRUSHER_RS;
     else if (strcmp(type_str, "trm") == 0) type = TREMOLO;
@@ -93,6 +92,9 @@ pedalboard_t *pedalboard_init() {
 }
 
 void pedalboard_destroy(pedalboard_t *p_pb) {
+    for (u_int32_t i = 0; i < p_pb->active_pedals; i++) {
+        abstract_pedal_destroy(p_pb->pedals[i]);
+    }
     free(p_pb);
 }
 

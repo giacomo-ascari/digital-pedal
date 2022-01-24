@@ -7,6 +7,8 @@
 #define MAX_PEDALS_COUNT 16
 
 enum pedal_types {
+    BYPASS,         // bps
+    AMPLIFIER,      // amp
     OVERDRIVE,      // ovr
     FUZZ,           // fzz
     BITCRUSHER_RS,  // brs
@@ -26,6 +28,29 @@ typedef struct _float_parameter_t {
 
 // PEDALS structs
 
+// BYPASS
+
+typedef struct _bypass_pedal_t {
+    float_parameter_t gain_intensity;
+    float_parameter_t clip_threshold;
+    float_parameter_t soft_threshold;
+    float_parameter_t softener;
+    float_parameter_t balance;
+} bypass_pedal_t;
+bypass_pedal_t *bypass_pedal_init();
+void bypass_pedal_destroy(bypass_pedal_t *p_pd);
+float bypass(float in, bypass_pedal_t *p_pd);
+
+// AMPLIFIER
+
+typedef struct _amplifier_pedal_t {
+    float_parameter_t gain_intensity;
+    float_parameter_t clip_threshold;
+} amplifier_pedal_t;
+amplifier_pedal_t *amplifier_pedal_init();
+void amplifier_pedal_destroy(amplifier_pedal_t *p_pd);
+float amplifier(float in, amplifier_pedal_t *p_pd);
+
 // OVERDRIVE
 
 typedef struct _overdrive_pedal_t {
@@ -37,7 +62,7 @@ typedef struct _overdrive_pedal_t {
 } overdrive_pedal_t;
 overdrive_pedal_t *overdrive_pedal_init();
 void overdrive_pedal_destroy(overdrive_pedal_t *p_pd);
-float overdrive(float in, float gain_intensity, float clip_threshold, float soft_threshold, float softener, float balance);
+float overdrive(float in, overdrive_pedal_t *p_pd);
 
 // FUZZ
 
@@ -50,7 +75,7 @@ typedef struct _fuzz_pedal_t {
 } fuzz_pedal_t;
 fuzz_pedal_t *fuzz_pedal_init();
 void fuzz_pedal_destroy(fuzz_pedal_t *p_pd);
-float fuzz(float in, float gain_intensity, float clip_threshold, float height, float speed, float balance);
+float fuzz(float in, fuzz_pedal_t *p_pd);
 
 // BITCRUSHER resolution
 
@@ -60,7 +85,7 @@ typedef struct _bitcrusher_rs_pedal_t {
 } bitcrusher_rs_pedal_t;
 bitcrusher_rs_pedal_t *bitcrusher_rs_pedal_init();
 void bitcrusher_rs_pedal_destroy(bitcrusher_rs_pedal_t *p_pd);
-float bitcrusher_rs(float in, float reduction_intensity, float balance);
+float bitcrusher_rs(float in, bitcrusher_rs_pedal_t *p_pd);
 
 // TREMOLO
 
@@ -70,7 +95,7 @@ typedef struct _tremolo_pedal_t {
 } tremolo_pedal_t;
 tremolo_pedal_t *tremolo_pedal_init();
 void tremolo_pedal_destroy(tremolo_pedal_t *p_pd);
-float tremolo(float in, float speed, float balance);
+float tremolo(float in, tremolo_pedal_t *p_pd);
 
 // LOW PASS FILTER
 
@@ -80,7 +105,7 @@ typedef struct _low_pass_filter_pedal_t {
 } low_pass_filter_pedal_t;
 low_pass_filter_pedal_t *low_pass_filter_pedal_init();
 void low_pass_filter_pedal_destroy(low_pass_filter_pedal_t *p_pd);
-float low_pass_filter(float in, u_int32_t width, float balance);
+float low_pass_filter(float in, low_pass_filter_pedal_t *p_pd);
 
 // ABSTRACT PEDAL
 

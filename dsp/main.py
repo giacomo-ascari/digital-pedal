@@ -24,14 +24,13 @@ def main():
     samples = read("sound-in.wav")
     print("Reading completed")
     
-    proc_samples = process(samples, ["brs", "lpf"])
+    proc_samples = process(samples, ["bps"])
     print("Processing completed")
 
     write(proc_samples, "sound-out.wav")
     print("Write completed")
 
     interval_lower, interval_upper = int(48000*9), int(48000*9.2)
-    #interval_lower, interval_upper = int(48000*5), int(48000*15)
     plt.title("yeehaw") 
     plt.xlabel("time") 
     plt.ylabel("sample")

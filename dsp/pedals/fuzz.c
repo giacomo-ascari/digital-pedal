@@ -18,15 +18,15 @@ fuzz_pedal_t *fuzz_pedal_init() {
 void fuzz_pedal_destroy(fuzz_pedal_t *p_pd) {
     free(p_pd);
 }
-float fuzz(float in, float gain_intensity, float clip_threshold, float height, float speed, float balance) {
+float fuzz(float in, fuzz_pedal_t *p_pd) {
     static u_int32_t i = 0;
-    float out = gain(in, gain_intensity);
-    out = hard_clip(out, clip_threshold);
-    if (out == clip_threshold) {
-        out = out + wave_gen('s', i++, height, speed) - height;
-    } else if (out == -clip_threshold-1) {
-        out = out - wave_gen('s', i++, height, speed) + height;
+    float out = gain(in, p_pd->gain_intensity.value);
+    out = hard_clip(out, p_pd->clip_threshold.value);
+    if (out == p_pd->clip_threshold.value) {
+        out = out + wave_gen('s', i++, p_pd->height.value, p_pd->speed.value) - p_pd->height.value;
+    } else if (out == -p_pd->clip_threshold.value-1) {
+        out = out - wave_gen('s', i++, p_pd->height.value, p_pd->speed.value) + p_pd->height.value;
     }
-    out = mix(out, in, balance);
+    out = mix(out, in, p_pd->balance.value);
     return out;
 }

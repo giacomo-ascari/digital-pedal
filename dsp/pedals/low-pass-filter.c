@@ -15,9 +15,10 @@ low_pass_filter_pedal_t *low_pass_filter_pedal_init() {
 void low_pass_filter_pedal_destroy(low_pass_filter_pedal_t *p_pd) {
     free(p_pd);
 }
-float low_pass_filter(float in, u_int32_t width, float balance) {
+float low_pass_filter(float in, low_pass_filter_pedal_t *p_pd) {
     static float history[441];
     static u_int16_t i = 0;
+    u_int32_t width = p_pd->width.value;
     float out = 0;
     if (width > 441) width = 441;
     history[i % width] = in;
@@ -26,6 +27,6 @@ float low_pass_filter(float in, u_int32_t width, float balance) {
     }
     i++;
     out /= width;
-    out = mix(out, in, balance);
+    out = mix(out, in, p_pd->balance.value);
     return out;
 }

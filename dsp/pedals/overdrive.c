@@ -18,10 +18,10 @@ overdrive_pedal_t *overdrive_pedal_init() {
 void overdrive_pedal_destroy(overdrive_pedal_t *p_pd) {
     free(p_pd);
 }
-float overdrive(float in, float gain_intensity, float clip_threshold, float soft_threshold, float softener, float balance) {
-    float out = gain(in, gain_intensity);
-    out = soft_clip(out, soft_threshold, softener);
-    out = hard_clip(out, clip_threshold);
-    out = mix(out, in, balance);
+float overdrive(float in, overdrive_pedal_t *p_pd) {
+    float out = gain(in, p_pd->gain_intensity.value);
+    out = soft_clip(out, p_pd->soft_threshold.value, p_pd->softener.value);
+    out = hard_clip(out, p_pd->clip_threshold.value);
+    out = mix(out, in, p_pd->balance.value);
     return out;
 }

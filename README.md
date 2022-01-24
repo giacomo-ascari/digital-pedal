@@ -21,7 +21,7 @@ DAC? Probably one already on the STM32F4 MCU.
 ## Pedals
 |           Name          |     Family     |             DSP             | Amplitude | Time/ frequency | Implemented |
 |:-----------------------:|:--------------:|:---------------------------:|:---------:|:---------------:|:-----------:|
-| Bypass                  | Utilities      | Bypass signal (default)     |           |                 |             |
+| Bypass                  | Utilities      | Bypass signal (default)     |           |                 |      X      |
 | Amplifier               | Utilities      | Gain > hard clip            |     X     |                 |             |
 | Dynamic amplifier       | Utilities      | Gain > hard clip            |     X     |        X        |             |
 | Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
