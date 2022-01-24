@@ -10,7 +10,7 @@ This project aims at the creation of a multi-effect stompbox.
                              [DIGITAL-PEDAL]
 ```
 <p align="center">
-  <img src="https://github.com/giacomo-ascari/digital-pedal/blob/main/logo360x.png?raw=true" />
+  <img style="filter: drop-shadow(0 0 0.75rem grey);" src="https://github.com/giacomo-ascari/digital-pedal/blob/main/logo360x.png?raw=true" />
 </p>
 
 ## Hardware
