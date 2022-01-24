@@ -7,13 +7,13 @@
 #define MAX_PEDALS_COUNT 16
 
 enum pedal_types {
-    BYPASS,         // bps
-    AMPLIFIER,      // amp
-    OVERDRIVE,      // ovr
-    FUZZ,           // fzz
-    BITCRUSHER_RS,  // brs
-    TREMOLO,        // trm
-    LPF             // lpf
+    BYPASS = 0,         // bps
+    AMPLIFIER = 1,      // amp
+    OVERDRIVE = 2,      // ovr
+    FUZZ = 3,           // fzz
+    BITCRUSHER_RS = 4,  // brs
+    TREMOLO = 5,        // trm
+    LPF= 6             // lpf
 };
 
 // PARAMETERS structs
@@ -108,6 +108,12 @@ void low_pass_filter_pedal_destroy(low_pass_filter_pedal_t *p_pd);
 float low_pass_filter(float in, low_pass_filter_pedal_t *p_pd);
 
 // ABSTRACT PEDAL
+
+/*typedef struct _abstract_pedal_mapping_t {
+    void *pedal_init;
+    void *pedal_destroy;
+    void *pedal_process;
+} abstract_pedal_mapping_t;*/
 
 typedef struct _abstract_pedal_t {
     enum pedal_types type;

@@ -6,6 +6,15 @@
 
 // ABSTRACT PEDAL
 
+/*abstract_pedal_mapping_t abstract_map[7];
+abstract_map[BYPASS] = (abstract_pedal_mapping_t){bypass_pedal_init, bypass_pedal_destroy, bypass};
+abstract_map[AMPLIFIER] = (abstract_pedal_mapping_t){amplifier_pedal_init, amplifier_pedal_destroy, amplifier};
+abstract_map[OVERDRIVE] = (abstract_pedal_mapping_t){overdrive_pedal_init, overdrive_pedal_destroy, overdrive};
+abstract_map[FUZZ] = (abstract_pedal_mapping_t){fuzz_pedal_init, fuzz_pedal_destroy, fuzz};
+abstract_map[BITCRUSHER_RS] = (abstract_pedal_mapping_t){bitcrusher_rs_pedal_init, bitcrusher_rs_pedal_destroy, bitcrusher_rs};
+abstract_map[TREMOLO] = (abstract_pedal_mapping_t){tremolo_pedal_init, tremolo_pedal_destroy, tremolo};
+abstract_map[LPF] = (abstract_pedal_mapping_t){low_pass_filter_pedal_init, low_pass_filter_pedal_destroy, low_pass_filter};*/
+
 abstract_pedal_t *abstract_pedal_init(enum pedal_types type) {
     abstract_pedal_t *p_pd = malloc(sizeof(abstract_pedal_t));
     p_pd->type = type;
