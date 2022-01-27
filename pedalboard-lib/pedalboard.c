@@ -7,16 +7,20 @@
 #include "pedals/amplifier/amplifier.h"
 #include "pedals/bitcrusher-rs/bitcrusher-rs.h"
 #include "pedals/bypass/bypass.h"
+#include "pedals/dyn-amplifier/dyn-amplifier.h"
 #include "pedals/fuzz/fuzz.h"
 #include "pedals/low-pass-filter/low-pass-filter.h"
 #include "pedals/overdrive/overdrive.h"
+#include "pedals/overdrive-log/overdrive-log.h"
 #include "pedals/tremolo/tremolo.h"
 
 enum pedal_types pedal_type_parse(char *type_str) {
     enum pedal_types type;
     if (strcmp(type_str, "bps") == 0) type = BYPASS;
     else if (strcmp(type_str, "amp") == 0) type = AMPLIFIER;
+    else if (strcmp(type_str, "damp") == 0) type = DYN_AMPLIFIER;
     else if (strcmp(type_str, "ovr") == 0) type = OVERDRIVE;
+    else if (strcmp(type_str, "ovrl") == 0) type = OVERDRIVE_LOG;
     else if (strcmp(type_str, "fzz") == 0) type = FUZZ;
     else if (strcmp(type_str, "brs") == 0) type = BITCRUSHER_RS;
     else if (strcmp(type_str, "trm") == 0) type = TREMOLO;
@@ -39,6 +43,9 @@ void pedalboard_append(pedalboard_t *p_pb, enum pedal_types type) {
         } else if (type == BITCRUSHER_RS) {
             bitcrusher_rs_pedal_init(&(p_pb->pedals[i].config));
             p_pb->pedals[i].pedal_process = bitcrusher_rs_process;
+        } else if (type == DYN_AMPLIFIER) {
+            dyn_amplifier_pedal_init(&(p_pb->pedals[i].config));
+            p_pb->pedals[i].pedal_process = dyn_amplifier_process;
         } else if (type == FUZZ) {
             fuzz_pedal_init(&(p_pb->pedals[i].config));
             p_pb->pedals[i].pedal_process = fuzz_process;
@@ -48,6 +55,9 @@ void pedalboard_append(pedalboard_t *p_pb, enum pedal_types type) {
         } else if (type == OVERDRIVE) {
             overdrive_pedal_init(&(p_pb->pedals[i].config));
             p_pb->pedals[i].pedal_process = overdrive_process;
+        } else if (type == OVERDRIVE_LOG) {
+            overdrive_log_pedal_init(&(p_pb->pedals[i].config));
+            p_pb->pedals[i].pedal_process = overdrive_log_process;
         }  else if (type == TREMOLO) {
             tremolo_pedal_init(&(p_pb->pedals[i].config));
             p_pb->pedals[i].pedal_process = tremolo_process;

@@ -24,7 +24,7 @@ def main():
     samples = read("sound-in.wav")
     print("Reading completed")
     
-    proc_samples = process(samples, ["fzz", "brs", "amp"])
+    proc_samples = process(samples, ["damp"])
     print("Processing completed")
 
     write(proc_samples, "sound-out.wav")
