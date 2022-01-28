@@ -31,6 +31,7 @@ def main():
     print("Write completed")
 
     interval_lower, interval_upper = int(48000*9), int(48000*9.2)
+    #interval_lower, interval_upper = int(48000*8), int(48000*11)
     plt.title("yeehaw") 
     plt.xlabel("time") 
     plt.ylabel("sample")

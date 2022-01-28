@@ -8,7 +8,7 @@
 void overdrive_log_pedal_init(pedal_config_t *conf) {
     conf->float_params[GAIN_INTENSITY] = (float_parameter_t){1000, 500, 2000, 100};
     conf->float_params[CLIP_THRESHOLD] = (float_parameter_t){32767, 0, 32767, 1};
-    conf->float_params[BALANCE] = (float_parameter_t){0.5, 0, 1, 0.1};
+    conf->float_params[BALANCE] = (float_parameter_t){0.2, 0, 1, 0.1};
 }
 
 float overdrive_log_process(float in, pedal_config_t *conf) {
