@@ -21,21 +21,26 @@ DAC? Probably one already on the STM32F4 MCU.
 ## Pedals
 |           Name          |     Family     |             DSP             | Amplitude | Time/ frequency | Implemented |
 |:-----------------------:|:--------------:|:---------------------------:|:---------:|:---------------:|:-----------:|
-| Bypass                  | Utilities      | Bypass signal (default)     |           |                 |      X      |
 | Amplifier               | Utilities      | Gain > hard clip            |     X     |                 |      X      |
-| Dynamic amplifier       | Utilities      | Gain > hard clip            |     X     |        X        |             |
-| Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
-| Fuzz                    | Distortion     | Gain > hard clip > sum wave |     X     |                 |      X      |
+| Bypass                  | Utilities      | Bypass signal (default)     |           |                 |      X      |
 | Bitcrusher (resolution) | Distortion     | Reduce sample resolution    |     X     |                 |      X      |
-| Bitcrusher (rate)       | Distortion     | Reduce sampling rate        |           |        X        |             |
-| Tremolo                 | Distortion     | Multiply by wave            |     X     |                 |      X      |
+| Dynamic amplifier       | Utilities      | Gain > hard clip            |     X     |        X        |     WIP     |
+| Fuzz                    | Distortion     | Gain > hard clip > sum wave |     X     |                 |      X      |
 | Low pass filter         | Filter         | Low pass filter             |           |        X        |      X      |
-| Wah wah                 | Filter         |                             |           |        X        |             |
-| Compressor              | Compression    |                             |     X     |        X        |             |
-| Equalizer               | Equalisation   |                             |     X     |        X        |             |
-| Delay/echo              | Delay Lines    |                             |           |        X        |             |
-| Vibrato                 | Distortion     |                             |           |        X        |             |
-| Flanger                 | Flangers       |                             |           |                 |             |
-| Phaser                  | Phasers        |                             |           |        X        |             |
-| Octaver                 | Pitch Shifting |                             |           |        X        |             |
-| Chorus                  | Chorus         |                             |           |        X        |             |
+| Overdrive               | Distortion     | Gain > soft clip            |     X     |                 |      X      |
+| Overdrive (log)         | Distortion     | Gain > soft clip            |     X     |                 |      X      |
+| Tremolo                 | Distortion     | Multiply by wave            |     X     |                 |      X      |
+
+## Would-be-nice-to-have pedals
+|           Name          |     Family     |             DSP             | Amplitude | Time/ frequency |
+|:-----------------------:|:--------------:|:---------------------------:|:---------:|:---------------:|
+| Bitcrusher (rate)       | Distortion     | Reduce sampling rate        |           |        X        |
+| Wah wah                 | Filter         |                             |           |        X        |
+| Compressor              | Compression    |                             |     X     |        X        |
+| Equalizer               | Equalisation   |                             |     X     |        X        |
+| Delay/echo              | Delay Lines    |                             |           |        X        |
+| Vibrato                 | Distortion     |                             |           |        X        |
+| Flanger                 | Flangers       |                             |           |                 |
+| Phaser                  | Phasers        |                             |           |        X        |
+| Octaver                 | Pitch Shifting |                             |           |        X        |
+| Chorus                  | Chorus         |                             |           |        X        |
