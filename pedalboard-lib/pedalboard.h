@@ -6,7 +6,7 @@
 
 #define MAX_PEDALS_COUNT 16
 
-#define PEDAL_TYPES 7
+#define PEDAL_TYPES 8
 #define U_INT_PARAM_TYPES 1
 #define FLOAT_PARAM_TYPES 8
 
@@ -16,10 +16,12 @@ enum pedal_types {
     AMPLIFIER = 0,      // amp
     BITCRUSHER_RS = 1,  // brs
     BYPASS = 2,         // bps
-    FUZZ = 3,           // fzz
-    LPF = 4,            // lpf
-    OVERDRIVE = 5,      // ovr
-    TREMOLO = 6,        // trm
+    DYN_AMPLIFIER = 3,  // damp
+    FUZZ = 4,           // fzz
+    LPF = 5,            // lpf
+    OVERDRIVE = 6,      // ovr
+    OVERDRIVE_LOG = 7,  // ovrl
+    TREMOLO = 8,        // trm
 };
 
 enum u_int_param_type {
