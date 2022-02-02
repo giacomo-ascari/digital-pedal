@@ -20,6 +20,7 @@
 #include "main.h"
 #include "fatfs.h"
 #include "usb_host.h"
+#include "pedalboard_min.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -43,14 +44,15 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
 extern ApplicationTypeDef Appli_state;
 FATFS myUsbFatFS;
 extern char USBHPath[4];
-u_int32_t t = 0;
-FIL myFile;
+
+FIL inFile;
 FRESULT res;
-UINT byteswritten, bytesread;
-char rwtext[100];
+UINT bytesWritten, bytesRead;
+char buffer[100];
 
 /* USER CODE END PV */
 
@@ -60,7 +62,7 @@ static void MX_GPIO_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-u_int16_t UsbTest_Write(void)
+/*u_int16_t UsbTest_Write(void)
 {
 	//Open/Create file for Writing
 	if(f_open(&myFile, "TEST.TXT", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK)
@@ -72,8 +74,8 @@ u_int16_t UsbTest_Write(void)
 		//Set text string to write to file
 		sprintf(rwtext, "Hello world from Mohamed Yaqoob!");
 		//write to file
-		res = f_write(&myFile, (uint8_t *)rwtext, strlen(rwtext), &byteswritten);
-		if((byteswritten == 0) || (res != FR_OK))
+		res = f_write(&myFile, (uint8_t *)rwText, strlen(rwText), &bytesWritten);
+		if((bytesWritten == 0) || (res != FR_OK))
 		{
 			return 0; //error
 		}
@@ -82,9 +84,9 @@ u_int16_t UsbTest_Write(void)
 	//Close file
 	f_close(&myFile);
 	return 1; //success
-}
+}*/
 
-bool UsbTest_Read(void)
+/*bool UsbTest_Read(void)
 {
 	//Open file for Reading
 	if(f_open(&myFile, "TEST.TXT", FA_READ) != FR_OK)
@@ -110,7 +112,7 @@ bool UsbTest_Read(void)
 	//Close file
 	f_close(&myFile);
 	return 1; //success
-}
+}*/
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -149,6 +151,9 @@ int main(void)
 	MX_FATFS_Init();
 	MX_USB_HOST_Init();
 	/* USER CODE BEGIN 2 */
+	pedalboard_t pedalboard;
+	pedalboard_append(&pedalboard, BITCRUSHER_RS);
+	pedalboard_append(&pedalboard, LPF);
 
 	/* USER CODE END 2 */
 
@@ -158,44 +163,53 @@ int main(void)
 	{
 		/* USER CODE END WHILE */
 		MX_USB_HOST_Process();
-		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
 		/* USER CODE BEGIN 3 */
-		if (t % 85000 == 1) HAL_GPIO_TogglePin(Led4_GPIO_Port, Led4_Pin);
+		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
-		switch(Appli_state)
+		if (Appli_state == APPLICATION_READY)
 		{
-		case APPLICATION_READY:
-			/*if(UsbTest_Write()) HAL_GPIO_TogglePin(Led4_GPIO_Port, Led4_Pin);
-			else HAL_GPIO_TogglePin(Led3_GPIO_Port, Led3_Pin);
-			HAL_Delay(1000);*/
-			/*if(UsbTest_Read()) HAL_GPIO_TogglePin(LED4_GPIO_Port, LED4_Pin);
-			else HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
-			HAL_Delay(1000);*/
-			break;
-
-		case APPLICATION_IDLE:
-			break;
-
-		case APPLICATION_DISCONNECT:
+			//HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);
+			if(HAL_GPIO_ReadPin(Btn1_GPIO_Port, Btn1_Pin) == GPIO_PIN_SET) {
+				if(f_open(&inFile, "IN.TXT", FA_READ) == FR_OK)
+				{
+					// succ
+					HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);
+					res = f_read(&inFile, (uint8_t*)&buffer[i], 1, &bytesRead);
+					if(buffer[i] == 0x00)
+					{
+						bytesRead = i;
+						break;
+					}
+					HAL_Delay(1000);
+					HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_RESET);
+				} else {
+					// wtf
+					HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
+					HAL_Delay(1000);
+					HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_RESET);
+				}
+				f_close(&inFile);
+			}
+		}
+		else if (Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE)
+		{
 			HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_RESET);
-			if (t % 85000 == 1) HAL_GPIO_TogglePin(Led3_GPIO_Port, Led3_Pin);
+			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Led4_GPIO_Port, Led4_Pin, GPIO_PIN_RESET);
-			break;
-
-		case APPLICATION_START:
-			if(f_mount(&myUsbFatFS, (TCHAR const*)USBHPath, 0) == FR_OK)
+		}
+		else if (Appli_state == APPLICATION_START)
+		{
+			if (f_mount(&myUsbFatFS, (TCHAR const*)USBHPath, 0) == FR_OK)
 			{
 				HAL_GPIO_WritePin(Led4_GPIO_Port, Led4_Pin, GPIO_PIN_SET);
 			}
-
-			break;
-
-		default:
-			break;
+			else
+			{
+				HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
+			}
 		}
-		t++;
 	}
 
 	/* USER CODE END 3 */
@@ -256,8 +270,8 @@ static void MX_GPIO_Init(void)
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOH_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE();
-	__HAL_RCC_GPIOD_CLK_ENABLE();
 	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
@@ -271,6 +285,12 @@ static void MX_GPIO_Init(void)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(OtgPower_GPIO_Port, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : Btn1_Pin */
+	GPIO_InitStruct.Pin = Btn1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(Btn1_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : Led1_Pin Led2_Pin Led3_Pin Led4_Pin */
 	GPIO_InitStruct.Pin = Led1_Pin|Led2_Pin|Led3_Pin|Led4_Pin;
