@@ -1,5 +1,5 @@
 gcc -o out \
-    ../pedalboard-lib/main.c \
+    ../demo/main.c \
     ../pedalboard-lib/pedalboard.c \
     ../pedalboard-lib/pedals/amplifier/amplifier.c \
     ../pedalboard-lib/pedals/bitcrusher-rs/bitcrusher-rs.c \

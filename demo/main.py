@@ -8,7 +8,7 @@ def process(samples, types):
     with open("samples-in.tmp", "w") as f:
         for s in samples:
             f.write(str(s) + "\n")
-    subprocess.run(['/bin/sh', './compile.sh'])
+    subprocess.run(['/bin/sh', './compile.min.sh'])
     args = ['./out', "samples-in.tmp", "samples-out.tmp"]
     for t in types:
         args.append(t)
