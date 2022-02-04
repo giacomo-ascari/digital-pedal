@@ -49,11 +49,6 @@ extern ApplicationTypeDef Appli_state;
 FATFS myUsbFatFS;
 extern char USBHPath[4];
 
-FIL inFile;
-FRESULT res;
-UINT bytesWritten, bytesRead;
-char buffer[100];
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -171,16 +166,41 @@ int main(void)
 		{
 			//HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);
 			if(HAL_GPIO_ReadPin(Btn1_GPIO_Port, Btn1_Pin) == GPIO_PIN_SET) {
-				if(f_open(&inFile, "IN.TXT", FA_READ) == FR_OK)
+
+				FIL inFile, outFile;
+				FRESULT resRead, resWrite;
+				int32_t bytesRead, bytesWritten;
+				int32_t inSample, outSample, tmp;
+				int32_t count = 0;
+				char readBuffer[16], writeBuffer[16];
+				char sampleBuffer[16];
+
+				resRead = f_open(&inFile, "in1.txt", FA_READ);
+				resWrite = f_open(&outFile, "out1.txt", FA_CREATE_ALWAYS);
+				f_close(&outFile);
+				resWrite = f_open(&outFile, "out1.txt", FA_WRITE);
+				if(resRead == FR_OK && resWrite == FR_OK)
 				{
 					// succ
 					HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);
-					res = f_read(&inFile, (uint8_t*)&buffer[i], 1, &bytesRead);
-					if(buffer[i] == 0x00)
-					{
-						bytesRead = i;
-						break;
-					}
+					do {
+
+						resRead = f_read(&inFile, &readBuffer, 1, &bytesRead);
+						if (bytesRead) {
+							sampleBuffer[count] = readBuffer[0];
+							if (sampleBuffer[count] == '\n') {
+								sampleBuffer[count] == '\0';
+								tmp = sscanf(sampleBuffer, "%d", &inSample);
+								outSample = (int32_t)pedalboard_process(&pedalboard, (float)inSample);
+								sprintf(writeBuffer, "%d\n", outSample);
+								resWrite = f_write(&outFile, (uint8_t *)writeBuffer, strlen(writeBuffer), &bytesWritten);
+								count = 0;
+							} else {
+								count++;
+							}
+						}
+
+					} while(bytesRead > 0);
 					HAL_Delay(1000);
 					HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_RESET);
 				} else {
@@ -190,6 +210,7 @@ int main(void)
 					HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_RESET);
 				}
 				f_close(&inFile);
+				f_close(&outFile);
 			}
 		}
 		else if (Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE)
