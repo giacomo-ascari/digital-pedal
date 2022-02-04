@@ -147,9 +147,9 @@ int main(void)
 	MX_USB_HOST_Init();
 	/* USER CODE BEGIN 2 */
 	pedalboard_t pedalboard;
+	pedalboard.active_pedals = 0;
 	pedalboard_append(&pedalboard, BITCRUSHER_RS);
 	pedalboard_append(&pedalboard, LPF);
-
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
