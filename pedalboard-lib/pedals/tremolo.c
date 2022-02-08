@@ -1,7 +1,16 @@
-#include "tremolo.h"
-#include "../../pedalboard.h"
+#include "../pedalboard.h"
 
-// TREMOLO
+//$ PEDAL TREMOLO tremolo_pedal_init tremolo_process
+
+//$ HEADER
+
+void tremolo_pedal_init(pedal_config_t *conf);
+
+float tremolo_process(float in, pedal_config_t *conf);
+
+//$ HEADER
+
+//$ SOURCE
 
 void tremolo_pedal_init(pedal_config_t *conf) {
     conf->float_params[SPEED] = (float_parameter_t){32, 2, 64, 2};
@@ -14,3 +23,5 @@ float tremolo_process(float in, pedal_config_t *conf) {
     out = mix(out, in, conf->float_params[BALANCE].value);
     return out;
 }
+
+//$ SOURCE

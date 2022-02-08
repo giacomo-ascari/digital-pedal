@@ -1,7 +1,16 @@
-#include "overdrive.h"
-#include "../../pedalboard.h"
+#include "../pedalboard.h"
 
-// OVERDRIVE
+//$ PEDAL OVERDRIVE overdrive_pedal_init overdrive_process
+
+//$ HEADER
+
+void overdrive_pedal_init(pedal_config_t *conf);
+
+float overdrive_process(float in, pedal_config_t *conf);
+
+//$ HEADER
+
+//$ SOURCE
 
 void overdrive_pedal_init(pedal_config_t *conf) {
     conf->float_params[GAIN_INTENSITY] = (float_parameter_t){4, 1, 10, 0.5};
@@ -18,3 +27,5 @@ float overdrive_process(float in, pedal_config_t *conf) {
     out = mix(out, in, conf->float_params[BALANCE].value);
     return out;
 }
+
+//$ SOURCE

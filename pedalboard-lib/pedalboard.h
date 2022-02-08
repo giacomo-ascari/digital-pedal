@@ -12,7 +12,9 @@
 
 // ENUMERATION
 
-enum pedal_types {
+//$ PEDAL_ENUMERATORS enum pedal_types { $ };
+
+/*enum pedal_types {
     AMPLIFIER = 0,      // amp
     BITCRUSHER_RS = 1,  // brs
     BYPASS = 2,         // bps
@@ -22,21 +24,22 @@ enum pedal_types {
     OVERDRIVE = 6,      // ovr
     OVERDRIVE_LOG = 7,  // ovrl
     TREMOLO = 8,        // trm
-};
+};*/
 
 enum u_int_param_type {
     WIDTH = 0,          // width
 };
 
 enum float_param_type {
-    GAIN_INTENSITY = 0,     // gain intensity
-    CLIP_THRESHOLD = 1,     // clip threshold
-    SOFT_THRESHOLD = 2,     // soft threshold
-    REDUCT_INTENSITY = 3,   // reduction intensity
-    SOFTENER = 4,           // softener
-    BALANCE = 5,            // balance
-    HEIGHT = 6,             // height
-    SPEED = 7,              // speed
+    GAIN_INTENSITY,     // gain intensity
+    CLIP_THRESHOLD,     // clip threshold
+    SOFT_THRESHOLD,     // soft threshold
+    REDUCT_INTENSITY,   // reduction intensity
+    SOFTENER,           // softener
+    BALANCE_L,          // balance (left or main channel)
+    BALANCE_R,          // balance (right or secondary channel)
+    HEIGHT,             // height
+    SPEED,              // speed
 };
 
 // PROCESSING
@@ -48,7 +51,7 @@ float soft_clip(float in, float soft_threshold, float softener);
 float reduce_resolution(float in, float reduction_intensity);
 float wave_gen(char t, u_int32_t i, float height, float speed);
 
-// PARAMETERS structs _ DO NOT TOUCH
+// PARAMETERS structs
 
 typedef struct _u_int_parameter_t {
     u_int32_t value, min, max, step;
@@ -58,7 +61,7 @@ typedef struct _float_parameter_t {
     float value, min, max, step;
 } float_parameter_t;
 
-// PEDALS structs _ DO NOT TOUCH
+// PEDALS structs
 
 typedef struct _pedal_config_t {
     u_int_parameter_t u_int_params[U_INT_PARAM_TYPES];
@@ -73,7 +76,7 @@ typedef struct _pedal_t {
 
 enum pedal_types pedal_type_parse(char *type_str);
 
-// PEDALBOARD _ DO NOT TOUCH
+// PEDALBOARD
 
 typedef struct _pedalboard_t {
     u_int8_t active_pedals;

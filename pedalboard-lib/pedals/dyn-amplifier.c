@@ -1,7 +1,16 @@
-#include "dyn-amplifier.h"
-#include "../../pedalboard.h"
+#include "../pedalboard.h"
 
-// DYN_AMPLIFIER
+//$ PEDAL DYN_AMPLIFIER dyn_amplifier_pedal_init dyn_amplifier_process
+
+//$ HEADER
+
+void dyn_amplifier_pedal_init(pedal_config_t *conf);
+
+float dyn_amplifier_process(float in, pedal_config_t *conf);
+
+//$ HEADER
+
+//$ SOURCE
 
 void dyn_amplifier_pedal_init(pedal_config_t *conf) {
     //conf->float_params[GAIN_INTENSITY] = (float_parameter_t){1000, 0.1, 10, 0.1};
@@ -25,3 +34,5 @@ float dyn_amplifier_process(float in, pedal_config_t *conf) {
     //return out;
     return in;
 }
+
+//$ SOURCE

@@ -1,9 +1,17 @@
-#include "overdrive-log.h"
-#include "../../pedalboard.h"
-
+#include "../pedalboard.h"
 #include <math.h>
 
-// OVERDRIVE_LOG
+//$ PEDAL OVERDRIVE_LOG overdrive_log_pedal_init overdrive_log_process
+
+//$ HEADER
+
+void overdrive_log_pedal_init(pedal_config_t *conf);
+
+float overdrive_log_process(float in, pedal_config_t *conf);
+
+//$ HEADER
+
+//$ SOURCE
 
 void overdrive_log_pedal_init(pedal_config_t *conf) {
     conf->float_params[GAIN_INTENSITY] = (float_parameter_t){1000, 500, 2000, 100};
@@ -21,3 +29,5 @@ float overdrive_log_process(float in, pedal_config_t *conf) {
     out = mix(out, in, conf->float_params[BALANCE].value);
     return out;
 }
+
+//$ SOURCE
