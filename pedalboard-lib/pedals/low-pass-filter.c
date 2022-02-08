@@ -1,8 +1,22 @@
+<<<<<<< HEAD:pedalboard-lib/pedals/low-pass-filter/low-pass-filter.c
 #include "low-pass-filter.h"
 #include "../../pedalboard.h"
 #include "../../dsp/dsp.h"
+=======
+#include "../pedalboard.h"
+>>>>>>> bf62d7bae70927fca8cb880393defa669ad491d1:pedalboard-lib/pedals/low-pass-filter.c
 
-// LOW PASS FILTER
+//$ PEDAL LPF low_pass_filter_pedal_init low_pass_filter_process
+
+//$ HEADER
+
+void low_pass_filter_pedal_init(pedal_config_t *conf);
+
+float low_pass_filter_process(float in, pedal_config_t *conf);
+
+//$ HEADER
+
+//$ SOURCE
 
 void low_pass_filter_pedal_init(pedal_config_t *conf) {
     conf->u_int_params[WIDTH] = (u_int_parameter_t){40, 2, 32, 2};
@@ -26,3 +40,5 @@ float low_pass_filter_process(float in, pedal_config_t *conf) {
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
 }
+
+//$ SOURCE

@@ -4,6 +4,7 @@
 
 #include "pedalboard.h"
 
+<<<<<<< HEAD
 #include "pedals/amplifier/amplifier.h"
 #include "pedals/bitcrusher-rs/bitcrusher-rs.h"
 #include "pedals/bypass/bypass.h"
@@ -28,6 +29,8 @@ enum pedal_types pedal_type_parse(char *type_str) {
     return type;
 }
 
+=======
+>>>>>>> bf62d7bae70927fca8cb880393defa669ad491d1
 // PEDALBOARD
 
 void pedalboard_append(pedalboard_t *p_pb, enum pedal_types type) {

@@ -1,8 +1,22 @@
+<<<<<<< HEAD:pedalboard-lib/pedals/fuzz/fuzz.c
 #include "fuzz.h"
 #include "../../pedalboard.h"
 #include "../../dsp/dsp.h"
+=======
+#include "../pedalboard.h"
+>>>>>>> bf62d7bae70927fca8cb880393defa669ad491d1:pedalboard-lib/pedals/fuzz.c
 
-// FUZZ
+//$ PEDAL FUZZ fuzz_pedal_init fuzz_process
+
+//$ HEADER
+
+void fuzz_pedal_init(pedal_config_t *conf);
+
+float fuzz_process(float in, pedal_config_t *conf);
+
+//$ HEADER
+
+//$ SOURCE
 
 void fuzz_pedal_init(pedal_config_t *conf) {
     conf->u_int_params[COUNTER] = (u_int_parameter_t){0, 1, 0, 0};
@@ -26,3 +40,5 @@ float fuzz_process(float in, pedal_config_t *conf) {
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
 }
+
+//$ SOURCE
