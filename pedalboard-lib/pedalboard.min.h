@@ -1,62 +1,54 @@
-#include <math.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
-#define _TREMOLO_H
-#define _BITCRUSHER_RS_H
+#include <stdlib.h>
 #define _LOW_PASS_FILTER_H
+#define _OVERDRIVE_H
+#define U_INT_PARAM_TYPES 2
+#define _OVERDRIVE_SQRT_H
+#define _BYPASS_H
+#define FLOAT_PARAM_TYPES 9
+#define _AMPLIFIER_H
+#define _DYN_AMPLIFIER_H
+#define _DSP_H
+#define _BITCRUSHER_RS_H
 #define _FUZZ_H
 #define MAX_PEDALS_COUNT 16
-#define _BYPASS_H
 #define _PEDALBOARD_H
-#define FLOAT_PARAM_TYPES 8
-#define PEDAL_TYPES 8
-#define _OVERDRIVE_LOG_H
-#define _DYN_AMPLIFIER_H
-#define U_INT_PARAM_TYPES 1
-#define _AMPLIFIER_H
-#define _OVERDRIVE_H
-
+#define _TREMOLO_H
 
 
 
 // ENUMERATION
 
 enum pedal_types {
-    AMPLIFIER = 0,      // amp
-    BITCRUSHER_RS = 1,  // brs
-    BYPASS = 2,         // bps
-    DYN_AMPLIFIER = 3,  // damp
-    FUZZ = 4,           // fzz
-    LPF = 5,            // lpf
-    OVERDRIVE = 6,      // ovr
-    OVERDRIVE_LOG = 7,  // ovrl
-    TREMOLO = 8,        // trm
+    AMPLIFIER,      // amp
+    BITCRUSHER_RS,  // brs
+    BYPASS,         // bps
+    DYN_AMPLIFIER,  // damp
+    FUZZ,           // fzz
+    LPF,            // lpf
+    OVERDRIVE,      // ovr
+    OVERDRIVE_SQRT, // ovrs
+    TREMOLO,        // trm
 };
 
 enum u_int_param_type {
-    WIDTH = 0,          // width
+    WIDTH,          // width
+    COUNTER,        // multipurpose counter
 };
 
 enum float_param_type {
-    GAIN_INTENSITY = 0,     // gain intensity
-    CLIP_THRESHOLD = 1,     // clip threshold
-    SOFT_THRESHOLD = 2,     // soft threshold
-    REDUCT_INTENSITY = 3,   // reduction intensity
-    SOFTENER = 4,           // softener
-    BALANCE = 5,            // balance
-    HEIGHT = 6,             // height
-    SPEED = 7,              // speed
+    GAIN_INTENSITY,     // gain intensity
+    CLIP_THRESHOLD,     // clip threshold
+    SOFT_THRESHOLD,     // soft threshold
+    REDUCT_INTENSITY,   // reduction intensity
+    SOFTENER,           // softener
+    BALANCE_1,          // gain on primary channel
+    BALANCE_2,          // gain on secondary channel
+    HEIGHT,             // height
+    SPEED,              // speed
 };
-
-// PROCESSING
-
-float gain(float in, float gain_intensity);
-float mix(float in_1, float in_2, float balance);
-float hard_clip(float in, float clip_threshold);
-float soft_clip(float in, float soft_threshold, float softener);
-float reduce_resolution(float in, float reduction_intensity);
-float wave_gen(char t, u_int32_t i, float height, float speed);
 
 // PARAMETERS structs _ DO NOT TOUCH
 
@@ -95,9 +87,19 @@ float pedalboard_process(pedalboard_t *p_pb, float in);
 
 
 
-void overdrive_log_pedal_init(pedal_config_t *conf);
+float gain(float in, float gain_intensity);
 
-float overdrive_log_process(float in, pedal_config_t *conf);
+float mix(float in_1, float in_2, float balance_1, float balance_2);
+
+float hard_clip(float in, float clip_threshold);
+
+float soft_clip(float in, float soft_threshold, float softener);
+
+float reduce_resolution(float in, float reduction_intensity);
+
+float square_root(float in);
+
+float wave_gen(char t, u_int32_t i, float height, float speed);
 
 
 
@@ -134,6 +136,12 @@ float low_pass_filter_process(float in, pedal_config_t *conf);
 void dyn_amplifier_pedal_init(pedal_config_t *conf);
 
 float dyn_amplifier_process(float in, pedal_config_t *conf);
+
+
+
+void overdrive_sqrt_pedal_init(pedal_config_t *conf);
+
+float overdrive_sqrt_process(float in, pedal_config_t *conf);
 
 
 

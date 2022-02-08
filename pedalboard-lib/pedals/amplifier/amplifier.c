@@ -1,5 +1,6 @@
 #include "amplifier.h"
 #include "../../pedalboard.h"
+#include "../../dsp/dsp.h"
 
 // AMPLIFIER
 

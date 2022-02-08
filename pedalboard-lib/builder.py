@@ -43,7 +43,6 @@ def main():
 
     source_list = []
     append_content(source_list, c_files)
-    print(source_list)
 
     header_list = []
     append_content(header_list, h_files)

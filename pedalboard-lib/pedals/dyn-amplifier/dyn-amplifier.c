@@ -1,5 +1,6 @@
 #include "dyn-amplifier.h"
 #include "../../pedalboard.h"
+#include "../../dsp/dsp.h"
 
 // DYN_AMPLIFIER
 

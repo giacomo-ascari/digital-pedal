@@ -1,5 +1,6 @@
 #include "bypass.h"
 #include "../../pedalboard.h"
+#include "../../dsp/dsp.h"
 
 // BYPASS
 
