@@ -8,7 +8,7 @@ def process(samples, types):
     with open("samples-in.tmp", "w") as f:
         for s in samples:
             f.write(str(s) + "\n")
-    subprocess.run(['/bin/sh', './compile.min.sh'])
+    subprocess.run(['/bin/sh', './compile.sh'])
     args = ['./out', "samples-in.tmp", "samples-out.tmp"]
     for t in types:
         args.append(t)
@@ -24,13 +24,14 @@ def main():
     samples = read("sound-in.wav")
     print("Reading completed")
     
-    proc_samples = process(samples, ["fzz", "ovrl", "lpf"])
+    proc_samples = process(samples, ["lfp", "ovrs", "lfp"])
     print("Processing completed")
 
     write(proc_samples, "sound-out.wav")
     print("Write completed")
 
-    interval_lower, interval_upper = int(48000*9), int(48000*9.2)
+    interval_lower, interval_upper = int(48000*48), int(48000*49.2)
+    #interval_lower, interval_upper = int(48000*9), int(48000*9.2)
     #interval_lower, interval_upper = int(48000*8), int(48000*11)
     plt.title("yeehaw") 
     plt.xlabel("time") 
