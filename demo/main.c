@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../pedalboard-lib/pedalboard.min.h"
+#include "../lib/pedalboard.min.h"
 
 #define MAX_SAMPLES_COUNT 48000
 #define SAMPLES_RATE 48000
