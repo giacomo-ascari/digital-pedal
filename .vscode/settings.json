@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "dsp.h": "c"
+        "dsp.h": "c",
+        "type_traits": "c",
+        "stdlib.h": "c"
     }
 }

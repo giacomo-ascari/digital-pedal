@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 
     int16_t raw_samples[MAX_SAMPLES_COUNT];
     int16_t out_samples[MAX_SAMPLES_COUNT];
-    int32_t samples_index = 0;
+    int32_t index = 0, circular_index;
 
     FILE *raw_file = fopen(argv[1], "r");
     FILE *out_file = fopen(argv[2], "w");
@@ -26,19 +26,19 @@ int main(int argc, char** argv)
     {
 
         // getting traslated index
-        int32_t i = samples_index % MAX_SAMPLES_COUNT;
+        circular_index = index % MAX_SAMPLES_COUNT;
         
         // acquire raw data from stdin
-        fscanf(raw_file, "%hd", &raw_samples[i]);
+        fscanf(raw_file, "%hd", &raw_samples[circular_index]);
         
         // digital signal processing
-        out_samples[i] = pedalboard_process(&pedalboard, raw_samples[i]);
+        out_samples[circular_index] = pedalboard_process(&pedalboard, raw_samples[circular_index]);
 
         // send processed data to stdout
-        fprintf(out_file, "%hd\n", out_samples[i]);
+        fprintf(out_file, "%hd\n", out_samples[circular_index]);
 
         // increase index
-        samples_index++;
+        index++;
     }
 
     fclose(raw_file);

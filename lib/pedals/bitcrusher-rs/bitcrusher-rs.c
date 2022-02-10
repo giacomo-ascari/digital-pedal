@@ -5,16 +5,17 @@
 // BITCRUSHER resolution
 
 void bitcrusher_rs_pedal_init(pedal_config_t *conf) {
-    conf->u_int_params[REDUCT_INTENSITY] = (u_int_parameter_t){8, 1, 10, 1};
-    conf->float_params[BALANCE_1] = (float_parameter_t){0.5, 0, 1, 0.1};
-    conf->float_params[BALANCE_2] = (float_parameter_t){0.5, 0, 1, 0.1};
+    conf->int_params[REDUCT_INTENSITY] = (int_parameter_t){12, 1, 16, 1};
+    conf->float_params[BALANCE_1] = (float_parameter_t){0.5F, 0.F, 1.F, 0.1F};
+    conf->float_params[BALANCE_2] = (float_parameter_t){0.5F, 0.F, 1.F, 0.1F};
 }
 
 float bitcrusher_rs_process(float in, pedal_config_t *conf) {
-    int16_t divider = pow(2, conf->u_int_params[REDUCT_INTENSITY].value);
+    int16_t shift = conf->int_params[REDUCT_INTENSITY].value;
     int16_t _out = (int16_t)in;
-    _out /= divider;
-    _out *= divider;
+    _out = _out >> shift;
+    _out = _out << shift;
+    _out += (2 << shift -2);
     float out = (float)_out;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;

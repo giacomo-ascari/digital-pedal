@@ -5,24 +5,28 @@
 // FUZZ
 
 void fuzz_pedal_init(pedal_config_t *conf) {
-    conf->u_int_params[COUNTER] = (u_int_parameter_t){0, 1, 0, 0};
-    conf->float_params[GAIN_INTENSITY] = (float_parameter_t){4, 1, 10, 0.5};
-    conf->float_params[CLIP_THRESHOLD] = (float_parameter_t){32767, 0, 32767, 1};
-    conf->float_params[HEIGHT] = (float_parameter_t){2048, 0, 8192, 32};
-    conf->float_params[SPEED] = (float_parameter_t){20, 2, 64, 2};
-    conf->float_params[BALANCE_1] = (float_parameter_t){1, 0, 1, 0.1};
-    conf->float_params[BALANCE_2] = (float_parameter_t){0, 0, 1, 0.1};
+    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0, 0};
+    conf->float_params[INTENSITY] = (float_parameter_t){4.F, 1.F, 10.F, 0.5F};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1.F};
+    conf->float_params[HEIGHT] = (float_parameter_t){2048.F, 0.F, 8192.F, 32.F};
+    conf->float_params[SPEED] = (float_parameter_t){20.F, 2.F, 64.F, 2.F};
+    conf->float_params[BALANCE_1] = (float_parameter_t){1.F, 0.F, 1.F, 0.1F};
+    conf->float_params[BALANCE_2] = (float_parameter_t){0.F, 0.F, 1.F, 0.1F};
 }
 
 float fuzz_process(float in, pedal_config_t *conf) {
-    float out = gain(in, conf->float_params[GAIN_INTENSITY].value);
-    out = hard_clip(out, conf->float_params[CLIP_THRESHOLD].value);
-    if (out == conf->float_params[CLIP_THRESHOLD].value) {
-        out = out + wave_gen('s', conf->u_int_params[COUNTER].value, conf->float_params[HEIGHT].value, conf->float_params[SPEED].value) - conf->float_params[HEIGHT].value;
-    } else if (out == -(conf->float_params[CLIP_THRESHOLD].value)-1) {
-        out = out - wave_gen('s', conf->u_int_params[COUNTER].value++, conf->float_params[HEIGHT].value, conf->float_params[SPEED].value) + conf->float_params[HEIGHT].value;
+    float out = in * conf->float_params[INTENSITY].value;
+    float threshold_high = conf->float_params[THRESHOLD_HIGH].value;
+    float height = conf->float_params[HEIGHT].value;
+    float speed = conf->float_params[SPEED].value;
+
+    out = hard_clip(out, threshold_high);
+    if (out == threshold_high) {
+        out = out + wave_gen('s', conf->int_params[COUNTER].value, height, speed) - height;
+    } else if (out == -threshold_high - 1.F) {
+        out = out - wave_gen('s', conf->int_params[COUNTER].value, height, speed) + height;
     }
-    conf->u_int_params[COUNTER].value++;
+    conf->int_params[COUNTER].value++;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
 }

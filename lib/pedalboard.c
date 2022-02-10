@@ -87,10 +87,10 @@ void pedalboard_append(pedalboard_t *p_pb, enum pedal_types type) {
     }
 }
 
-float pedalboard_process(pedalboard_t *p_pb, float in) {
-    float out = in;
+int16_t pedalboard_process(pedalboard_t *p_pb, int16_t in) {
+    float out = (float)in;
     for (u_int8_t i = 0; i < p_pb->active_pedals; i++) {
         out = p_pb->pedals[i].pedal_process(out, &(p_pb->pedals[i].config));
     }
-    return out;
+    return (int16_t)out;
 }

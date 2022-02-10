@@ -1,10 +1,8 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "dsp.h"
-
-float gain(float in, float gain_intensity) {
-    return in * gain_intensity;
-}
 
 float mix(float in_1, float in_2, float balance_1, float balance_2) {
     return in_1 * balance_1 + in_2 * balance_2;
@@ -31,14 +29,13 @@ float soft_clip(float in, float soft_threshold, float softener) {
     return out;
 }
 
-float reduce_resolution(float in, float reduction_intensity) {
-    int16_t out = (float)(in / reduction_intensity);
-    out *= reduction_intensity;
-    return (float)out; 
-}
-
 float square_root(float in) {
-    return sqrt(in);
+    float out;  
+    out = in * 0.5F;
+    for (u_int8_t i = 0; i < 8; i++) {
+        out = 0.5F * (out + (in / out));
+    }
+    return out;
 }
 
 float wave_gen(char t, u_int32_t i, float height, float speed) {

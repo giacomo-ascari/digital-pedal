@@ -5,24 +5,16 @@
 // LPF
 
 void low_pass_filter_pedal_init(pedal_config_t *conf) {
-    conf->u_int_params[WIDTH] = (u_int_parameter_t){40, 2, 32, 2};
-    conf->u_int_params[COUNTER] = (u_int_parameter_t){0, 1, 0, 0};
-    conf->float_params[BALANCE_1] = (float_parameter_t){1, 0, 1, 0.1};
-    conf->float_params[BALANCE_2] = (float_parameter_t){0, 0, 1, 0.1};
+    conf->float_params[INTENSITY] = (float_parameter_t){0.9F, 0.0F, 1.0F, 0.01F};
+    conf->float_params[BALANCE_1] = (float_parameter_t){1.F, 0.F, 1.F, 0.1F};
+    conf->float_params[BALANCE_2] = (float_parameter_t){0.F, 0.F, 1.F, 0.1F};
+    conf->float_params[PAST] = (float_parameter_t){0.F, 0.F, 0.F, 0.F};
 }
 
 float low_pass_filter_process(float in, pedal_config_t *conf) {
-    static float history[441];
-    u_int32_t width = conf->u_int_params[WIDTH].value;
-    u_int32_t i = conf->u_int_params[COUNTER].value;
-    float out = 0;
-    if (width > 441) width = 441;
-    history[i % width] = in;
-    for (u_int16_t j = i-width; j < i; j++) {
-        out += history[j % width];
-    }
-    conf->u_int_params[COUNTER].value++;
-    out /= width;
+    float alpha = conf->float_params[INTENSITY].value;
+    float out = conf->float_params[PAST].value * alpha + (1.F - alpha) * in;
+    conf->float_params[PAST].value = out;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
 }
