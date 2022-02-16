@@ -1,0 +1,11 @@
+FILE_TYPE = MULTI_PHYS_TABLE;
+
+PART 'WM8782SEDS_V'
+CLASS = IC
+{========================================================================================}
+:"MANUFACTURER_NAME", "MANUFACTURER_PART_NUMBER"= "PART_NUMBER", "JEDEC_TYPE", "PACK_TYPE", "MOUSER_PART_NUMBER", "MOUSER_PRICE/STOCK", "ARROW_PART_NUMBER", "ARROW_PRICE/STOCK", "DESCRIPTION", "DATASHEET", "HEIGHT";
+{========================================================================================}
+ "Cirrus Logic", "WM8782SEDS/V" (!) = "", "SOP65P780X200-20N", "Small Outline Packages", "238-WM8782SEDS/V", "https://www.mouser.com/Search/Refine.aspx?Keyword=238-WM8782SEDS%2FV", "", "", "Audio A/D Converter ICs STEREO ADC 20-pin", "https://componentsearchengine.com/Datasheets/1/WM8782SEDS_V.pdf", "2 mm"
+END_PART
+
+END.

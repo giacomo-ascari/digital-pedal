@@ -1,0 +1,218 @@
+;Proteus Design Interchange Format
+(PDIF
+ (vendor "SamacSys Limited")
+ (version 1 0)
+ (library
+  (part "WM8782SEDS_V"
+   (description "Audio A/D Converter ICs STEREO ADC 20-pin")
+   (family "ANA")
+   (package "SOP65P780X200-20N")
+   (attribute "Datasheet Link" "https://componentsearchengine.com/Datasheets/1/WM8782SEDS_V.pdf")
+   (attribute "Geometry.Height" "2mm")
+   (attribute "Manufacturer_Name" "Cirrus Logic")
+   (attribute "Manufacturer_Part_Number" "WM8782SEDS/V")
+   (attribute "Mouser Part Number" "238-WM8782SEDS/V")
+   (attribute "Mouser Price/Stock" "https://www.mouser.com/Search/Refine.aspx?Keyword=238-WM8782SEDS%2FV")
+   (attribute "Arrow Part Number" "")
+   (attribute "Arrow Price/Stock" "")
+   (gate
+    (symbol "WM8782SEDS_V")
+    (pin "MCLK" 1 PS)
+    (pin "DOUT" 2 PS)
+    (pin "LRCLK" 3 PS)
+    (pin "DGND" 4 PS)
+    (pin "DVDD" 5 PS)
+    (pin "BCLK" 6 PS)
+    (pin "IWL" 7 PS)
+    (pin "FSAMPEN" 8 PS)
+    (pin "FORMAT" 9 PS)
+    (pin "VMID" 10 PS)
+    (pin "M/S" 20 PS)
+    (pin "AINL" 19 PS)
+    (pin "AINOPL" 18 PS)
+    (pin "COM" 17 PS)
+    (pin "AINR" 16 PS)
+    (pin "AINOPR" 15 PS)
+    (pin "AGND" 14 PS)
+    (pin "AVDD" 13 PS)
+    (pin "VREFP" 12 PS)
+    (pin "VREFGND" 11 PS)
+   )
+  )
+  (symbol "WM8782SEDS_V"
+   (units THOU)
+   (origin (pt 0 0))
+   (graphic
+    (stroke 10)
+    (path (pt 200 100) (pt 1200 100) (pt 1200 -1000) (pt 200 -1000) (pt 200 100) (closed))
+   )
+   (terminal
+    (body (symbol "PIN") (pt 0 0) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -100) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -200) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -300) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -400) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -500) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -600) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -700) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -800) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 -900) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 0) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -100) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -200) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -300) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -400) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -500) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -600) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -700) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -800) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 1400 -900) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+  )
+  (symbol "PIN"
+   (units THOU)
+   (origin (pt 0 0))
+   (graphic
+    (stroke 10)
+    (path (pt 0 0) (pt 200 0))))
+  (symbol "PINSHORT"
+   (units THOU)
+   (origin (pt 0 0))
+   (graphic
+    (stroke 10)
+    (path (pt 0 0) (pt 100 0))))
+  (package "SOP65P780X200-20N"
+   (units MM)
+   (layer OCCA
+    (graphic
+     (stroke 0.05)
+     (path
+      (closed true)
+      (pt -4.7 4)
+      (pt 4.7 4)
+      (pt 4.7 -4)
+      (pt -4.7 -4)
+      (pt -4.7 4))))
+   (layer TASM
+    (graphic
+     (stroke 0.1)
+     (path
+      (closed true)
+      (pt -2.65 3.6)
+      (pt 2.65 3.6)
+      (pt 2.65 -3.6)
+      (pt -2.65 -3.6)
+      (pt -2.65 3.6))))
+   (layer TASM
+    (graphic
+     (stroke 0.1)
+     (path
+      (closed false)
+      (pt -2.65 2.95)
+      (pt -2 3.6))))
+   (layer TSLK
+    (graphic
+     (stroke 0.2)
+     (path
+      (closed true)
+      (pt -2.3 3.6)
+      (pt 2.3 3.6)
+      (pt 2.3 -3.6)
+      (pt -2.3 -3.6)
+      (pt -2.3 3.6))))
+   (layer TSLK
+    (graphic
+     (stroke 0.2)
+     (path
+      (closed false)
+      (pt -4.45 3.5)
+      (pt -2.65 3.5))))
+   (leg 1 (pt -3.55 2.925) (padstack 0))
+   (leg 2 (pt -3.55 2.275) (padstack 0))
+   (leg 3 (pt -3.55 1.625) (padstack 0))
+   (leg 4 (pt -3.55 0.975) (padstack 0))
+   (leg 5 (pt -3.55 0.325) (padstack 0))
+   (leg 6 (pt -3.55 -0.325) (padstack 0))
+   (leg 7 (pt -3.55 -0.975) (padstack 0))
+   (leg 8 (pt -3.55 -1.625) (padstack 0))
+   (leg 9 (pt -3.55 -2.275) (padstack 0))
+   (leg 10 (pt -3.55 -2.925) (padstack 0))
+   (leg 11 (pt 3.55 -2.925) (padstack 0))
+   (leg 12 (pt 3.55 -2.275) (padstack 0))
+   (leg 13 (pt 3.55 -1.625) (padstack 0))
+   (leg 14 (pt 3.55 -0.975) (padstack 0))
+   (leg 15 (pt 3.55 -0.325) (padstack 0))
+   (leg 16 (pt 3.55 0.325) (padstack 0))
+   (leg 17 (pt 3.55 0.975) (padstack 0))
+   (leg 18 (pt 3.55 1.625) (padstack 0))
+   (leg 19 (pt 3.55 2.275) (padstack 0))
+   (leg 20 (pt 3.55 2.925) (padstack 0))
+   (padstack 0
+    (plated false)
+    (pad (layer TCOP) (rectf 0.45 1.8 0 0 0))
+   )
+   (model "WM8782SEDS_V.stp"
+    (euler 0 0 0)
+    (offset 0 0 0)
+   )
+  )
+ )
+)

@@ -1,0 +1,9 @@
+Manufacturer=Cirrus Logic
+PartNumber=WM8782SEDS/V
+PartCategory=Integrated Circuit
+PackageCategory=Small Outline Packages
+PinCount=20
+Version=1.1
+Released=2022-02-11 05:01:19
+Downloaded=2022-02-11 08:53:10
+3D=Y

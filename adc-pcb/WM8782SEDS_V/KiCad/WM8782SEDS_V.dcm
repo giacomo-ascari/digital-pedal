@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP WM8782SEDS_V
+D Audio A/D Converter ICs STEREO ADC 20-pin
+K
+F https://componentsearchengine.com/Datasheets/1/WM8782SEDS_V.pdf
+$ENDCMP
+#
+#End Doc Library

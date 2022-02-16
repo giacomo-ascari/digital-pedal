@@ -117,9 +117,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	pedalboard_t pedalboard;
 	pedalboard.active_pedals = 0;
-	pedalboard_append(&pedalboard, FUZZ);
-	pedalboard_append(&pedalboard, BITCRUSHER_RS);
-	pedalboard_append(&pedalboard, LPF);
+	//pedalboard_append(&pedalboard, FUZZ);
+	//pedalboard_append(&pedalboard, BITCRUSHER_RS);
+	//pedalboard_append(&pedalboard, LPF);
+	//pedalboard_append(&pedalboard, LPF);
+	//pedalboard_append(&pedalboard, LPF);
+	//pedalboard_append(&pedalboard, LPF);
+	pedalboard_append(&pedalboard, OVERDRIVE_SQRT);
+	pedalboard_append(&pedalboard, OVERDRIVE_SQRT);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -179,13 +184,20 @@ int main(void)
 			HAL_GPIO_WritePin(Led4_GPIO_Port, Led4_Pin, GPIO_PIN_RESET);
 
 			if(HAL_GPIO_ReadPin(Btn1_GPIO_Port, Btn1_Pin) == GPIO_PIN_SET) {
-				// USE SINEWAVE as TEST
-				int32_t count = 44100 * 30;
-				float inSample, outSample;
+
+				float f_a = 1.F, f_b = 1.F;
+				float f_ops[6] = {12.1F, -53.4F, 76.1F, 11.9F, 6.F, 14.F};
 				HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);
-				for (int32_t i = 0; i < count; i++) {
-					inSample = wave_gen('s', i, 16000.0, 2.0);
-					outSample = pedalboard_process(&pedalboard, inSample);
+				for (int32_t i = 0; i < 44100 * 30; i++) {
+					f_b = f_ops[i % 6];
+					switch(i % 4) {
+						case 0: f_a += f_b; break;
+						case 1: f_a -= f_b; break;
+						case 2: f_a *= f_b; break;
+						case 3: f_a /= f_b; break;
+					}
+					f_b = pedalboard_process(&pedalboard, f_a);
+
 				}
 				HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_RESET);
 			}
