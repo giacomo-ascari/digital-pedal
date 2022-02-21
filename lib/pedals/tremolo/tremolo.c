@@ -12,7 +12,6 @@ void tremolo_pedal_init(pedal_config_t *conf) {
 }
 
 float tremolo_process(float in, pedal_config_t *conf) {
-    static u_int32_t i = 0;
     float out = in * wave_gen('s', conf->int_params[COUNTER].value, 1.F, conf->float_params[SPEED].value);
     conf->int_params[COUNTER].value++;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);

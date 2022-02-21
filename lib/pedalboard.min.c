@@ -1,45 +1,23 @@
-#include <math.h>
-#include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include <stdio.h>
 #include "pedalboard.min.h"
 
-// AMPLIFIER
+// OVERDRIVE
 
-void amplifier_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){0.5F, 0.1F, 10.F, 0.1F};
+void overdrive_pedal_init(pedal_config_t *conf) {
+    conf->float_params[INTENSITY] = (float_parameter_t){4.F, 1.F, 10.F, 0.5F};
     conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1.F};
+    conf->float_params[THRESHOLD_LOW] = (float_parameter_t){28000.F, 0.F, 32767.F, 1.F};
+    conf->float_params[SOFTENER] = (float_parameter_t){4.F, 1.F, 10.F, 0.5F};
+    conf->float_params[BALANCE_1] = (float_parameter_t){1.F, 0.F, 1.F, 0.1F};
+    conf->float_params[BALANCE_2] = (float_parameter_t){0.F, 0.F, 1.F, 0.1F};
 }
 
-float amplifier_process(float in, pedal_config_t *conf) {
-    float out = in * conf->float_params[INTENSITY].value;
+float overdrive_process(float in, pedal_config_t *conf) {
+    float out = in *  conf->float_params[INTENSITY].value;
+    out = soft_clip(out, conf->float_params[THRESHOLD_LOW].value, conf->float_params[SOFTENER].value);
     out = hard_clip(out, conf->float_params[THRESHOLD_HIGH].value);
-    return out;
-}
-
-// BYPASS
-
-void bypass_pedal_init(pedal_config_t *conf) {
-    return;
-}
-
-float bypass_process(float in, pedal_config_t *conf) {
-    return in;
-}
-
-// TREMOLO
-
-void tremolo_pedal_init(pedal_config_t *conf) {
-    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0, 0};
-    conf->float_params[SPEED] = (float_parameter_t){32.F, 2.F, 64.F, 2.F};
-    conf->float_params[BALANCE_1] = (float_parameter_t){0.1F, 0.F, 1.F, 0.1F};
-    conf->float_params[BALANCE_2] = (float_parameter_t){0.9F, 0.F, 1.F, 0.1F};
-}
-
-float tremolo_process(float in, pedal_config_t *conf) {
-    static u_int32_t i = 0;
-    float out = in * wave_gen('s', conf->int_params[COUNTER].value, 1.F, conf->float_params[SPEED].value);
-    conf->int_params[COUNTER].value++;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
 }
@@ -63,20 +41,54 @@ float bitcrusher_rs_process(float in, pedal_config_t *conf) {
     return out;
 }
 
-// LPF
+// TREMOLO
 
-void low_pass_filter_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){0.9F, 0.0F, 1.0F, 0.01F};
-    conf->float_params[BALANCE_1] = (float_parameter_t){1.F, 0.F, 1.F, 0.1F};
-    conf->float_params[BALANCE_2] = (float_parameter_t){0.F, 0.F, 1.F, 0.1F};
-    conf->float_params[PAST] = (float_parameter_t){0.F, 0.F, 0.F, 0.F};
+void tremolo_pedal_init(pedal_config_t *conf) {
+    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0, 0};
+    conf->float_params[SPEED] = (float_parameter_t){32.F, 2.F, 64.F, 2.F};
+    conf->float_params[BALANCE_1] = (float_parameter_t){0.1F, 0.F, 1.F, 0.1F};
+    conf->float_params[BALANCE_2] = (float_parameter_t){0.9F, 0.F, 1.F, 0.1F};
 }
 
-float low_pass_filter_process(float in, pedal_config_t *conf) {
-    float alpha = conf->float_params[INTENSITY].value;
-    float out = conf->float_params[PAST].value * alpha + (1.F - alpha) * in;
-    conf->float_params[PAST].value = out;
+float tremolo_process(float in, pedal_config_t *conf) {
+    float out = in * wave_gen('s', conf->int_params[COUNTER].value, 1.F, conf->float_params[SPEED].value);
+    conf->int_params[COUNTER].value++;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
+    return out;
+}
+
+// OVERDRIVE_SQRT
+
+void overdrive_sqrt_pedal_init(pedal_config_t *conf) {
+    conf->float_params[INTENSITY] = (float_parameter_t){500.F, 0.F, 2000.F, 100.F};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1.F};
+    conf->float_params[BALANCE_1] = (float_parameter_t){0.25F, 0.F, 1.F, 0.1F};
+    conf->float_params[BALANCE_2] = (float_parameter_t){0.75F, 0.F, 1.F, 0.1F};
+}
+
+float overdrive_sqrt_process(float in, pedal_config_t *conf) {
+    float out;
+    if (in > 0.0F) {
+        out = square_root(in);
+    } else {
+        out = -square_root(-in);
+    }
+    out = out * conf->float_params[INTENSITY].value;
+    out = hard_clip(out, conf->float_params[THRESHOLD_HIGH].value);
+    out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
+    return out;
+}
+
+// AMPLIFIER
+
+void amplifier_pedal_init(pedal_config_t *conf) {
+    conf->float_params[INTENSITY] = (float_parameter_t){0.5F, 0.1F, 10.F, 0.1F};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1.F};
+}
+
+float amplifier_process(float in, pedal_config_t *conf) {
+    float out = in * conf->float_params[INTENSITY].value;
+    out = hard_clip(out, conf->float_params[THRESHOLD_HIGH].value);
     return out;
 }
 
@@ -105,43 +117,19 @@ float dyn_amplifier_process(float in, pedal_config_t *conf) {
     return in;
 }
 
-// OVERDRIVE_SQRT
+// LPF
 
-void overdrive_sqrt_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){500.F, 0.F, 2000.F, 100.F};
-    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1.F};
-    conf->float_params[BALANCE_1] = (float_parameter_t){0.25F, 0.F, 1.F, 0.1F};
-    conf->float_params[BALANCE_2] = (float_parameter_t){0.75F, 0.F, 1.F, 0.1F};
-}
-
-float overdrive_sqrt_process(float in, pedal_config_t *conf) {
-    float out;
-    if (in > 0.0F) {
-        out = square_root(in);
-    } else {
-        out = -square_root(-in);
-    }
-    out = out * conf->float_params[INTENSITY].value;
-    out = hard_clip(out, conf->float_params[THRESHOLD_HIGH].value);
-    out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
-    return out;
-}
-
-// OVERDRIVE
-
-void overdrive_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){4.F, 1.F, 10.F, 0.5F};
-    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1.F};
-    conf->float_params[THRESHOLD_LOW] = (float_parameter_t){28000.F, 0.F, 32767.F, 1.F};
-    conf->float_params[SOFTENER] = (float_parameter_t){4.F, 1.F, 10.F, 0.5F};
+void low_pass_filter_pedal_init(pedal_config_t *conf) {
+    conf->float_params[INTENSITY] = (float_parameter_t){0.9F, 0.0F, 1.0F, 0.01F};
     conf->float_params[BALANCE_1] = (float_parameter_t){1.F, 0.F, 1.F, 0.1F};
     conf->float_params[BALANCE_2] = (float_parameter_t){0.F, 0.F, 1.F, 0.1F};
+    conf->float_params[PAST] = (float_parameter_t){0.F, 0.F, 0.F, 0.F};
 }
 
-float overdrive_process(float in, pedal_config_t *conf) {
-    float out = in *  conf->float_params[INTENSITY].value;
-    out = soft_clip(out, conf->float_params[THRESHOLD_LOW].value, conf->float_params[SOFTENER].value);
-    out = hard_clip(out, conf->float_params[THRESHOLD_HIGH].value);
+float low_pass_filter_process(float in, pedal_config_t *conf) {
+    float alpha = conf->float_params[INTENSITY].value;
+    float out = conf->float_params[PAST].value * alpha + (1.F - alpha) * in;
+    conf->float_params[PAST].value = out;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
 }
@@ -173,6 +161,16 @@ float fuzz_process(float in, pedal_config_t *conf) {
     conf->int_params[COUNTER].value++;
     out = mix(out, in, conf->float_params[BALANCE_1].value, conf->float_params[BALANCE_2].value);
     return out;
+}
+
+// BYPASS
+
+void bypass_pedal_init(pedal_config_t *conf) {
+    return;
+}
+
+float bypass_process(float in, pedal_config_t *conf) {
+    return in;
 }
 
 
@@ -226,20 +224,6 @@ float wave_gen(char t, u_int32_t i, float height, float speed) {
 }
 
 
-
-enum pedal_types pedal_type_parse(char *type_str) {
-    enum pedal_types type;
-    if (strcmp(type_str, "bps") == 0) type = BYPASS;
-    else if (strcmp(type_str, "amp") == 0) type = AMPLIFIER;
-    else if (strcmp(type_str, "damp") == 0) type = DYN_AMPLIFIER;
-    else if (strcmp(type_str, "ovr") == 0) type = OVERDRIVE;
-    else if (strcmp(type_str, "ovrs") == 0) type = OVERDRIVE_SQRT;
-    else if (strcmp(type_str, "fzz") == 0) type = FUZZ;
-    else if (strcmp(type_str, "brs") == 0) type = BITCRUSHER_RS;
-    else if (strcmp(type_str, "trm") == 0) type = TREMOLO;
-    else if (strcmp(type_str, "lpf") == 0) type = LPF;
-    return type;
-}
 
 // PEDALBOARD
 

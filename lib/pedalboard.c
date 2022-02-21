@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "pedalboard.h"
 
@@ -13,20 +12,6 @@
 #include "pedals/overdrive/overdrive.h"
 #include "pedals/overdrive-sqrt/overdrive-sqrt.h"
 #include "pedals/tremolo/tremolo.h"
-
-enum pedal_types pedal_type_parse(char *type_str) {
-    enum pedal_types type;
-    if (strcmp(type_str, "bps") == 0) type = BYPASS;
-    else if (strcmp(type_str, "amp") == 0) type = AMPLIFIER;
-    else if (strcmp(type_str, "damp") == 0) type = DYN_AMPLIFIER;
-    else if (strcmp(type_str, "ovr") == 0) type = OVERDRIVE;
-    else if (strcmp(type_str, "ovrs") == 0) type = OVERDRIVE_SQRT;
-    else if (strcmp(type_str, "fzz") == 0) type = FUZZ;
-    else if (strcmp(type_str, "brs") == 0) type = BITCRUSHER_RS;
-    else if (strcmp(type_str, "trm") == 0) type = TREMOLO;
-    else if (strcmp(type_str, "lpf") == 0) type = LPF;
-    return type;
-}
 
 // PEDALBOARD
 
