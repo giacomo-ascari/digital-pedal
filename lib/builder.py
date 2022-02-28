@@ -30,7 +30,7 @@ def append_content(line_list, file_list):
 
 def main():
 
-    c_files, h_files = list_files(".")
+    c_files, h_files = list_files("../lib")
     c_files = sorted(c_files, key=lambda tup: tup[1], reverse=True)
     h_files = sorted(h_files, key=lambda tup: tup[1], reverse=False)
 
@@ -47,7 +47,7 @@ def main():
     header_list = []
     append_content(header_list, h_files)
     
-    with open("pedalboard.min.h", "w") as f:
+    with open("../lib/pedalboard.min.h", "w") as f:
         for line in include_set:
             f.write(line + "\n")
         for line in define_set:
@@ -55,7 +55,7 @@ def main():
         for line in header_list:
             f.write(line + "\n")
     
-    with open("pedalboard.min.c", "w") as f:
+    with open("../lib/pedalboard.min.c", "w") as f:
         for line in include_set:
             f.write(line + "\n")
         f.write("#include \"pedalboard.min.h\"\n")

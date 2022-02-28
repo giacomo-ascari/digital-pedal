@@ -3,6 +3,7 @@ import wave, struct, math, random
 from matplotlib import pyplot as plt
 import numpy as np
 import subprocess
+import os
 
 def process(samples, types):
     with open("samples-in.tmp", "w") as f:
@@ -21,14 +22,33 @@ def process(samples, types):
 
 def main():
 
-    samples = read("sound-in.wav")
-    print("Reading completed")
-    
-    proc_samples = process(samples, ["lpf", "ovrs"])
-    print("Processing completed")
+    print("BUILDING LIBRARIES...", end=" ")
+    subprocess.run(['python3', '../lib/builder.py'])
+    print("DONE")
 
+    print("COMPILING SOURCE CODE...", end=" ")
+    subprocess.run(['/bin/sh', './compile.sh'])
+    print("DONE")
+
+    print("READING RAW SAMPLES .wav...", end=" ")
+    samples = read("sound-in.wav")
+    print("DONE")
+
+    print("PROCESSING RAW SAMPLES...", end=" ")
+    proc_samples = process(samples, ["lpf", "ovrs"])
+    print("DONE")
+    
+    print("WRITING PROCESSED SAMPLES .wav...", end=" ")
     write(proc_samples, "sound-out.wav")
-    print("Write completed")
+    print("DONE")
+
+    print("CLEANING UP...", end=" ")
+    if os.path.exists("samples-in.tmp"):
+        os.remove("samples-in.tmp")
+    if os.path.exists("samples-out.tmp"):
+        os.remove("samples-out.tmp")
+    print("DONE")
+
 
     #interval_lower, interval_upper = int(48000*48), int(48000*49.2)
     interval_lower, interval_upper = int(48000*9), int(48000*9.2)

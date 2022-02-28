@@ -1,20 +1,20 @@
-#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#define _OVERDRIVE_SQRT_H
+#include <stdlib.h>
+#define _FUZZ_H
+#define _AMPLIFIER_H
 #define _DYN_AMPLIFIER_H
-#define FLOAT_PARAM_TYPES 9
+#define _TREMOLO_H
+#define INT_PARAM_TYPES 3
+#define _DSP_H
+#define _OVERDRIVE_SQRT_H
+#define MAX_PEDALS_COUNT 16
+#define _OVERDRIVE_H
 #define _LOW_PASS_FILTER_H
 #define _BYPASS_H
-#define MAX_PEDALS_COUNT 16
-#define _TREMOLO_H
-#define _BITCRUSHER_RS_H
-#define _OVERDRIVE_H
 #define _PEDALBOARD_H
-#define INT_PARAM_TYPES 3
-#define _AMPLIFIER_H
-#define _DSP_H
-#define _FUZZ_H
+#define _BITCRUSHER_RS_H
+#define FLOAT_PARAM_TYPES 9
 
 
 
@@ -96,19 +96,7 @@ float soft_clip(float in, float soft_threshold, float softener);
 
 float square_root(float in);
 
-float wave_gen(char t, u_int32_t i, float height, float speed);
-
-
-
-void overdrive_pedal_init(pedal_config_t *conf);
-
-float overdrive_process(float in, pedal_config_t *conf);
-
-
-
-void bitcrusher_rs_pedal_init(pedal_config_t *conf);
-
-float bitcrusher_rs_process(float in, pedal_config_t *conf);
+float wave_gen(char t, u_int32_t i, u_int32_t tone);
 
 
 
@@ -118,21 +106,9 @@ float tremolo_process(float in, pedal_config_t *conf);
 
 
 
-void overdrive_sqrt_pedal_init(pedal_config_t *conf);
-
-float overdrive_sqrt_process(float in, pedal_config_t *conf);
-
-
-
 void amplifier_pedal_init(pedal_config_t *conf);
 
 float amplifier_process(float in, pedal_config_t *conf);
-
-
-
-void dyn_amplifier_pedal_init(pedal_config_t *conf);
-
-float dyn_amplifier_process(float in, pedal_config_t *conf);
 
 
 
@@ -148,7 +124,31 @@ float fuzz_process(float in, pedal_config_t *conf);
 
 
 
+void bitcrusher_rs_pedal_init(pedal_config_t *conf);
+
+float bitcrusher_rs_process(float in, pedal_config_t *conf);
+
+
+
+void dyn_amplifier_pedal_init(pedal_config_t *conf);
+
+float dyn_amplifier_process(float in, pedal_config_t *conf);
+
+
+
 void bypass_pedal_init(pedal_config_t *conf);
 
 float bypass_process(float in, pedal_config_t *conf);
+
+
+
+void overdrive_pedal_init(pedal_config_t *conf);
+
+float overdrive_process(float in, pedal_config_t *conf);
+
+
+
+void overdrive_sqrt_pedal_init(pedal_config_t *conf);
+
+float overdrive_sqrt_process(float in, pedal_config_t *conf);
 
