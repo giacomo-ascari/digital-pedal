@@ -59,8 +59,14 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define OtgPower_Pin GPIO_PIN_0
 #define OtgPower_GPIO_Port GPIOC
-#define Btn1_Pin GPIO_PIN_0
-#define Btn1_GPIO_Port GPIOA
+#define Btn0_Pin GPIO_PIN_0
+#define Btn0_GPIO_Port GPIOA
+#define Btn3_Pin GPIO_PIN_11
+#define Btn3_GPIO_Port GPIOB
+#define Btn2_Pin GPIO_PIN_14
+#define Btn2_GPIO_Port GPIOB
+#define Btn1_Pin GPIO_PIN_8
+#define Btn1_GPIO_Port GPIOD
 #define Led1_Pin GPIO_PIN_12
 #define Led1_GPIO_Port GPIOD
 #define Led2_Pin GPIO_PIN_13
@@ -69,6 +75,8 @@ void Error_Handler(void);
 #define Led3_GPIO_Port GPIOD
 #define Led4_Pin GPIO_PIN_15
 #define Led4_GPIO_Port GPIOD
+#define AudioPower_Pin GPIO_PIN_4
+#define AudioPower_GPIO_Port GPIOD
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
