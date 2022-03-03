@@ -18,7 +18,7 @@ References:
 */
 
 #include "stm32f4xx_hal.h"
-#include "cS43l22.h"
+#include "cs43l22.h"
 
 static uint8_t iData[2];
 static I2C_HandleTypeDef i2cx;
