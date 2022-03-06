@@ -43,8 +43,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-DAC_HandleTypeDef hdac;
-
 I2C_HandleTypeDef hi2c1;
 
 I2S_HandleTypeDef hi2s2;
@@ -68,7 +66,6 @@ static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
-static void MX_DAC_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -77,53 +74,55 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t ADC_BUFF[64];
-int8_t DAC_BUFF[64];
-int32_t IN_SAMPLES[2];
+
+int32_t ADC_BUFF[16];
+int16_t DAC_BUFF[16];
+int16_t IN_SAMPLES[2];
+uint32_t C = 0;
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	/* Prevent unused argument(s) compilation warning */
-	UNUSED(hi2s);
 
-	/* NOTE : This function Should not be modified, when the callback is needed,
-            the HAL_I2S_RxHalfCpltCallback could be implemented in the user file
-	 */
+	UNUSED(hi2s);
 	if (hi2s->Instance == SPI2) {
-		//RIGHT
-		int32_t sample_in = 0;
-		uint32_t offset = __HAL_DMA_GET_COUNTER(hi2s->hdmarx) * 4;
-		sample_in += ADC_BUFF[offset + 3]; sample_in <<= 8;
-		sample_in += ADC_BUFF[offset + 2]; sample_in <<= 8;
-		sample_in += ADC_BUFF[offset + 1];
-		IN_SAMPLES[0] = sample_in;
+		//LEFT
+		int32_t temp = ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)];
+		temp >>= 16;
+		IN_SAMPLES[0] = temp;
 		HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_SET);
-		//HAL_I2S_Receive_DMA(hi2s, (int16_t *)input_buff, 1);
-		//HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, input_buff[0]);
+
+		//IN_SAMPLES[0] = wave_gen('s', C, 1720.0F) * 15000;
 	}
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	/* Prevent unused argument(s) compilation warning */
 	UNUSED(hi2s);
-
-	/* NOTE : This function Should not be modified, when the callback is needed,
-            the HAL_I2S_RxCpltCallback could be implemented in the user file
-	 */
 	if (hi2s->Instance == SPI2) {
-		//LEFT
-		int32_t sample_in = 0;
-		uint32_t offset = __HAL_DMA_GET_COUNTER(hi2s->hdmarx) * 4;
-		sample_in += ADC_BUFF[offset + 3]; sample_in <<= 8;
-		sample_in += ADC_BUFF[offset + 2]; sample_in <<= 8;
-		sample_in += ADC_BUFF[offset + 1];
-		IN_SAMPLES[1] = sample_in;
+		//RIGHT
+		int32_t temp = ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)];
+		temp >>= 16;
+		IN_SAMPLES[1] = temp;
 		HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
-		//HAL_I2S_Receive_DMA(hi2s, (int16_t *)input_buff, 1);
-		//HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, input_buff[0]);
+
+		//IN_SAMPLES[1] = wave_gen('s', C++, 1720.0F) * 15000;
 	}
 }
+
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+  if (hi2s->Instance == SPI3) {
+	  DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[0];
+  }
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+  if (hi2s->Instance == SPI3) {
+  	  DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[1];
+  }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -161,7 +160,6 @@ int main(void)
   MX_I2C1_Init();
   MX_I2S2_Init();
   MX_I2S3_Init();
-  MX_DAC_Init();
   MX_USB_HOST_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
@@ -169,13 +167,17 @@ int main(void)
 	pedalboard.active_pedals = 0;
 	pedalboard_append(&pedalboard, OVERDRIVE_SQRT);
 
-	CS43_Init(hi2c1, MODE_ANAL);
-	CS43_SetVolume(20);
+	CS43_Init(hi2c1, MODE_I2S);
+	CS43_SetVolume(0);
 	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
 	CS43_Start();
 
-	for (int i = 0; i < 64; i++) ADC_BUFF[i] = 17;
-	HAL_I2S_Receive_DMA(&hi2s2, (uint16_t *)ADC_BUFF, 4);
+//	for (int i = 0; i < 400; i++) {
+//		DAC_BUFF[i] = wave_gen('s', i, 440.0F) * 20000;
+//	}
+
+	for (int i = 0; i < 16; i++) ADC_BUFF[i] = 17;
+	HAL_I2S_Receive_DMA(&hi2s2, (uint16_t *)ADC_BUFF, 2);
 	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
 
 	//HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
@@ -199,7 +201,6 @@ int main(void)
 		btn_states[3] = !HAL_GPIO_ReadPin(Btn3_GPIO_Port, Btn3_Pin);
 
 		HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, btn_states[0] || btn_states[1] || btn_states[2] || btn_states[3]);
-
 
 		/*if (Appli_state == APPLICATION_READY)
 		{
@@ -345,44 +346,6 @@ void PeriphCommonClock_Config(void)
 }
 
 /**
-  * @brief DAC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_DAC_Init(void)
-{
-
-  /* USER CODE BEGIN DAC_Init 0 */
-
-  /* USER CODE END DAC_Init 0 */
-
-  DAC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN DAC_Init 1 */
-
-  /* USER CODE END DAC_Init 1 */
-  /** DAC Initialization
-  */
-  hdac.Instance = DAC;
-  if (HAL_DAC_Init(&hdac) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** DAC channel OUT1 config
-  */
-  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
-  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_DISABLE;
-  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN DAC_Init 2 */
-
-  /* USER CODE END DAC_Init 2 */
-
-}
-
-/**
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -468,7 +431,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Instance = SPI3;
   hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
   hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s3.Init.DataFormat = I2S_DATAFORMAT_24B;
+  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_44K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
