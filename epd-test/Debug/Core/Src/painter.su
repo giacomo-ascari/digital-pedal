@@ -1,0 +1,6 @@
+../Core/Src/painter.c:18:9:read_font_pixel	24	static
+../Core/Src/painter.c:23:6:draw_single_pixel	24	static
+../Core/Src/painter.c:29:6:draw_rectangle	32	static
+../Core/Src/painter.c:37:6:draw_char	32	static
+../Core/Src/painter.c:48:10:translate	16	static
+../Core/Src/painter.c:72:6:draw_text	40	static

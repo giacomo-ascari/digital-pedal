@@ -7,308 +7,196 @@
 
 #include "epd_driver.h"
 
-void EPD_Init(void) {
-	EPD_2IN9_V2_Reset();
-	DEV_Delay_ms(100);
+uint8_t _WF_PARTIAL_2IN9[159] = { 0x0,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x80,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0A,0x0,0x0,0x0,0x0,0x0,0x2,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x22,0x22,0x22,0x22,0x22,0x22,0x0,0x0,0x0,0x22,0x17,0x41,0xB0,0x32,0x36 };
 
-	EPD_2IN9_V2_ReadBusy();
-	EPD_2IN9_V2_SendCommand(0x12);  //SWRESET
-	EPD_2IN9_V2_ReadBusy();
+uint8_t WS_20_30[159] = { 0x80,0x66,0x0,0x0,0x0,0x0,0x0,0x0,0x40,0x0,0x0,0x0,0x10,0x66,0x0,0x0,0x0,0x0,0x0,0x0,0x20,0x0,0x0,0x0,0x80,0x66,0x0,0x0,0x0,0x0,0x0,0x0,0x40,0x0,0x0,0x0,0x10,0x66,0x0,0x0,0x0,0x0,0x0,0x0,0x20,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x14,0x8,0x0,0x0,0x0,0x0,0x1,0xA,0xA,0x0,0xA,0xA,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x14,0x8,0x0,0x1,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x44,0x44,0x44,0x44,0x44,0x44,0x0,0x0,0x0,0x22,0x17,0x41,0x0,0x32,0x36 };
 
-	EPD_2IN9_V2_SendCommand(0x01); //Driver output control
-	EPD_2IN9_V2_SendData(0x27);
-	EPD_2IN9_V2_SendData(0x01);
-	EPD_2IN9_V2_SendData(0x00);
+extern SPI_HandleTypeDef hspi1;
 
-	EPD_2IN9_V2_SendCommand(0x11); //data entry mode
-	EPD_2IN9_V2_SendData(0x03);
-
-	EPD_2IN9_V2_SetWindows(0, 0, EPD_2IN9_V2_WIDTH-1, EPD_2IN9_V2_HEIGHT-1);
-
-		// EPD_2IN9_V2_SendCommand(0x3C); //BorderWavefrom
-		// EPD_2IN9_V2_SendData(0x05);
-
-	EPD_2IN9_V2_SendCommand(0x21); //  Display update control
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x80);
-
-	EPD_2IN9_V2_SetCursor(0, 0);
-	EPD_2IN9_V2_ReadBusy();
-
-	EPD_2IN9_V2_LUT_by_host(WS_20_30);
-}
-void EPD_Clear(void);
-void EPD_Display(uint8_t *image);
-void EPD_Display_Base(uint8_t *image);
-void EPD_Display_Partial(uint8_t *image);
-void EPD_Sleep(void);
-
-static void EPD_2IN9_V2_Reset(void)
-{
-    DEV_Digital_Write(EPD_RST_PIN, 1);
-    DEV_Delay_ms(100);
-    DEV_Digital_Write(EPD_RST_PIN, 0);
-    DEV_Delay_ms(2);
-    DEV_Digital_Write(EPD_RST_PIN, 1);
-    DEV_Delay_ms(100);
+static void _EPD_Reset(void) {
+	HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_RESET);
+	HAL_Delay(2);
+	HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
 }
 
-/******************************************************************************
-function :	send command
-parameter:
-     Reg : Command register
-******************************************************************************/
-static void EPD_2IN9_V2_SendCommand(UBYTE Reg)
-{
-    DEV_Digital_Write(EPD_DC_PIN, 0);
-    DEV_Digital_Write(EPD_CS_PIN, 0);
-    DEV_SPI_WriteByte(Reg);
-    DEV_Digital_Write(EPD_CS_PIN, 1);
+static void _EPD_SendCommand(uint8_t reg) {
+	HAL_GPIO_WritePin(EPD_DC_GPIO_Port, EPD_DC_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, &reg, 1, 1000);
+	HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_SET);
 }
 
-/******************************************************************************
-function :	send data
-parameter:
-    Data : Write data
-******************************************************************************/
-static void EPD_2IN9_V2_SendData(UBYTE Data)
-{
-    DEV_Digital_Write(EPD_DC_PIN, 1);
-    DEV_Digital_Write(EPD_CS_PIN, 0);
-    DEV_SPI_WriteByte(Data);
-    DEV_Digital_Write(EPD_CS_PIN, 1);
+static void _EPD_SendData(uint8_t data) {
+	HAL_GPIO_WritePin(EPD_DC_GPIO_Port, EPD_DC_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, &data, 1, 1000);
+	HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_SET);
 }
 
-/******************************************************************************
-function :	Wait until the busy_pin goes LOW
-parameter:
-******************************************************************************/
-void EPD_2IN9_V2_ReadBusy(void)
-{
-    Debug("e-Paper busy\r\n");
-	while(1)
-	{	 //=1 BUSY
-		if(DEV_Digital_Read(EPD_BUSY_PIN)==0)
+void _EPD_ReadBusy(void) {
+	while(1) {
+		if(HAL_GPIO_ReadPin(EPD_BUSY_GPIO_Port, EPD_BUSY_Pin) == GPIO_PIN_RESET)
 			break;
-		DEV_Delay_ms(50);
+		HAL_Delay(5);
 	}
-	DEV_Delay_ms(50);
-    Debug("e-Paper busy release\r\n");
 }
 
-static void EPD_2IN9_V2_LUT(UBYTE *lut)
-{
-	UBYTE count;
-	EPD_2IN9_V2_SendCommand(0x32);
+static void _EPD_LUT(uint8_t *lut) {
+	uint8_t count;
+	_EPD_SendCommand(0x32);
 	for(count=0; count<153; count++)
-		EPD_2IN9_V2_SendData(lut[count]);
-	EPD_2IN9_V2_ReadBusy();
+		_EPD_SendData(lut[count]);
+	_EPD_ReadBusy();
 }
 
-static void EPD_2IN9_V2_LUT_by_host(UBYTE *lut)
-{
-	EPD_2IN9_V2_LUT((UBYTE *)lut);			//lut
-	EPD_2IN9_V2_SendCommand(0x3f);
-	EPD_2IN9_V2_SendData(*(lut+153));
-	EPD_2IN9_V2_SendCommand(0x03);	// gate voltage
-	EPD_2IN9_V2_SendData(*(lut+154));
-	EPD_2IN9_V2_SendCommand(0x04);	// source voltage
-	EPD_2IN9_V2_SendData(*(lut+155));	// VSH
-	EPD_2IN9_V2_SendData(*(lut+156));	// VSH2
-	EPD_2IN9_V2_SendData(*(lut+157));	// VSL
-	EPD_2IN9_V2_SendCommand(0x2c);		// VCOM
-	EPD_2IN9_V2_SendData(*(lut+158));
-
+static void _EPD_LUT_by_host(uint8_t *lut) {
+	_EPD_LUT((uint8_t *)lut);			//lut
+	_EPD_SendCommand(0x3f);
+	_EPD_SendData(*(lut+153));
+	_EPD_SendCommand(0x03);	// gate voltage
+	_EPD_SendData(*(lut+154));
+	_EPD_SendCommand(0x04);	// source voltage
+	_EPD_SendData(*(lut+155));	// VSH
+	_EPD_SendData(*(lut+156));	// VSH2
+	_EPD_SendData(*(lut+157));	// VSL
+	_EPD_SendCommand(0x2c);		// VCOM
+	_EPD_SendData(*(lut+158));
 }
 
-/******************************************************************************
-function :	Turn On Display
-parameter:
-******************************************************************************/
-static void EPD_2IN9_V2_TurnOnDisplay(void)
-{
-	EPD_2IN9_V2_SendCommand(0x22); //Display Update Control
-	EPD_2IN9_V2_SendData(0xc7);
-	EPD_2IN9_V2_SendCommand(0x20); //Activate Display Update Sequence
-	EPD_2IN9_V2_ReadBusy();
+static void _EPD_TurnOnDisplay(void) {
+	_EPD_SendCommand(0x22); //Display Update Control
+	_EPD_SendData(0xc7);
+	_EPD_SendCommand(0x20); //Activate Display Update Sequence
+	_EPD_ReadBusy();
 }
 
-static void EPD_2IN9_V2_TurnOnDisplay_Partial(void)
-{
-	EPD_2IN9_V2_SendCommand(0x22); //Display Update Control
-	EPD_2IN9_V2_SendData(0x0F);
-	EPD_2IN9_V2_SendCommand(0x20); //Activate Display Update Sequence
-	EPD_2IN9_V2_ReadBusy();
+static void _EPD_TurnOnDisplay_Partial(void) {
+	_EPD_SendCommand(0x22); //Display Update Control
+	_EPD_SendData(0x0F);
+	_EPD_SendCommand(0x20); //Activate Display Update Sequence
+	_EPD_ReadBusy();
 }
 
-/******************************************************************************
-function :	Setting the display window
-parameter:
-******************************************************************************/
-static void EPD_2IN9_V2_SetWindows(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend)
-{
-    EPD_2IN9_V2_SendCommand(0x44); // SET_RAM_X_ADDRESS_START_END_POSITION
-    EPD_2IN9_V2_SendData((Xstart>>3) & 0xFF);
-    EPD_2IN9_V2_SendData((Xend>>3) & 0xFF);
+static void _EPD_SetWindows(uint16_t Xstart, uint16_t Ystart, uint16_t Xend, uint16_t Yend) {
+	_EPD_SendCommand(0x44); // SET_RAM_X_ADDRESS_START_END_POSITION
+	_EPD_SendData((Xstart>>3) & 0xFF);
+	_EPD_SendData((Xend>>3) & 0xFF);
 
-    EPD_2IN9_V2_SendCommand(0x45); // SET_RAM_Y_ADDRESS_START_END_POSITION
-    EPD_2IN9_V2_SendData(Ystart & 0xFF);
-    EPD_2IN9_V2_SendData((Ystart >> 8) & 0xFF);
-    EPD_2IN9_V2_SendData(Yend & 0xFF);
-    EPD_2IN9_V2_SendData((Yend >> 8) & 0xFF);
+	_EPD_SendCommand(0x45); // SET_RAM_Y_ADDRESS_START_END_POSITION
+	_EPD_SendData(Ystart & 0xFF);
+	_EPD_SendData((Ystart >> 8) & 0xFF);
+	_EPD_SendData(Yend & 0xFF);
+	_EPD_SendData((Yend >> 8) & 0xFF);
 }
 
-/******************************************************************************
-function :	Set Cursor
-parameter:
-******************************************************************************/
-static void EPD_2IN9_V2_SetCursor(UWORD Xstart, UWORD Ystart)
-{
-    EPD_2IN9_V2_SendCommand(0x4E); // SET_RAM_X_ADDRESS_COUNTER
-    EPD_2IN9_V2_SendData(Xstart & 0xFF);
+static void _EPD_SetCursor(uint16_t Xstart, uint16_t Ystart) {
+	_EPD_SendCommand(0x4E); // SET_RAM_X_ADDRESS_COUNTER
+	_EPD_SendData(Xstart & 0xFF);
 
-    EPD_2IN9_V2_SendCommand(0x4F); // SET_RAM_Y_ADDRESS_COUNTER
-    EPD_2IN9_V2_SendData(Ystart & 0xFF);
-    EPD_2IN9_V2_SendData((Ystart >> 8) & 0xFF);
+	_EPD_SendCommand(0x4F); // SET_RAM_Y_ADDRESS_COUNTER
+	_EPD_SendData(Ystart & 0xFF);
+	_EPD_SendData((Ystart >> 8) & 0xFF);
 }
 
-/******************************************************************************
-function :	Initialize the e-Paper register
-parameter:
-******************************************************************************/
-void EPD_2IN9_V2_Init(void)
-{
-	EPD_2IN9_V2_Reset();
-	DEV_Delay_ms(100);
 
-	EPD_2IN9_V2_ReadBusy();
-	EPD_2IN9_V2_SendCommand(0x12);  //SWRESET
-	EPD_2IN9_V2_ReadBusy();
 
-	EPD_2IN9_V2_SendCommand(0x01); //Driver output control
-	EPD_2IN9_V2_SendData(0x27);
-	EPD_2IN9_V2_SendData(0x01);
-	EPD_2IN9_V2_SendData(0x00);
+void EPD_Init(void) {
+	HAL_GPIO_WritePin(EPD_DC_GPIO_Port, EPD_DC_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_SET);
 
-	EPD_2IN9_V2_SendCommand(0x11); //data entry mode
-	EPD_2IN9_V2_SendData(0x03);
+	_EPD_Reset();
+	HAL_Delay(100);
 
-	EPD_2IN9_V2_SetWindows(0, 0, EPD_2IN9_V2_WIDTH-1, EPD_2IN9_V2_HEIGHT-1);
+	_EPD_ReadBusy();
+	_EPD_SendCommand(0x12);  //SWRESET
+	_EPD_ReadBusy();
 
-	// EPD_2IN9_V2_SendCommand(0x3C); //BorderWavefrom
-	// EPD_2IN9_V2_SendData(0x05);
+	_EPD_SendCommand(0x01); //Driver output control
+	_EPD_SendData(0x27);
+	_EPD_SendData(0x01);
+	_EPD_SendData(0x00);
 
-	EPD_2IN9_V2_SendCommand(0x21); //  Display update control
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x80);
+	_EPD_SendCommand(0x11); //data entry mode
+	_EPD_SendData(0x03);
 
-	// EPD_2IN9_V2_SendCommand(0x18); //Read built-in temperature sensor
-	// EPD_2IN9_V2_SendData(0x80);
+	_EPD_SetWindows(0, 0, EPD_WIDTH-1, EPD_HEIGHT-1);
 
-	EPD_2IN9_V2_SetCursor(0, 0);
-	EPD_2IN9_V2_ReadBusy();
+	_EPD_SendCommand(0x21); //  Display update control
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x80);
 
-	EPD_2IN9_V2_LUT_by_host(WS_20_30);
+	_EPD_SetCursor(0, 0);
+	_EPD_ReadBusy();
+
+	_EPD_LUT_by_host(WS_20_30);
 }
 
-/******************************************************************************
-function :	Clear screen
-parameter:
-******************************************************************************/
-void EPD_2IN9_V2_Clear(void)
-{
-	UWORD i;
-	EPD_2IN9_V2_SendCommand(0x24);   //write RAM for black(0)/white (1)
-	for(i=0;i<4736;i++)
-	{
-		EPD_2IN9_V2_SendData(0xff);
+void EPD_Clear(void) {
+	uint16_t i;
+	_EPD_SendCommand(0x24);   //write RAM for black(0)/white (1)
+	for(i = 0; i < EPD_BYTES; i++) {
+		_EPD_SendData(0xff);
 	}
-	EPD_2IN9_V2_TurnOnDisplay();
+	_EPD_TurnOnDisplay();
 }
 
-/******************************************************************************
-function :	Sends the image buffer in RAM to e-Paper and displays
-parameter:
-******************************************************************************/
-void EPD_2IN9_V2_Display(UBYTE *Image)
-{
-	UWORD i;
-	EPD_2IN9_V2_SendCommand(0x24);   //write RAM for black(0)/white (1)
-	for(i=0;i<4736;i++)
-	{
-		EPD_2IN9_V2_SendData(Image[i]);
+void EPD_Display(uint8_t *image) {
+	uint16_t i;
+	_EPD_SendCommand(0x24);   //write RAM for black(0)/white (1)
+	for(i=0; i<EPD_BYTES; i++) {
+		_EPD_SendData(image[i]);
 	}
-	EPD_2IN9_V2_TurnOnDisplay();
+	_EPD_TurnOnDisplay();
 }
 
-void EPD_2IN9_V2_Display_Base(UBYTE *Image)
-{
-	UWORD i;
+void EPD_Display_Partial(uint8_t *image) {
+	uint16_t i;
 
-	EPD_2IN9_V2_SendCommand(0x24);   //Write Black and White image to RAM
-	for(i=0;i<4736;i++)
-	{
-		EPD_2IN9_V2_SendData(Image[i]);
+	//Reset
+	HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_RESET);
+	HAL_Delay(2);
+	HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_SET);
+	HAL_Delay(2);
+
+	_EPD_LUT(_WF_PARTIAL_2IN9);
+	_EPD_SendCommand(0x37);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x40);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+	_EPD_SendData(0x00);
+
+	_EPD_SendCommand(0x3C); //BorderWavefrom
+	_EPD_SendData(0x80);
+
+	_EPD_SendCommand(0x22);
+	_EPD_SendData(0xC0);
+	_EPD_SendCommand(0x20);
+	_EPD_ReadBusy();
+
+	_EPD_SetWindows(0, 0, EPD_WIDTH-1, EPD_HEIGHT-1);
+	_EPD_SetCursor(0, 0);
+
+	_EPD_SendCommand(0x24);   //Write Black and White image to RAM
+	for(i=0;i<EPD_BYTES;i++)	{
+		_EPD_SendData(image[i]);
 	}
-	EPD_2IN9_V2_SendCommand(0x26);   //Write Black and White image to RAM
-	for(i=0;i<4736;i++)
-	{
-		EPD_2IN9_V2_SendData(Image[i]);
-	}
-	EPD_2IN9_V2_TurnOnDisplay();
+	_EPD_TurnOnDisplay_Partial();
 }
 
-void EPD_2IN9_V2_Display_Partial(UBYTE *Image)
-{
-	UWORD i;
-
-//Reset
-    DEV_Digital_Write(EPD_RST_PIN, 0);
-    DEV_Delay_ms(2);
-    DEV_Digital_Write(EPD_RST_PIN, 1);
-    DEV_Delay_ms(2);
-
-	EPD_2IN9_V2_LUT(_WF_PARTIAL_2IN9);
-	EPD_2IN9_V2_SendCommand(0x37);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x40);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-	EPD_2IN9_V2_SendData(0x00);
-
-	EPD_2IN9_V2_SendCommand(0x3C); //BorderWavefrom
-	EPD_2IN9_V2_SendData(0x80);
-
-	EPD_2IN9_V2_SendCommand(0x22);
-	EPD_2IN9_V2_SendData(0xC0);
-	EPD_2IN9_V2_SendCommand(0x20);
-	EPD_2IN9_V2_ReadBusy();
-
-	EPD_2IN9_V2_SetWindows(0, 0, EPD_2IN9_V2_WIDTH-1, EPD_2IN9_V2_HEIGHT-1);
-	EPD_2IN9_V2_SetCursor(0, 0);
-
-	EPD_2IN9_V2_SendCommand(0x24);   //Write Black and White image to RAM
-	for(i=0;i<4736;i++)
-	{
-		EPD_2IN9_V2_SendData(Image[i]);
-	}
-	EPD_2IN9_V2_TurnOnDisplay_Partial();
-}
-
-/******************************************************************************
-function :	Enter sleep mode
-parameter:
-******************************************************************************/
-void EPD_2IN9_V2_Sleep(void)
-{
-	EPD_2IN9_V2_SendCommand(0x10); //enter deep sleep
-	EPD_2IN9_V2_SendData(0x01);
-	DEV_Delay_ms(100);
+void EPD_Sleep(void) {
+	_EPD_SendCommand(0x10); //enter deep sleep
+	_EPD_SendData(0x01);
+	HAL_Delay(100);
 }
 
 /*
@@ -438,4 +326,4 @@ int EPD_2in9_V2_test(void)
     return 0;
 }
 
-*/
+ */
