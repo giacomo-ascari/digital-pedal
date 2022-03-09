@@ -61,6 +61,14 @@ void Error_Handler(void);
 #define OtgPower_GPIO_Port GPIOC
 #define Btn0_Pin GPIO_PIN_0
 #define Btn0_GPIO_Port GPIOA
+#define EPD_RST_Pin GPIO_PIN_1
+#define EPD_RST_GPIO_Port GPIOA
+#define EPD_DC_Pin GPIO_PIN_2
+#define EPD_DC_GPIO_Port GPIOA
+#define EPD_BUSY_Pin GPIO_PIN_3
+#define EPD_BUSY_GPIO_Port GPIOA
+#define EPD_CS_Pin GPIO_PIN_6
+#define EPD_CS_GPIO_Port GPIOA
 #define Btn3_Pin GPIO_PIN_11
 #define Btn3_GPIO_Port GPIOB
 #define Btn2_Pin GPIO_PIN_14

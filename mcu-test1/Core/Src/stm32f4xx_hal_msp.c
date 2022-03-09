@@ -194,7 +194,7 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     hdma_spi2_rx.Init.MemInc = DMA_MINC_ENABLE;
     hdma_spi2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
     hdma_spi2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_spi2_rx.Init.Mode = DMA_NORMAL;
+    hdma_spi2_rx.Init.Mode = DMA_CIRCULAR;
     hdma_spi2_rx.Init.Priority = DMA_PRIORITY_LOW;
     hdma_spi2_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi2_rx) != HAL_OK)
@@ -331,6 +331,71 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* hi2s)
   /* USER CODE BEGIN SPI3_MspDeInit 1 */
 
   /* USER CODE END SPI3_MspDeInit 1 */
+  }
+
+}
+
+/**
+* @brief SPI MSP Initialization
+* This function configures the hardware resources used in this example
+* @param hspi: SPI handle pointer
+* @retval None
+*/
+void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  if(hspi->Instance==SPI1)
+  {
+  /* USER CODE BEGIN SPI1_MspInit 0 */
+
+  /* USER CODE END SPI1_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_SPI1_CLK_ENABLE();
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**SPI1 GPIO Configuration
+    PA5     ------> SPI1_SCK
+    PA7     ------> SPI1_MOSI
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* USER CODE BEGIN SPI1_MspInit 1 */
+
+  /* USER CODE END SPI1_MspInit 1 */
+  }
+
+}
+
+/**
+* @brief SPI MSP De-Initialization
+* This function freeze the hardware resources used in this example
+* @param hspi: SPI handle pointer
+* @retval None
+*/
+void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
+{
+  if(hspi->Instance==SPI1)
+  {
+  /* USER CODE BEGIN SPI1_MspDeInit 0 */
+
+  /* USER CODE END SPI1_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_SPI1_CLK_DISABLE();
+
+    /**SPI1 GPIO Configuration
+    PA5     ------> SPI1_SCK
+    PA7     ------> SPI1_MOSI
+    */
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_5|GPIO_PIN_7);
+
+  /* USER CODE BEGIN SPI1_MspDeInit 1 */
+
+  /* USER CODE END SPI1_MspDeInit 1 */
   }
 
 }

@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include "pedalboard_min.h"
 #include "cs43l22.h"
+#include "epd_driver.h"
+#include "painter.h"
 
 /* USER CODE END Includes */
 
@@ -50,6 +52,8 @@ I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_spi2_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
+SPI_HandleTypeDef hspi1;
+
 /* USER CODE BEGIN PV */
 
 extern ApplicationTypeDef Appli_state;
@@ -66,6 +70,7 @@ static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
+static void MX_SPI1_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -74,43 +79,25 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-union boo{
-	uint16_t ADC16[32];
-	uint32_t ADC32[16];
-	int16_t ADCS16[32];
-	int32_t  ADCS32[16];
 
-
-}hoo;
-
-int32_t ADC_BUFF[16];
-
+union _ADC_BUFF {
+	uint8_t ADC8[32];
+	uint16_t ADC16[16];
+	uint32_t ADC32[8];
+} ADC_BUFF;
 
 int16_t DAC_BUFF[16];
 int16_t IN_SAMPLES[2];
 uint32_t C = 0;
 
-void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
-{
-
-	UNUSED(hi2s);
-	if (hi2s->Instance == SPI2) {
-		//LEFT
-		int32_t temp = ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)];
-		temp >>= 16;
-		IN_SAMPLES[0] = temp;
-		HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_SET);
-
-		//IN_SAMPLES[0] = wave_gen('s', C, 1720.0F) * 15000;
-	}
-}
+uint8_t image[EPD_BYTES];
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	UNUSED(hi2s);
 	if (hi2s->Instance == SPI2) {
 		//RIGHT
-		int32_t temp = ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)];
+		int32_t temp = 0 /*ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)]*/;
 		temp >>= 16;
 		IN_SAMPLES[1] = temp;
 		HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
@@ -121,16 +108,16 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-  if (hi2s->Instance == SPI3) {
-	  DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[0];
-  }
+	if (hi2s->Instance == SPI3) {
+		DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[0];
+	}
 }
 
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-  if (hi2s->Instance == SPI3) {
-  	  DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[1];
-  }
+	if (hi2s->Instance == SPI3) {
+		DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[1];
+	}
 }
 
 /* USER CODE END 0 */
@@ -172,7 +159,10 @@ int main(void)
   MX_I2S3_Init();
   MX_USB_HOST_Init();
   MX_FATFS_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+  ADC_BUFF.ADC32[0] = 0xf1234567;
+
 	pedalboard_t pedalboard;
 	pedalboard.active_pedals = 0;
 	pedalboard_append(&pedalboard, OVERDRIVE_SQRT);
@@ -182,15 +172,30 @@ int main(void)
 	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
 	CS43_Start();
 
-//	for (int i = 0; i < 400; i++) {
-//		DAC_BUFF[i] = wave_gen('s', i, 440.0F) * 20000;
-//	}
-
-	for (int i = 0; i < 16; i++) ADC_BUFF[i] = 17;
-
 	//HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
+	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
 
-	//HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+	EPD_Init();
+	EPD_Clear();
+
+	char text[5][16+1] = {
+			{'g', '3', '3', 'k', 'y', '-', 't', 'o', 'a', 'd', '\0'},
+			{'d', 'i', 'g', 'i', 't', 'a', 'l', ' ', 'p', 'e', 'd', 'a', 'l', '\0'},
+			{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', '\0'},
+			{'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', ' ', '0', '1', '2', '3', '4', '\0'},
+			{'5', '6', '7', '8', '9', ' ', '.', ',', '+', '-', '<', '>', '\0'}
+	};
+	draw_clean(image);
+	draw_rectangle(image, 36, 56, 88, 20);
+	draw_text(image, text[0], 40, 60);
+	draw_text(image, text[1], 20, 90);
+	draw_text(image, text[2], 0, 120);
+	draw_text(image, text[3], 0, 132);
+	draw_text(image, text[4], 0, 144);
+	draw_float_number(image, 43172.5, 0, 200);
+	EPD_Display(image);
+	EPD_Sleep();
+
 
   /* USER CODE END 2 */
 
@@ -213,7 +218,7 @@ int main(void)
 		HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, btn_states[0] || btn_states[1] || btn_states[2] || btn_states[3]);
 
 		if (btn_states[0] == GPIO_PIN_SET) {
-			HAL_I2S_Receive_DMA(&hi2s2, hoo.ADC16, 4);
+			//HAL_I2S_Receive_DMA(&hi2s2, hoo.ADC16, 4);
 			//HAL_I2S_Receive(&hi2s2, (uint16_t *)ADC_BUFF, 4, 10);
 
 
@@ -464,6 +469,44 @@ static void MX_I2S3_Init(void)
 }
 
 /**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -502,6 +545,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, EPD_RST_Pin|EPD_DC_Pin|EPD_CS_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, Led1_Pin|Led2_Pin|Led3_Pin|Led4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -514,11 +560,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OtgPower_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Btn0_Pin */
-  GPIO_InitStruct.Pin = Btn0_Pin;
+  /*Configure GPIO pins : Btn0_Pin EPD_BUSY_Pin */
+  GPIO_InitStruct.Pin = Btn0_Pin|EPD_BUSY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Btn0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : EPD_RST_Pin EPD_DC_Pin EPD_CS_Pin */
+  GPIO_InitStruct.Pin = EPD_RST_Pin|EPD_DC_Pin|EPD_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Btn3_Pin Btn2_Pin */
   GPIO_InitStruct.Pin = Btn3_Pin|Btn2_Pin;
