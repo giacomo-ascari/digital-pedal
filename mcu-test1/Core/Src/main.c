@@ -74,8 +74,18 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+union boo{
+	uint16_t ADC16[32];
+	uint32_t ADC32[16];
+	int16_t ADCS16[32];
+	int32_t  ADCS32[16];
+
+
+}hoo;
 
 int32_t ADC_BUFF[16];
+
+
 int16_t DAC_BUFF[16];
 int16_t IN_SAMPLES[2];
 uint32_t C = 0;
@@ -177,8 +187,8 @@ int main(void)
 //	}
 
 	for (int i = 0; i < 16; i++) ADC_BUFF[i] = 17;
-	HAL_I2S_Receive_DMA(&hi2s2, (uint16_t *)ADC_BUFF, 2);
-	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
+
+	//HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
 
 	//HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
@@ -202,6 +212,12 @@ int main(void)
 
 		HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, btn_states[0] || btn_states[1] || btn_states[2] || btn_states[3]);
 
+		if (btn_states[0] == GPIO_PIN_SET) {
+			HAL_I2S_Receive_DMA(&hi2s2, hoo.ADC16, 4);
+			//HAL_I2S_Receive(&hi2s2, (uint16_t *)ADC_BUFF, 4, 10);
+
+
+		}
 		/*if (Appli_state == APPLICATION_READY)
 		{
 			//HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);
