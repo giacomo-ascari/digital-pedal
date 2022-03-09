@@ -99,14 +99,21 @@ int main(void)
 			{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', '\0'},
 			{'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', ' ', '0', '1', '2', '3', '4', '\0'},
 			{'5', '6', '7', '8', '9', ' ', '.', ',', '+', '-', '<', '>', '\0'}
-	}
-	;
-	for (int i = 0; i < EPD_BYTES; i++) image[i] = 0xFF;
+	};
 
-	draw_text(image, text[0], 0, 20);
-	draw_text(image, text[1], 0, 32);
-	draw_text(image, text[2], 0, 44);
-	draw_rectangle(image, 45, 20, 60, 60);
+	draw_clean(image);
+	draw_text(image, text[0], 0, 120);
+	draw_text(image, text[1], 0, 132);
+	draw_text(image, text[2], 0, 144);
+	draw_rectangle(image, 45, 120, 60, 60);
+
+	EPD_Display(image);
+
+	draw_rectangle(image, 0, 200, 128, 12);
+	draw_float_number(image, 43172.5, 0, 200);
+	draw_float_number(image, 999, 0, 220);
+	draw_float_number(image, 0, 0, 240);
+
 	EPD_Display(image);
 
 	EPD_Sleep();

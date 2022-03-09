@@ -21,15 +21,15 @@ uint8_t read_font_pixel(uint8_t *image, uint16_t x, uint16_t y) {
 	return ((pixel_group >> (7 - x % 8)) & 0x01);
 }
 
-void draw_single_pixel(uint8_t *image, uint16_t x, uint16_t y) {
+void toggle_single_pixel(uint8_t *image, uint16_t x, uint16_t y) {
 	uint16_t i = (x +  y * CANVAS_WIDTH) / 8;
 	if (x < CANVAS_WIDTH && y < CANVAS_HEIGHT) image[i] ^= (0x01 << (7 - x % 8));
 }
 
 void draw_rectangle(uint8_t *image, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-	for (uint16_t i = 0; i < w; i++) {
-		for (uint16_t j = 0; j < h; j++) {
-			draw_single_pixel(image, x + j, y + i);
+	for (uint16_t i = 0; i < h; i++) {
+		for (uint16_t j = 0; j < w; j++) {
+			toggle_single_pixel(image, x + j, y + i);
 		}
 	}
 }
@@ -39,7 +39,7 @@ void draw_char(uint8_t *image, uint16_t x, uint16_t y, uint16_t c) {
 	for (uint16_t i = 0; i < FONT_HEIGHT; i++) {
 		for (uint16_t j = 0; j < FONT_WIDTH; j++) {
 			if (read_font_pixel(font, j, i + font_offset)) {
-				draw_single_pixel(image, x + j, y + i);
+				toggle_single_pixel(image, x + j, y + i);
 			}
 		}
 	}
@@ -77,28 +77,33 @@ void draw_text(uint8_t *image, char *text, uint16_t x, uint16_t y) {
 	}
 }
 
-void pow(int16_t a, int16_t b) {
-	int16_t res = 1;
-	for (int16_t i = 0; i < b; i++) {
+int32_t pow(int32_t a, int32_t b) {
+	int32_t res = 1;
+	for (int32_t i = 0; i < b; i++) {
 		res *= a;
 	}
 	return res;
 }
 
 void draw_float_number(uint8_t *image, float val, uint16_t x, uint16_t y) {
-	int16_t int_part = (int16_t)val;
-	int16_t dec_part = (int16_t)(val % 1 * 1000);
+	int32_t int_part = (int32_t)val;
+	int32_t dec_part = (int32_t)(val * 100.0F) % 100;
+	int32_t offset = 8;
 
-	int16_t int_len = 1;
-	int16_t int_row[8];
-	for (int i = 0; i < 8; i++) {
-		int_row = int_part % pow(10, i+1) / pow(10, i);
+	char row[12] = "00000000.00"; // 8 for integer, 1 for dot, 2 for decimal, 1 for null
+	for (uint16_t i = 0; i < 8; i++) {
+		row[7 - i] = '0' + (char)(int_part % pow(10, i+1) / pow(10, i));
+		if (pow(10, i) < int_part) offset--;
 	}
-
-	char row[9];
-	for (int i = 7; i >= 0; i--) {
-		row[i] = int_row[i]
+	for (uint16_t i = 0; i < 2; i++) {
+		row[10 - i] = '0' + (char)(dec_part % pow(10, i+1) / pow(10, i));
 	}
+	draw_text(image, row + offset, x, y);
 
+}
+
+void draw_clean(uint8_t *image) {
+	uint16_t bytes = CANVAS_WIDTH * CANVAS_HEIGHT / 8;
+	for (uint16_t i = 0; i < bytes; i++) image[i] = 0xFF;
 }
 
