@@ -83,7 +83,7 @@ void MX_USB_HOST_Process(void);
 union _ADC_BUFF {
 	uint8_t ADC8[32];
 	uint16_t ADC16[16];
-	uint32_t ADC32[8];
+	int32_t ADC32[8];
 } ADC_BUFF;
 
 int16_t DAC_BUFF[16];
@@ -161,7 +161,6 @@ int main(void)
   MX_FATFS_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  ADC_BUFF.ADC32[0] = 0xf1234567;
 
 	pedalboard_t pedalboard;
 	pedalboard.active_pedals = 0;
@@ -173,7 +172,7 @@ int main(void)
 	CS43_Start();
 
 	//HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
-	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
+	//HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
 
 	EPD_Init();
 	EPD_Clear();
@@ -218,7 +217,11 @@ int main(void)
 		HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, btn_states[0] || btn_states[1] || btn_states[2] || btn_states[3]);
 
 		if (btn_states[0] == GPIO_PIN_SET) {
-			//HAL_I2S_Receive_DMA(&hi2s2, hoo.ADC16, 4);
+
+			HAL_Delay(50);
+			HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 8);
+			HAL_Delay(500);
+			//HAL_I2S_DMAStop(&hi2s2);
 			//HAL_I2S_Receive(&hi2s2, (uint16_t *)ADC_BUFF, 4, 10);
 
 
@@ -338,7 +341,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)

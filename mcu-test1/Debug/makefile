@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (10.3-2021.10)
+# Toolchain: GNU Tools for STM32 (9-2020-q2-update)
 ################################################################################
 
 -include ../makefile.init
@@ -51,14 +51,14 @@ BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ART
 EXECUTABLES += \
 mcu-test1.elf \
 
-MAP_FILES += \
-mcu-test1.map \
-
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
 mcu-test1.list \
+
+OBJCOPY_BIN += \
+mcu-test1.bin \
 
 
 # All Target
@@ -68,8 +68,8 @@ all: main-build
 main-build: mcu-test1.elf secondary-outputs
 
 # Tool invocations
-mcu-test1.elf mcu-test1.map: $(OBJS) $(USER_OBJS) C:\Users\giaco\Desktop\digital-pedal\mcu-test1\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "mcu-test1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\giaco\Desktop\digital-pedal\mcu-test1\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mcu-test1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+mcu-test1.elf: $(OBJS) $(USER_OBJS) /home/asky/Desktop/digital-pedal/mcu-test1/STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "mcu-test1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/asky/Desktop/digital-pedal/mcu-test1/STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mcu-test1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -83,12 +83,17 @@ mcu-test1.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+mcu-test1.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "mcu-test1.bin"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
-	-$(RM) default.size.stdout mcu-test1.elf mcu-test1.list mcu-test1.map
+	-$(RM) default.size.stdout mcu-test1.bin mcu-test1.elf mcu-test1.list
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'
