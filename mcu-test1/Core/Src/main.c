@@ -23,10 +23,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include <stdlib.h>
 #include "pedalboard_min.h"
 #include "cs43l22.h"
 #include "epd_driver.h"
 #include "painter.h"
+
 
 /* USER CODE END Includes */
 
@@ -60,6 +63,27 @@ extern ApplicationTypeDef Appli_state;
 FATFS myUsbFatFS;
 extern char USBHPath[4];
 
+union _ADC_BUFF {
+	uint8_t ADC8[32];
+	uint16_t ADC16[16];
+	int32_t ADC32[8];
+} ADC_BUFF;
+
+int32_t BUFF_CONV[4];
+
+union _DAC_BUFF {
+	uint8_t DAC8[32];
+	uint16_t DAC16[16];
+	int32_t DAC32[8];
+} DAC_BUFF;
+
+float RAW_SAMPLES[2];
+float PROC_SAMPLES[2];
+
+uint8_t image[EPD_BYTES];
+
+pedalboard_t pedalboard;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,43 +104,57 @@ void MX_USB_HOST_Process(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-union _ADC_BUFF {
-	uint8_t ADC8[32];
-	uint16_t ADC16[16];
-	int32_t ADC32[8];
-} ADC_BUFF;
+void Conv_ADC(uint8_t *buf, int32_t *result) {
+	*result = 0xFF000000 * ((buf[1] >> 7) & 1) + (buf[1] << 16) + (buf[0] << 8) + buf[3];
+}
 
-int16_t DAC_BUFF[16];
-int16_t IN_SAMPLES[2];
-uint32_t C = 0;
+uint32_t rxHalfCpltCounter = 0;
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+	if (hi2s->Instance == SPI2)
+	{
+		Conv_ADC(&ADC_BUFF.ADC8[0], &BUFF_CONV[0]); // LEFT
+		Conv_ADC(&ADC_BUFF.ADC8[4], &BUFF_CONV[1]); // RIGHT
+		RAW_SAMPLES[0] = (float)BUFF_CONV[0];
+		RAW_SAMPLES[1] = (float)BUFF_CONV[1];
+		rxHalfCpltCounter++;
+	}
+}
 
-uint8_t image[EPD_BYTES];
-
+uint32_t rxCpltCounter = 0;
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	UNUSED(hi2s);
-	if (hi2s->Instance == SPI2) {
-		//RIGHT
-		int32_t temp = 0 /*ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)]*/;
-		temp >>= 16;
-		IN_SAMPLES[1] = temp;
-		HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
-
-		//IN_SAMPLES[1] = wave_gen('s', C++, 1720.0F) * 15000;
+	if (hi2s->Instance == SPI2)
+	{
+		Conv_ADC(&ADC_BUFF.ADC8[8], &BUFF_CONV[2]); // LEFT
+		Conv_ADC(&ADC_BUFF.ADC8[12], &BUFF_CONV[3]); // RIGHT
+		RAW_SAMPLES[0] = (float)BUFF_CONV[2];
+		RAW_SAMPLES[1] = (float)BUFF_CONV[3];
+		rxCpltCounter++;
 	}
 }
 
+uint32_t txHalfCpltCounter = 0;
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	if (hi2s->Instance == SPI3) {
-		DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[0];
+	if (hi2s->Instance == SPI3)
+	{
+		//PROC_SAMPLES[0] = pedalboard_process(&pedalboard, (float)RAW_SAMPLES[0]);
+		//PROC_SAMPLES[0] = RAW_SAMPLES[0] * 10;
+		PROC_SAMPLES[0] = wave_gen('s', txHalfCpltCounter, 440.0F) * 10000;
+		DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[0];
+		txHalfCpltCounter++;
 	}
 }
 
+uint32_t txCpltCounter = 0;
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	if (hi2s->Instance == SPI3) {
-		DAC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = IN_SAMPLES[1];
+	if (hi2s->Instance == SPI3)
+	{
+		PROC_SAMPLES[1] = wave_gen('s', txCpltCounter, 440.0F) * 10000;
+		DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[1];
+		txCpltCounter++;
 	}
 }
 
@@ -162,38 +200,32 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-	pedalboard_t pedalboard;
 	pedalboard.active_pedals = 0;
-	pedalboard_append(&pedalboard, OVERDRIVE_SQRT);
+	pedalboard_append(&pedalboard, LPF);
 
 	CS43_Init(hi2c1, MODE_I2S);
 	CS43_SetVolume(0);
 	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
 	CS43_Start();
 
-	//HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
-	//HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
+	HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 4);
+	HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 2);
 
-	EPD_Init();
-	EPD_Clear();
+	//EPD_Init();
+	//EPD_Clear();
 
-	char text[5][16+1] = {
-			{'g', '3', '3', 'k', 'y', '-', 't', 'o', 'a', 'd', '\0'},
-			{'d', 'i', 'g', 'i', 't', 'a', 'l', ' ', 'p', 'e', 'd', 'a', 'l', '\0'},
-			{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', '\0'},
-			{'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', ' ', '0', '1', '2', '3', '4', '\0'},
-			{'5', '6', '7', '8', '9', ' ', '.', ',', '+', '-', '<', '>', '\0'}
-	};
+	char row[16+1];
 	draw_clean(image);
 	draw_rectangle(image, 36, 56, 88, 20);
-	draw_text(image, text[0], 40, 60);
-	draw_text(image, text[1], 20, 90);
-	draw_text(image, text[2], 0, 120);
-	draw_text(image, text[3], 0, 132);
-	draw_text(image, text[4], 0, 144);
-	draw_float_number(image, 43172.5, 0, 200);
-	EPD_Display(image);
-	EPD_Sleep();
+
+	sprintf(row, "g33ky toad");
+	draw_text(image, row, 40, 60);
+
+	sprintf(row, "digital pedal");
+	draw_text(image, row, 20, 90);
+
+	//EPD_Display(image);
+	//EPD_Sleep();
 
 
   /* USER CODE END 2 */
@@ -208,24 +240,37 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
-		GPIO_PinState btn_states[4];
-		btn_states[0] = HAL_GPIO_ReadPin(Btn0_GPIO_Port, Btn0_Pin);
-		btn_states[1] = !HAL_GPIO_ReadPin(Btn1_GPIO_Port, Btn1_Pin);
-		btn_states[2] = !HAL_GPIO_ReadPin(Btn2_GPIO_Port, Btn2_Pin);
-		btn_states[3] = !HAL_GPIO_ReadPin(Btn3_GPIO_Port, Btn3_Pin);
+		/*int interval = 5;
+		if (HAL_GetTick() % (interval * 1000) == 0) {
+			EPD_Init();
+			draw_clean(image);
 
-		HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, btn_states[0] || btn_states[1] || btn_states[2] || btn_states[3]);
+			sprintf(row, "RxH %d -LR", rxHalfCpltCounter / interval);
+			draw_text(image, row, 0, 0);
+			sprintf(row, "RxC %d -LR", rxCpltCounter / interval);
+			draw_text(image, row, 0, 20);
+			sprintf(row, "TxH %d -L", txHalfCpltCounter / interval);
+			draw_text(image, row, 0, 40);
+			sprintf(row, "TxC %d -R", txCpltCounter / interval);
+			draw_text(image, row, 0, 60);
 
-		if (btn_states[0] == GPIO_PIN_SET) {
+			rxHalfCpltCounter = 0;
+			rxCpltCounter = 0;
+			txHalfCpltCounter = 0;
+			txCpltCounter = 0;
 
-			HAL_Delay(50);
-			HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 8);
-			HAL_Delay(500);
-			//HAL_I2S_DMAStop(&hi2s2);
-			//HAL_I2S_Receive(&hi2s2, (uint16_t *)ADC_BUFF, 4, 10);
+			EPD_Display(image);
+			EPD_Sleep();
+		}*/
 
+		//GPIO_PinState btn_states[4];
+		//btn_states[0] = HAL_GPIO_ReadPin(Btn0_GPIO_Port, Btn0_Pin);
+		//btn_states[1] = !HAL_GPIO_ReadPin(Btn1_GPIO_Port, Btn1_Pin);
+		//btn_states[2] = !HAL_GPIO_ReadPin(Btn2_GPIO_Port, Btn2_Pin);
+		//btn_states[3] = !HAL_GPIO_ReadPin(Btn3_GPIO_Port, Btn3_Pin);
 
-		}
+		//HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, btn_states[0] || btn_states[1] || btn_states[2] || btn_states[3]);
+
 		/*if (Appli_state == APPLICATION_READY)
 		{
 			//HAL_GPIO_WritePin(Led1_GPIO_Port, Led1_Pin, GPIO_PIN_SET);

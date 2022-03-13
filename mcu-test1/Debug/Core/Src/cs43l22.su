@@ -1,7 +1,7 @@
-cs43l22.c:30:13:write_register	24	static
-cs43l22.c:38:13:read_register	24	static
-cs43l22.c:47:6:CS43_Init	8	static
-cs43l22.c:115:6:CS43_Enable_RightLeft	16	static
-cs43l22.c:144:6:CS43_SetVolume	24	static
-cs43l22.c:161:6:CS43_Start	8	static
-cs43l22.c:185:6:CS43_Stop	8	static
+../Core/Src/cs43l22.c:30:13:write_register	24	static
+../Core/Src/cs43l22.c:38:13:read_register	24	static
+../Core/Src/cs43l22.c:47:6:CS43_Init	8	static
+../Core/Src/cs43l22.c:115:6:CS43_Enable_RightLeft	16	static
+../Core/Src/cs43l22.c:144:6:CS43_SetVolume	24	static
+../Core/Src/cs43l22.c:161:6:CS43_Start	8	static
+../Core/Src/cs43l22.c:185:6:CS43_Stop	8	static

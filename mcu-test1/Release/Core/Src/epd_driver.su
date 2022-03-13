@@ -1,0 +1,12 @@
+../Core/Src/epd_driver.c:25:13:_EPD_SendCommand	16	static
+../Core/Src/epd_driver.c:32:13:_EPD_SendData	16	static
+../Core/Src/epd_driver.c:95:13:_EPD_SetCursor.constprop	8	static
+../Core/Src/epd_driver.c:83:13:_EPD_SetWindows.constprop	8	static
+../Core/Src/epd_driver.c:39:6:_EPD_ReadBusy	8	static
+../Core/Src/epd_driver.c:47:13:_EPD_LUT	16	static
+../Core/Src/epd_driver.c:69:13:_EPD_TurnOnDisplay	8	static
+../Core/Src/epd_driver.c:106:6:EPD_Init	8	static
+../Core/Src/epd_driver.c:138:6:EPD_Clear	8	static
+../Core/Src/epd_driver.c:147:6:EPD_Display	16	static
+../Core/Src/epd_driver.c:156:6:EPD_Display_Partial	16	static
+../Core/Src/epd_driver.c:196:6:EPD_Sleep	8	static

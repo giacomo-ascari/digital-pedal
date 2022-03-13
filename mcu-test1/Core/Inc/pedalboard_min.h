@@ -1,6 +1,7 @@
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 #define _DSP_H
 #define _DYN_AMPLIFIER_H
 #define FLOAT_PARAM_TYPES 9
