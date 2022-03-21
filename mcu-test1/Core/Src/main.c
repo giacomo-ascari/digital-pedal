@@ -84,6 +84,13 @@ uint8_t image[EPD_BYTES];
 
 pedalboard_t pedalboard;
 
+struct _ENCODER_T {
+	uint16_t last;
+	uint16_t current;
+} encoderA, encoderB;
+
+int16_t encoderCounter = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -167,7 +174,7 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	//https://www.youtube.com/watch?v=QIPQOnVablY
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -200,6 +207,8 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+	HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_SET);
+
 	pedalboard.active_pedals = 0;
 	pedalboard_append(&pedalboard, LPF);
 
@@ -209,10 +218,10 @@ int main(void)
 	CS43_Start();
 
 	HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 4);
-	HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 2);
+	//HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 2);
 
-	//EPD_Init();
-	//EPD_Clear();
+	EPD_Init();
+	EPD_Clear();
 
 	char row[16+1];
 	draw_clean(image);
@@ -224,8 +233,13 @@ int main(void)
 	sprintf(row, "digital pedal");
 	draw_text(image, row, 20, 90);
 
-	//EPD_Display(image);
-	//EPD_Sleep();
+	EPD_Display(image);
+	EPD_Sleep();
+
+	encoderA.current = 0;
+	encoderB.current = 0;
+
+	HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_RESET);
 
 
   /* USER CODE END 2 */
@@ -240,19 +254,50 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
-		/*int interval = 5;
-		if (HAL_GetTick() % (interval * 1000) == 0) {
+		encoderA.last = encoderA.current;
+		encoderB.last = encoderB.current;
+
+		//loat out = conf->float_params[PAST].value * alpha + (1.F - alpha) * in;
+		uint16_t temp;
+		uint16_t alpha = 10; //%
+		uint16_t thr = 500;
+
+		GPIO_PinState sA, sB;
+		sA = HAL_GPIO_ReadPin(EncA_GPIO_Port, EncA_Pin);
+		sB = HAL_GPIO_ReadPin(EncB_GPIO_Port, EncB_Pin);
+		HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, sA);
+		HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, sB);
+
+		temp = sA == GPIO_PIN_SET ? 1023 : 0;
+		encoderA.current = (encoderA.last * alpha / 100) + (temp * (100 - alpha) / 100);
+		temp = sB == GPIO_PIN_SET ? 1023 : 0;
+		encoderB.current = (encoderB.last * alpha / 100) + (temp * (100 - alpha) / 100);
+
+
+		if (encoderA.last < thr != encoderA.current < thr) {
+			if (encoderB.current > thr) {
+				encoderCounter++;
+			} else {
+				encoderCounter--;
+			}
+		}
+
+		int interval = 5;
+		/*if (HAL_GetTick() % (interval * 1000) == 0) {
 			EPD_Init();
 			draw_clean(image);
 
-			sprintf(row, "RxH %d -LR", rxHalfCpltCounter / interval);
+			sprintf(row, "RxH %d LR", rxHalfCpltCounter / interval);
 			draw_text(image, row, 0, 0);
-			sprintf(row, "RxC %d -LR", rxCpltCounter / interval);
+			sprintf(row, "RxC %d LR", rxCpltCounter / interval);
 			draw_text(image, row, 0, 20);
-			sprintf(row, "TxH %d -L", txHalfCpltCounter / interval);
+			sprintf(row, "TxH %d L", txHalfCpltCounter / interval);
 			draw_text(image, row, 0, 40);
-			sprintf(row, "TxC %d -R", txCpltCounter / interval);
+			sprintf(row, "TxC %d R", txCpltCounter / interval);
 			draw_text(image, row, 0, 60);
+
+			sprintf(row, "Enc %d", encoderCounter);
+			draw_text(image, row, 0, 80);
 
 			rxHalfCpltCounter = 0;
 			rxCpltCounter = 0;
@@ -607,6 +652,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OtgPower_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : EncB_Pin EncA_Pin */
+  GPIO_InitStruct.Pin = EncB_Pin|EncA_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Btn0_Pin EPD_BUSY_Pin */
   GPIO_InitStruct.Pin = Btn0_Pin|EPD_BUSY_Pin;
