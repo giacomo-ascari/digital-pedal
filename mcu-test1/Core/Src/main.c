@@ -77,6 +77,9 @@ union _DAC_BUFF {
 	int32_t DAC32[8];
 } DAC_BUFF;
 
+uint16_t display_counter = 0;
+float display_array[296];
+
 float RAW_SAMPLES[2];
 float PROC_SAMPLES[2];
 
@@ -125,6 +128,10 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 		RAW_SAMPLES[0] = (float)BUFF_CONV[0];
 		RAW_SAMPLES[1] = (float)BUFF_CONV[1];
 		rxHalfCpltCounter++;
+		if (display_counter < 296) {
+			display_array[display_counter] = BUFF_CONV[0];
+			display_counter++;
+		}
 	}
 }
 
@@ -138,6 +145,10 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 		RAW_SAMPLES[0] = (float)BUFF_CONV[2];
 		RAW_SAMPLES[1] = (float)BUFF_CONV[3];
 		rxCpltCounter++;
+		if (display_counter < 296) {
+			display_array[display_counter] = BUFF_CONV[2];
+			display_counter++;
+		}
 	}
 }
 
@@ -238,6 +249,7 @@ int main(void)
 
 	encoderA.current = 0;
 	encoderB.current = 0;
+	uint32_t lasttick = 0;
 
 	HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_RESET);
 
@@ -254,36 +266,46 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
-		encoderA.last = encoderA.current;
-		encoderB.last = encoderB.current;
 
-		//loat out = conf->float_params[PAST].value * alpha + (1.F - alpha) * in;
-		uint16_t temp;
-		uint16_t alpha = 10; //%
-		uint16_t thr = 500;
+		if (HAL_GetTick() != lasttick) {
+			lasttick = HAL_GetTick();
+			encoderA.last = encoderA.current;
+			encoderB.last = encoderB.current;
 
-		GPIO_PinState sA, sB;
-		sA = HAL_GPIO_ReadPin(EncA_GPIO_Port, EncA_Pin);
-		sB = HAL_GPIO_ReadPin(EncB_GPIO_Port, EncB_Pin);
-		HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, sA);
-		HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, sB);
+			uint16_t temp;
+			uint16_t alpha = 75; //%
+			uint16_t ceil = 10000, thr = 5000;
 
-		temp = sA == GPIO_PIN_SET ? 1023 : 0;
-		encoderA.current = (encoderA.last * alpha / 100) + (temp * (100 - alpha) / 100);
-		temp = sB == GPIO_PIN_SET ? 1023 : 0;
-		encoderB.current = (encoderB.last * alpha / 100) + (temp * (100 - alpha) / 100);
+			GPIO_PinState sA, sB;
+			sA = HAL_GPIO_ReadPin(EncA_GPIO_Port, EncA_Pin);
+			sB = HAL_GPIO_ReadPin(EncB_GPIO_Port, EncB_Pin);
+			HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, sA);
+			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, sB);
 
+			temp = sA == GPIO_PIN_SET ? ceil : 0;
+			encoderA.current = (encoderA.last * alpha / 100) + (temp * (100 - alpha) / 100);
+			temp = sB == GPIO_PIN_SET ? ceil : 0;
+			encoderB.current = (encoderB.last * alpha / 100) + (temp * (100 - alpha) / 100);
 
-		if (encoderA.last < thr != encoderA.current < thr) {
-			if (encoderB.current > thr) {
-				encoderCounter++;
-			} else {
-				encoderCounter--;
+			if (encoderA.last < thr && encoderA.current >= thr) {
+				if (encoderB.current > thr) {
+					encoderCounter--;
+				} else {
+					encoderCounter++;
+				}
+			} else if (encoderA.last > thr && encoderA.current <= thr) {
+				if (encoderB.current > thr) {
+					encoderCounter++;
+				} else {
+					encoderCounter--;
+				}
 			}
 		}
 
+
+
 		int interval = 5;
-		/*if (HAL_GetTick() % (interval * 1000) == 0) {
+		if (HAL_GetTick() % (interval * 1000) == 0) {
 			EPD_Init();
 			draw_clean(image);
 
@@ -304,9 +326,14 @@ int main(void)
 			txHalfCpltCounter = 0;
 			txCpltCounter = 0;
 
+			for (int i = 0; i < 296; i++) {
+				toggle_single_pixel(image, 64 + (int)((float)display_array[i] / 17000.0 * 64.0), i);
+			}
+			display_counter = 0;
+
 			EPD_Display(image);
 			EPD_Sleep();
-		}*/
+		}
 
 		//GPIO_PinState btn_states[4];
 		//btn_states[0] = HAL_GPIO_ReadPin(Btn0_GPIO_Port, Btn0_Pin);
