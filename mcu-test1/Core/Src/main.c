@@ -159,8 +159,8 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 	{
 		//PROC_SAMPLES[0] = pedalboard_process(&pedalboard, (float)RAW_SAMPLES[0]);
 		//PROC_SAMPLES[0] = RAW_SAMPLES[0] * 10;
-		PROC_SAMPLES[0] = wave_gen('s', txHalfCpltCounter, 440.0F) * 10000;
-		DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[0];
+		//PROC_SAMPLES[0] = wave_gen('s', txHalfCpltCounter, 440.0F) * 10000;
+		//DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[0];
 		txHalfCpltCounter++;
 	}
 }
@@ -170,8 +170,8 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	if (hi2s->Instance == SPI3)
 	{
-		PROC_SAMPLES[1] = wave_gen('s', txCpltCounter, 440.0F) * 10000;
-		DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[1];
+		//PROC_SAMPLES[1] = wave_gen('s', txCpltCounter, 440.0F) * 10000;
+		//DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[1];
 		txCpltCounter++;
 	}
 }
@@ -229,7 +229,7 @@ int main(void)
 	CS43_Start();
 
 	HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 4);
-	//HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 2);
+	HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 2);
 
 	EPD_Init();
 	EPD_Clear();
@@ -276,15 +276,9 @@ int main(void)
 			uint16_t alpha = 75; //%
 			uint16_t ceil = 10000, thr = 5000;
 
-			GPIO_PinState sA, sB;
-			sA = HAL_GPIO_ReadPin(EncA_GPIO_Port, EncA_Pin);
-			sB = HAL_GPIO_ReadPin(EncB_GPIO_Port, EncB_Pin);
-			HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, sA);
-			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, sB);
-
-			temp = sA == GPIO_PIN_SET ? ceil : 0;
+			temp = HAL_GPIO_ReadPin(EncA_GPIO_Port, EncA_Pin) == GPIO_PIN_SET ? ceil : 0;
 			encoderA.current = (encoderA.last * alpha / 100) + (temp * (100 - alpha) / 100);
-			temp = sB == GPIO_PIN_SET ? ceil : 0;
+			temp = HAL_GPIO_ReadPin(EncB_GPIO_Port, EncB_Pin) == GPIO_PIN_SET ? ceil : 0;
 			encoderB.current = (encoderB.last * alpha / 100) + (temp * (100 - alpha) / 100);
 
 			if (encoderA.last < thr && encoderA.current >= thr) {
@@ -306,6 +300,7 @@ int main(void)
 
 		int interval = 5;
 		if (HAL_GetTick() % (interval * 1000) == 0) {
+			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
 			EPD_Init();
 			draw_clean(image);
 
@@ -332,7 +327,10 @@ int main(void)
 			display_counter = 0;
 
 			EPD_Display(image);
+
+
 			EPD_Sleep();
+			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_RESET);
 		}
 
 		//GPIO_PinState btn_states[4];

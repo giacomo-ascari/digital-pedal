@@ -26,6 +26,12 @@ void toggle_single_pixel(uint8_t *image, uint16_t x, uint16_t y) {
 	if (x < CANVAS_WIDTH && y < CANVAS_HEIGHT) image[i] ^= (0x01 << (7 - x % 8));
 }
 
+void toggle_image(uint8_t *image) {
+	for (uint16_t i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT / 8; i++) {
+		image[i] = ~image[i];
+	}
+}
+
 void draw_rectangle(uint8_t *image, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 	for (uint16_t i = 0; i < h; i++) {
 		for (uint16_t j = 0; j < w; j++) {
