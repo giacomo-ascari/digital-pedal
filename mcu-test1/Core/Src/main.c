@@ -322,7 +322,10 @@ int main(void)
 			txCpltCounter = 0;
 
 			for (int i = 0; i < 296; i++) {
-				toggle_single_pixel(image, 64 + (int)((float)display_array[i] / 17000.0 * 64.0), i);
+				float val = (float)display_array[i] / 32768.0F * 0.1F;
+				if (val > 63) val = 63;
+				if (val < -64) val = -64;
+				toggle_single_pixel(image, 64 + (int)val, i);
 			}
 			display_counter = 0;
 
