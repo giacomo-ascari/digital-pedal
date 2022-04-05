@@ -157,10 +157,12 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	if (hi2s->Instance == SPI3)
 	{
-		//PROC_SAMPLES[0] = pedalboard_process(&pedalboard, (float)RAW_SAMPLES[0]);
-		//PROC_SAMPLES[0] = RAW_SAMPLES[0] * 10;
+		PROC_SAMPLES[0] = pedalboard_process(&pedalboard, (float)RAW_SAMPLES[0]);
+		PROC_SAMPLES[0] /= 1.0F;
+		PROC_SAMPLES[1] = PROC_SAMPLES[0];
+		//PROC_SAMPLES[0] = RAW_SAMPLES[0] * 1;
 		//PROC_SAMPLES[0] = wave_gen('s', txHalfCpltCounter, 440.0F) * 10000;
-		//DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[0];
+		DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[0];
 		txHalfCpltCounter++;
 	}
 }
@@ -171,7 +173,7 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 	if (hi2s->Instance == SPI3)
 	{
 		//PROC_SAMPLES[1] = wave_gen('s', txCpltCounter, 440.0F) * 10000;
-		//DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[1];
+		DAC_BUFF.DAC16[__HAL_DMA_GET_COUNTER(hi2s->hdmatx)] = (int16_t)PROC_SAMPLES[1];
 		txCpltCounter++;
 	}
 }
@@ -224,12 +226,12 @@ int main(void)
 	pedalboard_append(&pedalboard, LPF);
 
 	CS43_Init(hi2c1, MODE_I2S);
-	CS43_SetVolume(0);
+	CS43_SetVolume(255);
 	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
 	CS43_Start();
 
 	HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 4);
-	HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 2);
+	HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 8);
 
 	EPD_Init();
 	EPD_Clear();
@@ -294,6 +296,8 @@ int main(void)
 					encoderCounter--;
 				}
 			}
+
+			CS43_SetVolume(encoderCounter);
 		}
 
 
@@ -322,7 +326,7 @@ int main(void)
 			txCpltCounter = 0;
 
 			for (int i = 0; i < 296; i++) {
-				float val = (float)display_array[i] / 32768.0F * 0.1F;
+				float val = (float)display_array[i] / 32768.0F * 10.0F;
 				if (val > 63) val = 63;
 				if (val < -64) val = -64;
 				toggle_single_pixel(image, 64 + (int)val, i);

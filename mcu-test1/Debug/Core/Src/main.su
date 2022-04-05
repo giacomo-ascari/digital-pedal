@@ -1,9 +1,9 @@
 ../Core/Src/main.c:117:6:Conv_ADC	0	static
 ../Core/Src/main.c:122:6:HAL_I2S_RxHalfCpltCallback	16	static
 ../Core/Src/main.c:139:6:HAL_I2S_RxCpltCallback	16	static
-../Core/Src/main.c:156:6:HAL_I2S_TxHalfCpltCallback	0	static
-../Core/Src/main.c:169:6:HAL_I2S_TxCpltCallback	0	static
-../Core/Src/main.c:432:6:SystemClock_Config	88	static,ignoring_inline_asm
-../Core/Src/main.c:475:6:PeriphCommonClock_Config	24	static,ignoring_inline_asm
-../Core/Src/main.c:185:5:main	200	static,ignoring_inline_asm
-../Core/Src/main.c:734:6:Error_Handler	0	static,ignoring_inline_asm
+../Core/Src/main.c:156:6:HAL_I2S_TxHalfCpltCallback	8	static
+../Core/Src/main.c:171:6:HAL_I2S_TxCpltCallback	0	static
+../Core/Src/main.c:436:6:SystemClock_Config	88	static,ignoring_inline_asm
+../Core/Src/main.c:479:6:PeriphCommonClock_Config	24	static,ignoring_inline_asm
+../Core/Src/main.c:187:5:main	200	static,ignoring_inline_asm
+../Core/Src/main.c:738:6:Error_Handler	0	static,ignoring_inline_asm
