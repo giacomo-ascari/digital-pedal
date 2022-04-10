@@ -12,6 +12,12 @@
 #define FONT_WIDTH 8
 #define FONT_HEIGHT 12
 
+#define INIT_STATE 0
+#define CLEAR_STATE 1
+#define DISPLAY_STATE 2
+#define DISPLAY_PARTIAL_STATE 3
+#define SLEEP_STATE 4
+
 void EPD_Init(void);
 void EPD_Clear(void);
 void EPD_Display(uint8_t *image);

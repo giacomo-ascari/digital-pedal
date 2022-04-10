@@ -68,8 +68,8 @@ all: main-build
 main-build: mcu-test1.elf secondary-outputs
 
 # Tool invocations
-mcu-test1.elf mcu-test1.map: $(OBJS) $(USER_OBJS) C:\Users\giaco\Desktop\digital-pedal\mcu-test1\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "mcu-test1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\giaco\Desktop\digital-pedal\mcu-test1\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mcu-test1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+mcu-test1.elf mcu-test1.map: $(OBJS) $(USER_OBJS) /home/asky/Desktop/digital-pedal/mcu-test1/STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "mcu-test1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/asky/Desktop/digital-pedal/mcu-test1/STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mcu-test1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

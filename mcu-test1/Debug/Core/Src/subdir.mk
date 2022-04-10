@@ -5,11 +5,15 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Core/Src/AUDIO.c \
+../Core/Src/AUDIO_LINK.c \
+../Core/Src/EPD_2_9.c \
 ../Core/Src/cs43l22.c \
 ../Core/Src/epd_driver.c \
 ../Core/Src/main.c \
 ../Core/Src/painter.c \
 ../Core/Src/pedalboard_min.c \
+../Core/Src/rotary_encoder.c \
 ../Core/Src/stm32f4xx_hal_msp.c \
 ../Core/Src/stm32f4xx_it.c \
 ../Core/Src/syscalls.c \
@@ -17,11 +21,15 @@ C_SRCS += \
 ../Core/Src/system_stm32f4xx.c 
 
 OBJS += \
+./Core/Src/AUDIO.o \
+./Core/Src/AUDIO_LINK.o \
+./Core/Src/EPD_2_9.o \
 ./Core/Src/cs43l22.o \
 ./Core/Src/epd_driver.o \
 ./Core/Src/main.o \
 ./Core/Src/painter.o \
 ./Core/Src/pedalboard_min.o \
+./Core/Src/rotary_encoder.o \
 ./Core/Src/stm32f4xx_hal_msp.o \
 ./Core/Src/stm32f4xx_it.o \
 ./Core/Src/syscalls.o \
@@ -29,11 +37,15 @@ OBJS += \
 ./Core/Src/system_stm32f4xx.o 
 
 C_DEPS += \
+./Core/Src/AUDIO.d \
+./Core/Src/AUDIO_LINK.d \
+./Core/Src/EPD_2_9.d \
 ./Core/Src/cs43l22.d \
 ./Core/Src/epd_driver.d \
 ./Core/Src/main.d \
 ./Core/Src/painter.d \
 ./Core/Src/pedalboard_min.d \
+./Core/Src/rotary_encoder.d \
 ./Core/Src/stm32f4xx_hal_msp.d \
 ./Core/Src/stm32f4xx_it.d \
 ./Core/Src/syscalls.d \
@@ -50,7 +62,7 @@ Core/Src/main.o: ../Core/Src/main.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/cs43l22.d ./Core/Src/cs43l22.o ./Core/Src/cs43l22.su ./Core/Src/epd_driver.d ./Core/Src/epd_driver.o ./Core/Src/epd_driver.su ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/painter.d ./Core/Src/painter.o ./Core/Src/painter.su ./Core/Src/pedalboard_min.d ./Core/Src/pedalboard_min.o ./Core/Src/pedalboard_min.su ./Core/Src/stm32f4xx_hal_msp.d ./Core/Src/stm32f4xx_hal_msp.o ./Core/Src/stm32f4xx_hal_msp.su ./Core/Src/stm32f4xx_it.d ./Core/Src/stm32f4xx_it.o ./Core/Src/stm32f4xx_it.su ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f4xx.d ./Core/Src/system_stm32f4xx.o ./Core/Src/system_stm32f4xx.su
+	-$(RM) ./Core/Src/AUDIO.d ./Core/Src/AUDIO.o ./Core/Src/AUDIO.su ./Core/Src/AUDIO_LINK.d ./Core/Src/AUDIO_LINK.o ./Core/Src/AUDIO_LINK.su ./Core/Src/EPD_2_9.d ./Core/Src/EPD_2_9.o ./Core/Src/EPD_2_9.su ./Core/Src/cs43l22.d ./Core/Src/cs43l22.o ./Core/Src/cs43l22.su ./Core/Src/epd_driver.d ./Core/Src/epd_driver.o ./Core/Src/epd_driver.su ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/painter.d ./Core/Src/painter.o ./Core/Src/painter.su ./Core/Src/pedalboard_min.d ./Core/Src/pedalboard_min.o ./Core/Src/pedalboard_min.su ./Core/Src/rotary_encoder.d ./Core/Src/rotary_encoder.o ./Core/Src/rotary_encoder.su ./Core/Src/stm32f4xx_hal_msp.d ./Core/Src/stm32f4xx_hal_msp.o ./Core/Src/stm32f4xx_hal_msp.su ./Core/Src/stm32f4xx_it.d ./Core/Src/stm32f4xx_it.o ./Core/Src/stm32f4xx_it.su ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f4xx.d ./Core/Src/system_stm32f4xx.o ./Core/Src/system_stm32f4xx.su
 
 .PHONY: clean-Core-2f-Src
 
