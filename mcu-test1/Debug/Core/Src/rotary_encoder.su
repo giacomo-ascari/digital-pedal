@@ -1,0 +1,2 @@
+../Core/Src/rotary_encoder.c:10:6:RE_Init	24	static
+../Core/Src/rotary_encoder.c:23:9:RE_Process	24	static

@@ -2,6 +2,7 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
+   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -15,9 +16,19 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   sodipodi:docname="drawing.svg">
+   sodipodi:docname="drawing.svg"
+   enable-background="new">
   <defs
-     id="defs2" />
+     id="defs2">
+    <linearGradient
+       id="linearGradient846"
+       osb:paint="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop844" />
+    </linearGradient>
+  </defs>
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -25,9 +36,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.99674932"
-     inkscape:cx="216.40319"
-     inkscape:cy="881.04361"
+     inkscape:zoom="1.6290957"
+     inkscape:cx="374.88394"
+     inkscape:cy="796.76966"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -35,7 +46,7 @@
      inkscape:window-width="1920"
      inkscape:window-height="1016"
      inkscape:window-x="0"
-     inkscape:window-y="27"
+     inkscape:window-y="1227"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata5">
@@ -45,33 +56,34 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     style="">
     <ellipse
        id="path3725-3"
        cx="100"
        cy="112"
        rx="40"
        ry="25"
-       style="stroke-width:0.35811225;fill:#ff2a2a" />
+       style="fill:#ff2a2a;stroke-width:0.35811225" />
     <rect
        id="rect3723-6"
        width="80"
-       height="10"
+       height="6"
        x="60"
-       y="102"
-       style="stroke-width:0.2379629;fill:#ff2a2a" />
+       y="106"
+       style="fill:#ff2a2a;stroke-width:0.18432528" />
     <ellipse
        id="path3721-7"
        style="opacity:1;fill:#ff5555;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        cx="100"
-       cy="102"
+       cy="106"
        rx="40"
        ry="25" />
     <rect
@@ -83,31 +95,31 @@
        style="fill:#d40000;stroke-width:0.32584414" />
     <ellipse
        id="path3721-3"
-       style="opacity:1;fill:#d40000;stroke:none;stroke-width:1.83711731;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="opacity:1;fill:#d40000;stroke:none;stroke-width:1.9170289;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        cx="100"
-       cy="102"
+       cy="104"
        rx="37.5"
-       ry="22.5" />
+       ry="24.5" />
     <ellipse
        id="path3725"
        cx="100"
-       cy="82"
+       cy="78"
        rx="40"
        ry="25"
-       style="stroke-width:0.35811225;fill:#ff2a2a" />
+       style="fill:#ff2a2a;stroke-width:0.35811225" />
     <rect
        id="rect3723"
        width="80"
-       height="10"
+       height="6"
        x="60"
        y="72"
-       style="stroke-width:0.2379629;fill:#ff2a2a" />
+       style="fill:#ff2a2a;stroke-width:0.18432528" />
     <ellipse
        id="path3721"
-       style="opacity:1;fill:#ff5555;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="opacity:1;fill:#ffe6d5;stroke:#ff5555;stroke-width:3.75547194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
        cx="100"
        cy="72"
-       rx="40"
-       ry="25" />
+       rx="38.122261"
+       ry="23.122265" />
   </g>
 </svg>

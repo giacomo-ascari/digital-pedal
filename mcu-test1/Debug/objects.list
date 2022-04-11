@@ -2,7 +2,6 @@
 "./Core/Src/AUDIO_LINK.o"
 "./Core/Src/EPD_2_9.o"
 "./Core/Src/cs43l22.o"
-"./Core/Src/epd_driver.o"
 "./Core/Src/main.o"
 "./Core/Src/painter.o"
 "./Core/Src/pedalboard_min.o"

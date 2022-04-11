@@ -1,12 +1,5 @@
-/*
- * EPD_2_9.h
- *
- *  Created on: Apr 10, 2022
- *      Author: asky
- */
-
-#ifndef INC_EPD_2_9_H_
-#define INC_EPD_2_9_H_
+#ifndef __EPD_H_
+#define __EPD_H_
 
 #include "main.h"
 #include "stm32f4xx_hal.h"
@@ -27,11 +20,18 @@
 #define EPD_IDLE_STATE 5
 
 typedef struct _EPD_HandleTypeDef {
-	uint16_t state;
-	uint16_t phase;
+	uint8_t state;
+	uint8_t phase;
 	uint8_t image[EPD_BYTES];
 } EPD_HandleTypeDef;
 
-void EPD_Process(EPD_HandleTypeDef *hepd);
+void EPD_Init(EPD_HandleTypeDef *hepd);
+void EPD_Clear(EPD_HandleTypeDef *hepd);
+void EPD_Display(EPD_HandleTypeDef *hepd);
+void EPD_Display_Partial(EPD_HandleTypeDef *hepd);
+void EPD_Sleep(EPD_HandleTypeDef *hepd);
 
-#endif /* INC_EPD_2_9_H_ */
+void EPD_AsyncState(EPD_HandleTypeDef *hepd, uint8_t state);
+void EPD_AsyncProcess(EPD_HandleTypeDef *hepd);
+
+#endif

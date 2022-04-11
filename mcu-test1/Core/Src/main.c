@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include "pedalboard_min.h"
 //#include "cs43l22.h"
-#include "epd_driver.h"
 #include "EPD_2_9.h"
 #include "painter.h"
 #include "rotary_encoder.h"
@@ -85,9 +84,9 @@ float display_array[296];
 float RAW_SAMPLES[2];
 float PROC_SAMPLES[2];
 
-uint8_t image[EPD_BYTES];
-
 pedalboard_t pedalboard;
+
+EPD_HandleTypeDef hepd1;
 
 RE_HandleTypeDef hre1;
 
@@ -230,26 +229,25 @@ int main(void)
 	HAL_I2S_Receive_DMA(&hi2s2, &ADC_BUFF.ADC16[0], 4);
 	HAL_I2S_Transmit_DMA(&hi2s3, &DAC_BUFF.DAC16[0], 8);
 
-	EPD_Init();
-	EPD_Clear();
+	EPD_Init(&hepd1);
+	EPD_Clear(&hepd1);
 
 	char row[16+1];
-	draw_clean(image);
-	draw_rectangle(image, 36, 56, 88, 20);
+	draw_clean(hepd1.image);
+	draw_rectangle(hepd1.image, 36, 56, 88, 20);
 
 	sprintf(row, "g33ky toad");
-	draw_text(image, row, 40, 60);
+	draw_text(hepd1.image, row, 40, 60);
 
 	sprintf(row, "digital pedal");
-	draw_text(image, row, 20, 90);
+	draw_text(hepd1.image, row, 20, 90);
 
-	EPD_Display(image);
-	EPD_Sleep();
+	EPD_Display(&hepd1);
+	EPD_Sleep(&hepd1);
 
 	RE_Init(&hre1, EncA_GPIO_Port, EncB_GPIO_Port, EncA_Pin, EncB_Pin);
 
 	HAL_GPIO_WritePin(Led2_GPIO_Port, Led2_Pin, GPIO_PIN_RESET);
-
 
 	/* USER CODE END 2 */
 
@@ -265,23 +263,25 @@ int main(void)
 
 		RE_Process(&hre1);
 
-		int interval = 5;
+
+		int interval = 7;
 		if (HAL_GetTick() % (interval * 1000) == 0) {
 			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_SET);
-			EPD_Init();
-			draw_clean(image);
+			EPD_Init(&hepd1);
+			EPD_Wait_If_Busy(&hepd1);
+			draw_clean(hepd1.image);
 
 			sprintf(row, "RxH %d LR", rxHalfCpltCounter / interval);
-			draw_text(image, row, 0, 0);
+			draw_text(hepd1.image, row, 0, 0);
 			sprintf(row, "RxC %d LR", rxCpltCounter / interval);
-			draw_text(image, row, 0, 20);
+			draw_text(hepd1.image, row, 0, 20);
 			sprintf(row, "TxH %d L", txHalfCpltCounter / interval);
-			draw_text(image, row, 0, 40);
+			draw_text(hepd1.image, row, 0, 40);
 			sprintf(row, "TxC %d R", txCpltCounter / interval);
-			draw_text(image, row, 0, 60);
+			draw_text(hepd1.image, row, 0, 60);
 
 			sprintf(row, "Enc %d", hre1.counter);
-			draw_text(image, row, 0, 80);
+			draw_text(hepd1.image, row, 0, 80);
 
 			rxHalfCpltCounter = 0;
 			rxCpltCounter = 0;
@@ -292,14 +292,13 @@ int main(void)
 				float val = (float)display_array[i] / 32768.0F * 10.0F;
 				if (val > 63) val = 63;
 				if (val < -64) val = -64;
-				toggle_single_pixel(image, 64 + (int)val, i);
+				toggle_single_pixel(hepd1.image, 64 + (int)val, i);
 			}
 			display_counter = 0;
 
-			EPD_Display(image);
+			EPD_Display_Async(&hepd1);
 
-
-			EPD_Sleep();
+			EPD_Sleep(&hepd1);
 			HAL_GPIO_WritePin(Led3_GPIO_Port, Led3_Pin, GPIO_PIN_RESET);
 		}
 
