@@ -39,7 +39,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart3;
+ UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
@@ -57,6 +57,16 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint8_t uart_rx_buffer[64];
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+}
 
 /* USER CODE END 0 */
 
@@ -95,8 +105,7 @@ int main(void)
 	int led_port[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
 	int states[6] = { GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET };
 
-	uint8_t dma_buff[8];
-	HAL_UART_Receive_DMA(&hdma_usart3_rx, (uint8_t *)dma_buff, 4);
+	HAL_UART_Receive_DMA(&huart3, uart_rx_buffer, 32);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,7 +115,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		uint8_t buff[4];
+		uint8_t buff[4] = "zzzz";
 		HAL_StatusTypeDef status;
 		//status = HAL_UART_Receive(&huart3, buff, 4, 1000);
 

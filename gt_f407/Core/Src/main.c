@@ -99,16 +99,24 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+
+
+	  HAL_StatusTypeDef status;
+	  status = HAL_UART_Transmit(&huart1, buff, 4, 1000);
+
+	  if (status == HAL_OK) {
+		  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+	  }
+
 	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	  HAL_UART_Transmit(&huart1, buff, 4, 1000);
 	  HAL_Delay(50);
 
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
 	  HAL_Delay(200);
+
   }
   /* USER CODE END 3 */
 }
