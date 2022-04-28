@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "commander.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,14 +40,37 @@
 
 /* Private variables ---------------------------------------------------------*/
  UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
+Commander_HandleTypeDef hcommander;
 
+void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
+{
+	UNUSED(huart);
+	Command command;
+	memcpy(&command, hcommander.uart_rx_buffer, COMMAND_BYTESIZE);
+	Commander_Enqueue(&hcommander, &command);
+}
+
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	UNUSED(huart);
+	Command command;
+	memcpy(&command, hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
+	Commander_Enqueue(&hcommander, &command);
+}
+
+void command_callback(Command command) {
+	//states[0] = states[0] == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+}
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -86,9 +109,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t buff[4] = "abc\n";
+  uint8_t buff[10] = { 8, 7, 12, 12, 12, 12, 3, 4, 5, 6 };
+  Commander_Init(&hcommander, &huart1, &hdma_usart1_rx, command_callback);
+  Commander_Start(&hcommander);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,14 +125,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+	  Command command = {255, 0, 45, 17.13};
+	  Commander_Send(&hcommander, &command);
 
-
-	  HAL_StatusTypeDef status;
-	  status = HAL_UART_Transmit(&huart1, buff, 4, 1000);
+	  /*HAL_StatusTypeDef status;
+	  status = HAL_UART_Transmit(&huart1, buff, 10, 1000);
 
 	  if (status == HAL_OK) {
 		  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	  }
+	  }*/
 
 	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
@@ -115,7 +142,7 @@ int main(void)
 	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-	  HAL_Delay(200);
+	  HAL_Delay(2000);
 
   }
   /* USER CODE END 3 */
@@ -192,6 +219,22 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
 
 }
 
