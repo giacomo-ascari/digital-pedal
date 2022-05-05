@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "commander.h"
+#include "AUDIO.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,17 +42,26 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- UART_HandleTypeDef huart1;
+ I2C_HandleTypeDef hi2c1;
+
+I2S_HandleTypeDef hi2s3;
+DMA_HandleTypeDef hdma_spi3_tx;
+
+UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
 
 FATFS usbFatFS;
-extern char USBH_Path[4];
+extern char USBHPath[4];
 
 extern ApplicationTypeDef Appli_state;
 
 Commander_HandleTypeDef hcommander;
+
+extern AUDIO_DrvTypeDef cs43l22_drv;
+
+int16_t AUDIO_OUT[2180];
 
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -80,6 +90,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_I2S3_Init(void);
+static void MX_I2C1_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -88,6 +100,59 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+
+float wave_gen(char t, u_int32_t i, float tone) {
+
+    float sin_table[128] = { 0.000000F, 0.024541F, 0.049068F, 0.073565F, 0.098017F, 0.122411F, 0.146730F, 0.170962F, 0.195090F, 0.219101F, 0.242980F, 0.266713F, 0.290284F, 0.313681F, 0.336890F, 0.359895F, 0.382683F, 0.405241F, 0.427555F, 0.449611F, 0.471396F, 0.492898F, 0.514102F, 0.534997F, 0.555570F, 0.575808F, 0.595699F, 0.615231F, 0.634393F, 0.653172F, 0.671559F, 0.689540F, 0.707106F, 0.724247F, 0.740951F, 0.757208F, 0.773010F, 0.788346F, 0.803207F, 0.817584F, 0.831469F, 0.844853F, 0.857728F, 0.870087F, 0.881921F, 0.893224F, 0.903989F, 0.914209F, 0.923879F, 0.932992F, 0.941544F, 0.949528F, 0.956940F, 0.963776F, 0.970031F, 0.975702F, 0.980785F, 0.985277F, 0.989176F, 0.992479F, 0.995185F, 0.997290F, 0.998795F, 0.999699F, 1.000000F, 0.999699F, 0.998796F, 0.997291F, 0.995185F, 0.992480F, 0.989177F, 0.985278F, 0.980786F, 0.975702F, 0.970032F, 0.963776F, 0.956941F, 0.949529F, 0.941545F, 0.932993F, 0.923880F, 0.914210F, 0.903990F, 0.893225F, 0.881922F, 0.870088F, 0.857729F, 0.844855F, 0.831471F, 0.817586F, 0.803209F, 0.788348F, 0.773012F, 0.757210F, 0.740952F, 0.724248F, 0.707108F, 0.689542F, 0.671560F, 0.653174F, 0.634395F, 0.615233F, 0.595701F, 0.575810F, 0.555572F, 0.534999F, 0.514105F, 0.492900F, 0.471399F, 0.449613F, 0.427557F, 0.405243F, 0.382685F, 0.359897F, 0.336892F, 0.313684F, 0.290287F, 0.266715F, 0.242982F, 0.219104F, 0.195093F, 0.170964F, 0.146733F, 0.122413F, 0.098019F, 0.073567F, 0.049070F, 0.024544F };
+    float period_f = 48000.F / tone;
+    u_int32_t period_i = period_f;
+    u_int32_t table_index = (i * 256 / period_i) % 256;
+
+    if (t == 's') {
+        if (table_index <= 127) {
+            return sin_table[table_index];
+        } else {
+            return -sin_table[table_index - 128];
+        }
+    } else if (t == 'q') {
+        if (table_index <= 127) {
+            return -1.F;
+        } else {
+            return 1.F;
+        }
+    } else {
+        return 0;
+    }
+}
+
+/*
+bool UsbTest_Read(void)
+{
+	//Open file for reading
+	if(f_open(&myFile, "TEST2.TXT", FA_READ) != FR_OK)
+	{
+		return 0;
+	}
+
+	//Read text from files until NULL
+	for(uint8_t i=0; i<100; i++)
+	{
+		res = f_read(&myFile, (uint8_t*)&rwtext[i], 1, &bytesread);
+		if(rwtext[i] == 0x00) // NULL string
+		{
+			bytesread = i;
+			break;
+		}
+	}
+	//Reading error handling
+	if(bytesread==0) return 0;
+
+	//Close file
+	f_close(&myFile);
+	return 1;  // success
+
+}*/
 
 /* USER CODE END 0 */
 
@@ -123,9 +188,32 @@ int main(void)
   MX_USART1_UART_Init();
   MX_FATFS_Init();
   MX_USB_HOST_Init();
+  MX_I2S3_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+
+	// COMMANDER
 	Commander_Init(&hcommander, &huart1, &hdma_usart1_rx, command_callback);
 	Commander_Start(&hcommander);
+
+	// DAC
+	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
+
+	AUDIO_OUT_Init(3, 50,  AUDIO_FREQUENCY_48K);
+	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, 10);
+	cs43l22_SetOutputMode(AUDIO_I2C_ADDRESS,OUTPUT_DEVICE_HEADPHONE ); //OUTPUT_DEVICE_BOTH
+	cs43l22_SetPassThrough(AUDIO_I2C_ADDRESS,0,0);
+	cs43l22_drv.Play(AUDIO_I2C_ADDRESS, (uint16_t *)AUDIO_OUT,2180);
+	//cs43l22_SetPassThrough(AUDIO_I2C_ADDRESS,0,0);
+	// start sound
+
+	for(int i = 0;i < 2180; i++) {
+		float temp = wave_gen('s', i, 220.) * 16000;
+		AUDIO_OUT[i] = temp;
+	}
+
+	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)AUDIO_OUT, 2180);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -138,39 +226,22 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
-		switch(Appli_state)
-		{
-		case APPLICATION_READY:
-
-			break;
-
-		case APPLICATION_IDLE:
-
-			break;
-
-		case APPLICATION_DISCONNECT:
-			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-			break;
-
-		case APPLICATION_START:
-
-			if(f_mount(&usbFatFS, (TCHAR const*)USBH_Path, 0) == FR_OK)
+		if (Appli_state == APPLICATION_START) {
+			if(f_mount(&usbFatFS, (TCHAR const*)USBHPath, 0) == FR_OK)
 			{
 				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 			}
-
-
+			//Command command = {255, 0, 45, 17.13};
+			//Commander_Send(&hcommander, &command);
+			//HAL_Delay(50);
+		} else if (Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE) {
+			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+		} else if (Appli_state == APPLICATION_READY) {
 			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-			Command command = {255, 0, 45, 17.13};
-			Commander_Send(&hcommander, &command);
-			HAL_Delay(50);
-			break;
-
-		default:
-			break;
+		} else {
+			//aaa
 		}
-
 	}
   /* USER CODE END 3 */
 }
@@ -223,6 +294,74 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief I2S3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2S3_Init(void)
+{
+
+  /* USER CODE BEGIN I2S3_Init 0 */
+
+  /* USER CODE END I2S3_Init 0 */
+
+  /* USER CODE BEGIN I2S3_Init 1 */
+
+  /* USER CODE END I2S3_Init 1 */
+  hi2s3.Instance = SPI3;
+  hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
+  hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
+  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_48K;
+  hi2s3.Init.CPOL = I2S_CPOL_LOW;
+  hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
+  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
+  if (HAL_I2S_Init(&hi2s3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2S3_Init 2 */
+
+  /* USER CODE END I2S3_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -263,8 +402,12 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
@@ -282,16 +425,26 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, LD1_Pin|LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : SPKRPower_Pin */
+  GPIO_InitStruct.Pin = SPKRPower_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SPKRPower_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OtgPower_Pin */
   GPIO_InitStruct.Pin = OtgPower_Pin;
