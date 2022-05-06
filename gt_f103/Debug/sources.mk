@@ -25,5 +25,8 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 Drivers/Commander \
+Drivers/EPDDriver \
+Drivers/Painter \
+Drivers/RotaryEncoder \
 Drivers/STM32F1xx_HAL_Driver/Src \
 

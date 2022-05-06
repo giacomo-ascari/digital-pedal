@@ -23,29 +23,29 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   9 .ccmram       00000000  10000000  10000000  000200c8  2**0
                   CONTENTS
- 10 .bss          00002c18  200000c8  200000c8  000200c8  2**2
+ 10 .bss          00003488  200000c8  200000c8  000200c8  2**2
                   ALLOC
- 11 ._user_heap_stack 00000600  20002ce0  20002ce0  000200c8  2**0
+ 11 ._user_heap_stack 00000600  20003550  20003550  000200c8  2**0
                   ALLOC
  12 .ARM.attributes 00000030  00000000  00000000  000200c8  2**0
                   CONTENTS, READONLY
- 13 .debug_info   00021fec  00000000  00000000  000200f8  2**0
+ 13 .debug_info   0002213f  00000000  00000000  000200f8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_abbrev 000052b3  00000000  00000000  000420e4  2**0
+ 14 .debug_abbrev 00005329  00000000  00000000  00042237  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_aranges 00001740  00000000  00000000  00047398  2**3
+ 15 .debug_aranges 00001740  00000000  00000000  00047560  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_ranges 00001540  00000000  00000000  00048ad8  2**3
+ 16 .debug_ranges 00001540  00000000  00000000  00048ca0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_macro  0002767d  00000000  00000000  0004a018  2**0
+ 17 .debug_macro  0002767d  00000000  00000000  0004a1e0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_line   00023994  00000000  00000000  00071695  2**0
+ 18 .debug_line   00023995  00000000  00000000  0007185d  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_str    000ceccc  00000000  00000000  00095029  2**0
+ 19 .debug_str    000cece5  00000000  00000000  000951f2  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .comment      00000050  00000000  00000000  00163cf5  2**0
+ 20 .comment      00000050  00000000  00000000  00163ed7  2**0
                   CONTENTS, READONLY
- 21 .debug_frame  00006128  00000000  00000000  00163d48  2**2
+ 21 .debug_frame  0000612c  00000000  00000000  00163f28  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2720,14 +2720,14 @@ int16_t AUDIO_OUT[2180];
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
  8001280:	b580      	push	{r7, lr}
- 8001282:	b086      	sub	sp, #24
+ 8001282:	b0a4      	sub	sp, #144	; 0x90
  8001284:	af00      	add	r7, sp, #0
  8001286:	6078      	str	r0, [r7, #4]
 	UNUSED(huart);
 	Command command;
 	memcpy(&command, hcommander.uart_rx_buffer, COMMAND_BYTESIZE);
  8001288:	f107 030c 	add.w	r3, r7, #12
- 800128c:	220a      	movs	r2, #10
+ 800128c:	2282      	movs	r2, #130	; 0x82
  800128e:	4907      	ldr	r1, [pc, #28]	; (80012ac <HAL_UART_RxHalfCpltCallback+0x2c>)
  8001290:	4618      	mov	r0, r3
  8001292:	f00b fcb3 	bl	800cbfc <memcpy>
@@ -2735,10 +2735,10 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
  8001296:	f107 030c 	add.w	r3, r7, #12
  800129a:	4619      	mov	r1, r3
  800129c:	4804      	ldr	r0, [pc, #16]	; (80012b0 <HAL_UART_RxHalfCpltCallback+0x30>)
- 800129e:	f000 fdeb 	bl	8001e78 <Commander_Enqueue>
+ 800129e:	f000 fdec 	bl	8001e7a <Commander_Enqueue>
 }
  80012a2:	bf00      	nop
- 80012a4:	3718      	adds	r7, #24
+ 80012a4:	3790      	adds	r7, #144	; 0x90
  80012a6:	46bd      	mov	sp, r7
  80012a8:	bd80      	pop	{r7, pc}
  80012aa:	bf00      	nop
@@ -2751,7 +2751,7 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
  80012b4:	b580      	push	{r7, lr}
- 80012b6:	b086      	sub	sp, #24
+ 80012b6:	b0a4      	sub	sp, #144	; 0x90
  80012b8:	af00      	add	r7, sp, #0
  80012ba:	6078      	str	r0, [r7, #4]
 	UNUSED(huart);
@@ -2759,37 +2759,37 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	memcpy(&command, hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
  80012bc:	4908      	ldr	r1, [pc, #32]	; (80012e0 <HAL_UART_RxCpltCallback+0x2c>)
  80012be:	f107 030c 	add.w	r3, r7, #12
- 80012c2:	220a      	movs	r2, #10
+ 80012c2:	2282      	movs	r2, #130	; 0x82
  80012c4:	4618      	mov	r0, r3
  80012c6:	f00b fc99 	bl	800cbfc <memcpy>
 	Commander_Enqueue(&hcommander, &command);
  80012ca:	f107 030c 	add.w	r3, r7, #12
  80012ce:	4619      	mov	r1, r3
  80012d0:	4804      	ldr	r0, [pc, #16]	; (80012e4 <HAL_UART_RxCpltCallback+0x30>)
- 80012d2:	f000 fdd1 	bl	8001e78 <Commander_Enqueue>
+ 80012d2:	f000 fdd2 	bl	8001e7a <Commander_Enqueue>
 }
  80012d6:	bf00      	nop
- 80012d8:	3718      	adds	r7, #24
+ 80012d8:	3790      	adds	r7, #144	; 0x90
  80012da:	46bd      	mov	sp, r7
  80012dc:	bd80      	pop	{r7, pc}
  80012de:	bf00      	nop
- 80012e0:	200013ce 	.word	0x200013ce
+ 80012e0:	20001446 	.word	0x20001446
  80012e4:	200013bc 	.word	0x200013bc
 
 080012e8 <command_callback>:
 
 void command_callback(Command command) {
- 80012e8:	b480      	push	{r7}
- 80012ea:	b085      	sub	sp, #20
+ 80012e8:	b084      	sub	sp, #16
+ 80012ea:	b490      	push	{r4, r7}
  80012ec:	af00      	add	r7, sp, #0
- 80012ee:	1d3b      	adds	r3, r7, #4
- 80012f0:	e883 0007 	stmia.w	r3, {r0, r1, r2}
+ 80012ee:	f107 0408 	add.w	r4, r7, #8
+ 80012f2:	e884 000f 	stmia.w	r4, {r0, r1, r2, r3}
 	//states[0] = states[0] == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 }
- 80012f4:	bf00      	nop
- 80012f6:	3714      	adds	r7, #20
+ 80012f6:	bf00      	nop
  80012f8:	46bd      	mov	sp, r7
- 80012fa:	f85d 7b04 	ldr.w	r7, [sp], #4
+ 80012fa:	bc90      	pop	{r4, r7}
+ 80012fc:	b004      	add	sp, #16
  80012fe:	4770      	bx	lr
 
 08001300 <wave_gen>:
@@ -3070,9 +3070,6 @@ int main(void)
  800150c:	f001 fcf4 	bl	8002ef8 <HAL_GPIO_WritePin>
  8001510:	e7e5      	b.n	80014de <main+0xd2>
 			}
-			//Command command = {255, 0, 45, 17.13};
-			//Commander_Send(&hcommander, &command);
-			//HAL_Delay(50);
 		} else if (Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE) {
  8001512:	4b19      	ldr	r3, [pc, #100]	; (8001578 <main+0x16c>)
  8001514:	781b      	ldrb	r3, [r3, #0]
@@ -3111,13 +3108,13 @@ int main(void)
  8001558:	200013bc 	.word	0x200013bc
  800155c:	40020400 	.word	0x40020400
  8001560:	20000004 	.word	0x20000004
- 8001564:	200014a4 	.word	0x200014a4
+ 8001564:	20001d14 	.word	0x20001d14
  8001568:	435c0000 	.word	0x435c0000
  800156c:	467a0000 	.word	0x467a0000
  8001570:	2000023c 	.word	0x2000023c
  8001574:	40020800 	.word	0x40020800
- 8001578:	200029c8 	.word	0x200029c8
- 800157c:	200025b8 	.word	0x200025b8
+ 8001578:	20003238 	.word	0x20003238
+ 800157c:	20002e28 	.word	0x20002e28
  8001580:	20000388 	.word	0x20000388
  8001584:	40020c00 	.word	0x40020c00
 
@@ -4550,7 +4547,7 @@ void OTG_FS_IRQHandler(void)
  8001d26:	bf00      	nop
  8001d28:	bd80      	pop	{r7, pc}
  8001d2a:	bf00      	nop
- 8001d2c:	200029cc 	.word	0x200029cc
+ 8001d2c:	2000323c 	.word	0x2000323c
 
 08001d30 <_sbrk>:
  *
@@ -4630,8 +4627,8 @@ void *_sbrk(ptrdiff_t incr)
  8001d8a:	bd80      	pop	{r7, pc}
  8001d8c:	20020000 	.word	0x20020000
  8001d90:	00000400 	.word	0x00000400
- 8001d94:	200025ac 	.word	0x200025ac
- 8001d98:	20002ce0 	.word	0x20002ce0
+ 8001d94:	20002e1c 	.word	0x20002e1c
+ 8001d98:	20003550 	.word	0x20003550
 
 08001d9c <SystemInit>:
   *         configuration.
@@ -4752,7 +4749,7 @@ LoopFillZerobss:
   ldr r2, =_sbss
  8001e08:	200000c8 	.word	0x200000c8
   ldr r4, =_ebss
- 8001e0c:	20002ce0 	.word	0x20002ce0
+ 8001e0c:	20003550 	.word	0x20003550
 
 08001e10 <ADC_IRQHandler>:
  * @retval None       
@@ -4788,19 +4785,19 @@ void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *hua
 	hcommander->command_index = 0;
  8001e2c:	68fb      	ldr	r3, [r7, #12]
  8001e2e:	2200      	movs	r2, #0
- 8001e30:	f883 20dc 	strb.w	r2, [r3, #220]	; 0xdc
+ 8001e30:	f883 294c 	strb.w	r2, [r3, #2380]	; 0x94c
 	hcommander->commands_to_handle = 0;
  8001e34:	68fb      	ldr	r3, [r7, #12]
  8001e36:	2200      	movs	r2, #0
- 8001e38:	f883 20dd 	strb.w	r2, [r3, #221]	; 0xdd
+ 8001e38:	f883 294d 	strb.w	r2, [r3, #2381]	; 0x94d
 	hcommander->counter = 0;
  8001e3c:	68fb      	ldr	r3, [r7, #12]
  8001e3e:	2200      	movs	r2, #0
- 8001e40:	f8c3 20e0 	str.w	r2, [r3, #224]	; 0xe0
+ 8001e40:	f8c3 2950 	str.w	r2, [r3, #2384]	; 0x950
 	hcommander->command_callback = command_callback;
  8001e44:	68fb      	ldr	r3, [r7, #12]
  8001e46:	683a      	ldr	r2, [r7, #0]
- 8001e48:	f8c3 20e4 	str.w	r2, [r3, #228]	; 0xe4
+ 8001e48:	f8c3 2954 	str.w	r2, [r3, #2388]	; 0x954
 }
  8001e4c:	bf00      	nop
  8001e4e:	3714      	adds	r7, #20
@@ -4820,68 +4817,67 @@ void Commander_Start(Commander_HandleTypeDef *hcommander) {
  8001e62:	6818      	ldr	r0, [r3, #0]
  8001e64:	687b      	ldr	r3, [r7, #4]
  8001e66:	3308      	adds	r3, #8
- 8001e68:	2214      	movs	r2, #20
- 8001e6a:	4619      	mov	r1, r3
- 8001e6c:	f005 f84d 	bl	8006f0a <HAL_UART_Receive_DMA>
+ 8001e68:	f44f 7282 	mov.w	r2, #260	; 0x104
+ 8001e6c:	4619      	mov	r1, r3
+ 8001e6e:	f005 f84c 	bl	8006f0a <HAL_UART_Receive_DMA>
 }
- 8001e70:	bf00      	nop
- 8001e72:	3708      	adds	r7, #8
- 8001e74:	46bd      	mov	sp, r7
- 8001e76:	bd80      	pop	{r7, pc}
+ 8001e72:	bf00      	nop
+ 8001e74:	3708      	adds	r7, #8
+ 8001e76:	46bd      	mov	sp, r7
+ 8001e78:	bd80      	pop	{r7, pc}
 
-08001e78 <Commander_Enqueue>:
+08001e7a <Commander_Enqueue>:
 		hcommander->commands_to_handle--;
 		hcommander->command_callback(hcommander->command_buffer[index]);
 	}
 }
 
 void Commander_Enqueue(Commander_HandleTypeDef *hcommander, Command *command) {
- 8001e78:	b580      	push	{r7, lr}
- 8001e7a:	b084      	sub	sp, #16
- 8001e7c:	af00      	add	r7, sp, #0
- 8001e7e:	6078      	str	r0, [r7, #4]
- 8001e80:	6039      	str	r1, [r7, #0]
+ 8001e7a:	b580      	push	{r7, lr}
+ 8001e7c:	b084      	sub	sp, #16
+ 8001e7e:	af00      	add	r7, sp, #0
+ 8001e80:	6078      	str	r0, [r7, #4]
+ 8001e82:	6039      	str	r1, [r7, #0]
 	uint8_t index = (hcommander->command_index + hcommander->commands_to_handle) % COMMANDS_COUNT;
- 8001e82:	687b      	ldr	r3, [r7, #4]
- 8001e84:	f893 20dc 	ldrb.w	r2, [r3, #220]	; 0xdc
- 8001e88:	687b      	ldr	r3, [r7, #4]
- 8001e8a:	f893 30dd 	ldrb.w	r3, [r3, #221]	; 0xdd
- 8001e8e:	4413      	add	r3, r2
- 8001e90:	b2db      	uxtb	r3, r3
- 8001e92:	f003 030f 	and.w	r3, r3, #15
- 8001e96:	73fb      	strb	r3, [r7, #15]
+ 8001e84:	687b      	ldr	r3, [r7, #4]
+ 8001e86:	f893 294c 	ldrb.w	r2, [r3, #2380]	; 0x94c
+ 8001e8a:	687b      	ldr	r3, [r7, #4]
+ 8001e8c:	f893 394d 	ldrb.w	r3, [r3, #2381]	; 0x94d
+ 8001e90:	4413      	add	r3, r2
+ 8001e92:	b2db      	uxtb	r3, r3
+ 8001e94:	f003 030f 	and.w	r3, r3, #15
+ 8001e98:	73fb      	strb	r3, [r7, #15]
 	memcpy(hcommander->command_buffer + index, command, COMMAND_BYTESIZE);
- 8001e98:	687b      	ldr	r3, [r7, #4]
- 8001e9a:	f103 011c 	add.w	r1, r3, #28
- 8001e9e:	7bfa      	ldrb	r2, [r7, #15]
- 8001ea0:	4613      	mov	r3, r2
- 8001ea2:	005b      	lsls	r3, r3, #1
- 8001ea4:	4413      	add	r3, r2
- 8001ea6:	009b      	lsls	r3, r3, #2
- 8001ea8:	440b      	add	r3, r1
- 8001eaa:	220a      	movs	r2, #10
- 8001eac:	6839      	ldr	r1, [r7, #0]
- 8001eae:	4618      	mov	r0, r3
- 8001eb0:	f00a fea4 	bl	800cbfc <memcpy>
+ 8001e9a:	687b      	ldr	r3, [r7, #4]
+ 8001e9c:	f503 7186 	add.w	r1, r3, #268	; 0x10c
+ 8001ea0:	7bfa      	ldrb	r2, [r7, #15]
+ 8001ea2:	4613      	mov	r3, r2
+ 8001ea4:	015b      	lsls	r3, r3, #5
+ 8001ea6:	4413      	add	r3, r2
+ 8001ea8:	009b      	lsls	r3, r3, #2
+ 8001eaa:	440b      	add	r3, r1
+ 8001eac:	2282      	movs	r2, #130	; 0x82
+ 8001eae:	6839      	ldr	r1, [r7, #0]
+ 8001eb0:	4618      	mov	r0, r3
+ 8001eb2:	f00a fea3 	bl	800cbfc <memcpy>
 	hcommander->commands_to_handle++;
- 8001eb4:	687b      	ldr	r3, [r7, #4]
- 8001eb6:	f893 30dd 	ldrb.w	r3, [r3, #221]	; 0xdd
- 8001eba:	3301      	adds	r3, #1
- 8001ebc:	b2da      	uxtb	r2, r3
- 8001ebe:	687b      	ldr	r3, [r7, #4]
- 8001ec0:	f883 20dd 	strb.w	r2, [r3, #221]	; 0xdd
+ 8001eb6:	687b      	ldr	r3, [r7, #4]
+ 8001eb8:	f893 394d 	ldrb.w	r3, [r3, #2381]	; 0x94d
+ 8001ebc:	3301      	adds	r3, #1
+ 8001ebe:	b2da      	uxtb	r2, r3
+ 8001ec0:	687b      	ldr	r3, [r7, #4]
+ 8001ec2:	f883 294d 	strb.w	r2, [r3, #2381]	; 0x94d
 	hcommander->counter++;
- 8001ec4:	687b      	ldr	r3, [r7, #4]
- 8001ec6:	f8d3 30e0 	ldr.w	r3, [r3, #224]	; 0xe0
- 8001eca:	1c5a      	adds	r2, r3, #1
- 8001ecc:	687b      	ldr	r3, [r7, #4]
- 8001ece:	f8c3 20e0 	str.w	r2, [r3, #224]	; 0xe0
+ 8001ec6:	687b      	ldr	r3, [r7, #4]
+ 8001ec8:	f8d3 3950 	ldr.w	r3, [r3, #2384]	; 0x950
+ 8001ecc:	1c5a      	adds	r2, r3, #1
+ 8001ece:	687b      	ldr	r3, [r7, #4]
+ 8001ed0:	f8c3 2950 	str.w	r2, [r3, #2384]	; 0x950
 }
- 8001ed2:	bf00      	nop
- 8001ed4:	3710      	adds	r7, #16
- 8001ed6:	46bd      	mov	sp, r7
- 8001ed8:	bd80      	pop	{r7, pc}
-	...
+ 8001ed4:	bf00      	nop
+ 8001ed6:	3710      	adds	r7, #16
+ 8001ed8:	46bd      	mov	sp, r7
+ 8001eda:	bd80      	pop	{r7, pc}
 
 08001edc <HAL_Init>:
   *         need to ensure that the SysTick time base is always set to 1 millisecond
@@ -5034,7 +5030,7 @@ __weak void HAL_IncTick(void)
  8001f9c:	4770      	bx	lr
  8001f9e:	bf00      	nop
  8001fa0:	20000040 	.word	0x20000040
- 8001fa4:	200025b0 	.word	0x200025b0
+ 8001fa4:	20002e20 	.word	0x20002e20
 
 08001fa8 <HAL_GetTick>:
   * @note This function is declared as __weak to be overwritten in case of other 
@@ -5054,7 +5050,7 @@ __weak uint32_t HAL_GetTick(void)
  8001fb4:	f85d 7b04 	ldr.w	r7, [sp], #4
  8001fb8:	4770      	bx	lr
  8001fba:	bf00      	nop
- 8001fbc:	200025b0 	.word	0x200025b0
+ 8001fbc:	20002e20 	.word	0x20002e20
 
 08001fc0 <HAL_Delay>:
   *       implementations in user file.
@@ -22349,9 +22345,9 @@ void MX_FATFS_Init(void)
 }
  80088a4:	bf00      	nop
  80088a6:	bd80      	pop	{r7, pc}
- 80088a8:	200025b8 	.word	0x200025b8
+ 80088a8:	20002e28 	.word	0x20002e28
  80088ac:	0800d0c0 	.word	0x0800d0c0
- 80088b0:	200025b4 	.word	0x200025b4
+ 80088b0:	20002e24 	.word	0x20002e24
 
 080088b4 <USBH_initialize>:
   * @brief  Initializes a Drive
@@ -22421,7 +22417,7 @@ DSTATUS USBH_status(BYTE lun)
  80088fa:	46bd      	mov	sp, r7
  80088fc:	bd80      	pop	{r7, pc}
  80088fe:	bf00      	nop
- 8008900:	200025f0 	.word	0x200025f0
+ 8008900:	20002e60 	.word	0x20002e60
 
 08008904 <USBH_read>:
   * @param  sector: Sector address (LBA)
@@ -22506,7 +22502,7 @@ DRESULT USBH_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
  800896e:	3748      	adds	r7, #72	; 0x48
  8008970:	46bd      	mov	sp, r7
  8008972:	bd80      	pop	{r7, pc}
- 8008974:	200025f0 	.word	0x200025f0
+ 8008974:	20002e60 	.word	0x20002e60
 
 08008978 <USBH_write>:
   * @param  count: Number of sectors to write (1..128)
@@ -22603,7 +22599,7 @@ DRESULT USBH_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
  80089f2:	3748      	adds	r7, #72	; 0x48
  80089f4:	46bd      	mov	sp, r7
  80089f6:	bd80      	pop	{r7, pc}
- 80089f8:	200025f0 	.word	0x200025f0
+ 80089f8:	20002e60 	.word	0x20002e60
 
 080089fc <USBH_ioctl>:
   * @param  *buff: Buffer to send/receive control data
@@ -22759,7 +22755,7 @@ DRESULT USBH_ioctl(BYTE lun, BYTE cmd, void *buff)
  8008aca:	3740      	adds	r7, #64	; 0x40
  8008acc:	46bd      	mov	sp, r7
  8008ace:	bd80      	pop	{r7, pc}
- 8008ad0:	200025f0 	.word	0x200025f0
+ 8008ad0:	20002e60 	.word	0x20002e60
 
 08008ad4 <USBH_MSC_InterfaceInit>:
   *         The function init the MSC class.
@@ -31048,7 +31044,7 @@ DSTATUS disk_status (
  800baea:	3710      	adds	r7, #16
  800baec:	46bd      	mov	sp, r7
  800baee:	bd80      	pop	{r7, pc}
- 800baf0:	200025e4 	.word	0x200025e4
+ 800baf0:	20002e54 	.word	0x20002e54
 
 0800baf4 <disk_initialize>:
   * @retval DSTATUS: Operation status
@@ -31102,7 +31098,7 @@ DSTATUS disk_initialize (
  800bb36:	46bd      	mov	sp, r7
  800bb38:	bd80      	pop	{r7, pc}
  800bb3a:	bf00      	nop
- 800bb3c:	200025e4 	.word	0x200025e4
+ 800bb3c:	20002e54 	.word	0x20002e54
 
 0800bb40 <disk_read>:
 	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
@@ -31146,7 +31142,7 @@ DSTATUS disk_initialize (
  800bb76:	46bd      	mov	sp, r7
  800bb78:	bd90      	pop	{r4, r7, pc}
  800bb7a:	bf00      	nop
- 800bb7c:	200025e4 	.word	0x200025e4
+ 800bb7c:	20002e54 	.word	0x20002e54
 
 0800bb80 <disk_write>:
 	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
@@ -31190,7 +31186,7 @@ DSTATUS disk_initialize (
  800bbb6:	46bd      	mov	sp, r7
  800bbb8:	bd90      	pop	{r4, r7, pc}
  800bbba:	bf00      	nop
- 800bbbc:	200025e4 	.word	0x200025e4
+ 800bbbc:	20002e54 	.word	0x20002e54
 
 0800bbc0 <disk_ioctl>:
 DRESULT disk_ioctl (
@@ -31232,7 +31228,7 @@ DRESULT disk_ioctl (
  800bbf2:	3710      	adds	r7, #16
  800bbf4:	46bd      	mov	sp, r7
  800bbf6:	bd80      	pop	{r7, pc}
- 800bbf8:	200025e4 	.word	0x200025e4
+ 800bbf8:	20002e54 	.word	0x20002e54
 
 0800bbfc <ld_word>:
 /* Load/Store multi-byte word in the FAT structure                       */
@@ -31367,7 +31363,7 @@ void clear_lock (	/* Clear lock entries of the volume */
  800bcb0:	46bd      	mov	sp, r7
  800bcb2:	f85d 7b04 	ldr.w	r7, [sp], #4
  800bcb6:	4770      	bx	lr
- 800bcb8:	200025c4 	.word	0x200025c4
+ 800bcb8:	20002e34 	.word	0x20002e34
 
 0800bcbc <sync_window>:
 #if !_FS_READONLY
@@ -32117,7 +32113,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
  800c172:	d003      	beq.n	800c17c <find_volume+0x2a8>
  800c174:	230d      	movs	r3, #13
  800c176:	e123      	b.n	800c3c0 <find_volume+0x4ec>
- 800c178:	200025bc 	.word	0x200025bc
+ 800c178:	20002e2c 	.word	0x20002e2c
 
 		tsect = ld_word(fs->win + BPB_TotSec16);		/* Number of sectors on the volume */
  800c17c:	6bbb      	ldr	r3, [r7, #56]	; 0x38
@@ -32452,7 +32448,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
  800c3c6:	bd80      	pop	{r7, pc}
  800c3c8:	41615252 	.word	0x41615252
  800c3cc:	61417272 	.word	0x61417272
- 800c3d0:	200025c0 	.word	0x200025c0
+ 800c3d0:	20002e30 	.word	0x20002e30
 
 0800c3d4 <f_mount>:
 FRESULT f_mount (
@@ -32555,7 +32551,7 @@ FRESULT f_mount (
  800c456:	3720      	adds	r7, #32
  800c458:	46bd      	mov	sp, r7
  800c45a:	bd80      	pop	{r7, pc}
- 800c45c:	200025bc 	.word	0x200025bc
+ 800c45c:	20002e2c 	.word	0x20002e2c
 
 0800c460 <FATFS_LinkDriverEx>:
   * @param  lun : only used for USB Key Disk to add multi-lun management
@@ -32655,7 +32651,7 @@ uint8_t FATFS_LinkDriverEx(const Diskio_drvTypeDef *drv, char *path, uint8_t lun
  800c4ec:	f85d 7b04 	ldr.w	r7, [sp], #4
  800c4f0:	4770      	bx	lr
  800c4f2:	bf00      	nop
- 800c4f4:	200025e4 	.word	0x200025e4
+ 800c4f4:	20002e54 	.word	0x20002e54
 
 0800c4f8 <FATFS_LinkDriver>:
   * @param  drv: pointer to the disk IO Driver structure
@@ -32737,7 +32733,7 @@ void MX_USB_HOST_Init(void)
  800c554:	bd80      	pop	{r7, pc}
  800c556:	bf00      	nop
  800c558:	0800c579 	.word	0x0800c579
- 800c55c:	200025f0 	.word	0x200025f0
+ 800c55c:	20002e60 	.word	0x20002e60
  800c560:	20000044 	.word	0x20000044
 
 0800c564 <MX_USB_HOST_Process>:
@@ -32757,7 +32753,7 @@ void MX_USB_HOST_Process(void)
  800c56e:	bf00      	nop
  800c570:	bd80      	pop	{r7, pc}
  800c572:	bf00      	nop
- 800c574:	200025f0 	.word	0x200025f0
+ 800c574:	20002e60 	.word	0x20002e60
 
 0800c578 <USBH_UserProcess>:
 /*
@@ -32825,7 +32821,7 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
  800c5c8:	f85d 7b04 	ldr.w	r7, [sp], #4
  800c5cc:	4770      	bx	lr
  800c5ce:	bf00      	nop
- 800c5d0:	200029c8 	.word	0x200029c8
+ 800c5d0:	20003238 	.word	0x20003238
 
 0800c5d4 <HAL_HCD_MspInit>:
                        LL Driver Callbacks (HCD -> USB Host Library)
@@ -33166,7 +33162,7 @@ USBH_StatusTypeDef USBH_LL_Init(USBH_HandleTypeDef *phost)
  800c7ae:	46bd      	mov	sp, r7
  800c7b0:	bd80      	pop	{r7, pc}
  800c7b2:	bf00      	nop
- 800c7b4:	200029cc 	.word	0x200029cc
+ 800c7b4:	2000323c 	.word	0x2000323c
 
 0800c7b8 <USBH_LL_Start>:
   * @brief  Start the low level portion of the host driver.
@@ -34030,7 +34026,7 @@ void MX_DriverVbusFS(uint8_t state)
  800ccb6:	e7ca      	b.n	800cc4e <_free_r+0x26>
  800ccb8:	b003      	add	sp, #12
  800ccba:	bd30      	pop	{r4, r5, pc}
- 800ccbc:	20002cd0 	.word	0x20002cd0
+ 800ccbc:	20003540 	.word	0x20003540
 
 0800ccc0 <sbrk_aligned>:
  800ccc0:	b570      	push	{r4, r5, r6, lr}
@@ -34058,7 +34054,7 @@ void MX_DriverVbusFS(uint8_t state)
  800ccf4:	f04f 34ff 	mov.w	r4, #4294967295	; 0xffffffff
  800ccf8:	4620      	mov	r0, r4
  800ccfa:	bd70      	pop	{r4, r5, r6, pc}
- 800ccfc:	20002cd4 	.word	0x20002cd4
+ 800ccfc:	20003544 	.word	0x20003544
 
 0800cd00 <_malloc_r>:
  800cd00:	e92d 41f0 	stmdb	sp!, {r4, r5, r6, r7, r8, lr}
@@ -34162,7 +34158,7 @@ void MX_DriverVbusFS(uint8_t state)
  800cdde:	6025      	str	r5, [r4, #0]
  800cde0:	e7de      	b.n	800cda0 <_malloc_r+0xa0>
  800cde2:	bf00      	nop
- 800cde4:	20002cd0 	.word	0x20002cd0
+ 800cde4:	20003540 	.word	0x20003540
 
 0800cde8 <_sbrk_r>:
  800cde8:	b538      	push	{r3, r4, r5, lr}
@@ -34178,19 +34174,19 @@ void MX_DriverVbusFS(uint8_t state)
  800cdfe:	b103      	cbz	r3, 800ce02 <_sbrk_r+0x1a>
  800ce00:	6023      	str	r3, [r4, #0]
  800ce02:	bd38      	pop	{r3, r4, r5, pc}
- 800ce04:	20002cd8 	.word	0x20002cd8
+ 800ce04:	20003548 	.word	0x20003548
 
 0800ce08 <__malloc_lock>:
  800ce08:	4801      	ldr	r0, [pc, #4]	; (800ce10 <__malloc_lock+0x8>)
  800ce0a:	f000 b809 	b.w	800ce20 <__retarget_lock_acquire_recursive>
  800ce0e:	bf00      	nop
- 800ce10:	20002cdc 	.word	0x20002cdc
+ 800ce10:	2000354c 	.word	0x2000354c
 
 0800ce14 <__malloc_unlock>:
  800ce14:	4801      	ldr	r0, [pc, #4]	; (800ce1c <__malloc_unlock+0x8>)
  800ce16:	f000 b804 	b.w	800ce22 <__retarget_lock_release_recursive>
  800ce1a:	bf00      	nop
- 800ce1c:	20002cdc 	.word	0x20002cdc
+ 800ce1c:	2000354c 	.word	0x2000354c
 
 0800ce20 <__retarget_lock_acquire_recursive>:
  800ce20:	4770      	bx	lr

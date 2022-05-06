@@ -57,6 +57,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define BTN_ENC1_Pin GPIO_PIN_15
+#define BTN_ENC1_GPIO_Port GPIOC
+#define ENC2B_Pin GPIO_PIN_0
+#define ENC2B_GPIO_Port GPIOA
+#define ENC2A_Pin GPIO_PIN_1
+#define ENC2A_GPIO_Port GPIOA
 #define LD6_Pin GPIO_PIN_3
 #define LD6_GPIO_Port GPIOA
 #define LD5_Pin GPIO_PIN_5
@@ -67,8 +73,22 @@ void Error_Handler(void);
 #define LD3_GPIO_Port GPIOB
 #define LD2_Pin GPIO_PIN_12
 #define LD2_GPIO_Port GPIOB
+#define BTN_ENC2_Pin GPIO_PIN_14
+#define BTN_ENC2_GPIO_Port GPIOB
 #define LD1_Pin GPIO_PIN_15
 #define LD1_GPIO_Port GPIOB
+#define EPD_CS_Pin GPIO_PIN_15
+#define EPD_CS_GPIO_Port GPIOA
+#define EPD_BUSY_Pin GPIO_PIN_4
+#define EPD_BUSY_GPIO_Port GPIOB
+#define ENC1B_Pin GPIO_PIN_6
+#define ENC1B_GPIO_Port GPIOB
+#define ENC1A_Pin GPIO_PIN_7
+#define ENC1A_GPIO_Port GPIOB
+#define EPD_RST_Pin GPIO_PIN_8
+#define EPD_RST_GPIO_Port GPIOB
+#define EPD_DC_Pin GPIO_PIN_9
+#define EPD_DC_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

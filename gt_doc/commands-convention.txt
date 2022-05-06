@@ -1,0 +1,22 @@
+ HEADER  SUBHEADER  PAYLOAD (TYPE UNION)
+ \____/  \_______/  \__________________/
+  uint8   uint8      - uint8/chars x128
+                     - int16 x64
+                     - int32 x32
+                     - float x32
+
+LED MODIFY
+| 0x01 | high/low | bytes of i-leds to be set to 1 |
+
+BUTTON EVENT
+| 0x02 | index of button | none |
+
+FILE LIST
+| 0x03 | filecount | string of filenames chained by \n |
+
+FILE SELECTION
+| 0x04 | index of selected file | none |
+
+UPDATE CUSTOM VARIABLE
+| 0x05 | id of variable | payload |
+

@@ -47,6 +47,9 @@
 									<listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/Commander"/>
+									<listOptionValue builtIn="false" value="../Drivers/Painter"/>
+									<listOptionValue builtIn="false" value="../Drivers/EPDDriver"/>
+									<listOptionValue builtIn="false" value="../Drivers/RotaryEncoder"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1069885269" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

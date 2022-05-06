@@ -231,9 +231,6 @@ int main(void)
 			{
 				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 			}
-			//Command command = {255, 0, 45, 17.13};
-			//Commander_Send(&hcommander, &command);
-			//HAL_Delay(50);
 		} else if (Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE) {
 			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);

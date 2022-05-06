@@ -9,15 +9,20 @@
 #define COMMANDER_COMMANDER_H_
 
 #define COMMANDS_COUNT 16
-#define COMMAND_BYTESIZE 10
+#define COMMAND_BYTESIZE 130
 
-// 1B + 1B + 4B + 4B
-// _Command is 10B large
+typedef union {
+	uint8_t bytes[128];
+	int16_t shorts[64];
+	int32_t ints[32];
+	float floats[32];
+	char chars[128];
+} Payload;
+
 typedef struct {
-	uint8_t header;
-	uint8_t subheader;
-	int32_t arg_int;
-	float arg_float;
+	uint8_t header; // 1 Byte
+	uint8_t subheader; // 1 Byte
+	Payload payload; // 128 Bytes
 } Command;
 
 typedef struct {

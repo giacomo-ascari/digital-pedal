@@ -1,0 +1,8 @@
+../Drivers/Painter/painter.c:19:9:read_font_pixel	24	static
+../Drivers/Painter/painter.c:25:6:toggle_single_pixel	24	static
+../Drivers/Painter/painter.c:30:6:toggle_image	24	static
+../Drivers/Painter/painter.c:36:6:draw_rectangle	32	static
+../Drivers/Painter/painter.c:44:6:draw_char	32	static
+../Drivers/Painter/painter.c:55:10:translate	16	static
+../Drivers/Painter/painter.c:79:6:draw_text	40	static
+../Drivers/Painter/painter.c:87:6:draw_clean	24	static

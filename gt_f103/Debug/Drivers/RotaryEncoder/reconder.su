@@ -1,0 +1,2 @@
+../Drivers/RotaryEncoder/reconder.c:10:6:RE_Init	24	static
+../Drivers/RotaryEncoder/reconder.c:23:9:RE_Process	24	static
