@@ -25,6 +25,8 @@
 #include "epddriver.h"
 #include "painter.h"
 #include "rencoder.h"
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +57,7 @@ int led_pins[6] = { LD1_Pin, LD2_Pin, LD3_Pin, LD4_Pin, LD5_Pin, LD6_Pin };
 int led_port[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
 int states[6] = { GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET };
 
-float display_array[296];
+//float display_array[296];
 EPD_HandleTypeDef hepd1;
 
 RE_HandleTypeDef hre1;
@@ -94,7 +96,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 void command_callback(Command command) {
-	states[0] = states[0] == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+
+	if (command.header == 0x05) {
+		EPD_Init(&hepd1);
+
+		char row[16+1];
+		draw_clean(hepd1.image);
+
+		sprintf(row, "g33ky toad");
+		draw_text(hepd1.image, row, 40, 60);
+
+		for(int i = 0; i < 128; i++) {
+			toggle_single_pixel(hepd1.image, i, command.payload.bytes[i]);
+		}
+
+		EPD_Display(&hepd1);
+		EPD_Sleep(&hepd1);
+	}
+
 }
 
 /* USER CODE END 0 */
@@ -167,10 +186,10 @@ int main(void)
 
 		RE_Process(&hre1);
 		RE_Process(&hre2);
-		//sprintf(row, "Enc %d", hre1.counter);
 
-		for (int i = 0; i < 1; i++) {
-			HAL_GPIO_WritePin(led_port[i], led_pins[i], states[i]);
+		for (int i = 0; i < 6; i++) {
+			int thr = (hre1.counter + hre2.counter) % 6;
+			HAL_GPIO_WritePin(led_port[i], led_pins[i], i <= thr ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		}
 	}
   /* USER CODE END 3 */
@@ -188,10 +207,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -201,12 +223,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -310,6 +332,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 

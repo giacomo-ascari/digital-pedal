@@ -30,7 +30,8 @@ typedef struct {
 	DMA_HandleTypeDef *hdma_uart_rx;
 	uint8_t uart_rx_buffer[COMMAND_BYTESIZE * 2];
 	Command command_buffer[COMMANDS_COUNT];
-	uint8_t command_index;
+	int8_t rear;
+	int8_t front;
 	uint8_t commands_to_handle;
 	uint32_t counter;
 	void (*command_callback)(Command command);

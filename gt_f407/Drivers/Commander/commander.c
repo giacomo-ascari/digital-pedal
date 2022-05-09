@@ -12,7 +12,8 @@
 void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_uart_rx, void (*command_callback)(Command command)) {
 	hcommander->huart = huart;
 	hcommander->hdma_uart_rx = hdma_uart_rx;
-	hcommander->command_index = 0;
+	hcommander->rear = -1;
+	hcommander->front = -1;
 	hcommander->commands_to_handle = 0;
 	hcommander->counter = 0;
 	hcommander->command_callback = command_callback;
@@ -28,18 +29,41 @@ void Commander_Send(Commander_HandleTypeDef *hcommander, Command *command) {
 }
 
 void Commander_Process(Commander_HandleTypeDef *hcommander) {
-	while (hcommander->commands_to_handle) {
-		uint8_t index = (hcommander->command_index + hcommander->commands_to_handle) % COMMANDS_COUNT;
-		hcommander->command_index++;
-		hcommander->command_index %= COMMANDS_COUNT;
+
+	if(hcommander->front == -1) {
+		// underflow
+	} else {
+
+		//printf("Element deleted from queue is : %dn",cqueue_arr[front]);
+		hcommander->command_callback(hcommander->command_buffer[hcommander->front]);
 		hcommander->commands_to_handle--;
-		hcommander->command_callback(hcommander->command_buffer[index]);
+
+		if(hcommander->front == hcommander->rear) {
+			hcommander->front = -1;
+			hcommander->rear = -1;
+		} else {
+			if(hcommander->front == COMMANDS_COUNT-1) hcommander->front = 0;
+			else hcommander->front++;
+		}
 	}
 }
 
 void Commander_Enqueue(Commander_HandleTypeDef *hcommander, Command *command) {
-	uint8_t index = (hcommander->command_index + hcommander->commands_to_handle) % COMMANDS_COUNT;
-	memcpy(hcommander->command_buffer + index, command, COMMAND_BYTESIZE);
-	hcommander->commands_to_handle++;
-	hcommander->counter++;
+
+
+	if((hcommander->front == 0 && hcommander->rear == COMMANDS_COUNT-1) || (hcommander->front == hcommander->rear+1)) {
+		// overflow
+	} else {
+		if(hcommander->front == -1) {
+			hcommander->front = 0;
+			hcommander->rear = 0;
+		} else {
+			if(hcommander->rear == COMMANDS_COUNT-1) hcommander->rear = 0;
+			else hcommander->rear++;
+		}
+		memcpy(hcommander->command_buffer + hcommander->rear, command, COMMAND_BYTESIZE);
+		hcommander->commands_to_handle++;
+	}
+
+
 }
