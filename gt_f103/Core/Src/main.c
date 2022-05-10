@@ -53,7 +53,7 @@ DMA_HandleTypeDef hdma_usart3_rx;
 
 Commander_HandleTypeDef hcommander;
 
-int led_pins[6] = { LD1_Pin, LD2_Pin, LD3_Pin, LD4_Pin, LD5_Pin, LD6_Pin };
+uint16_t led_pins[6] = { LD1_Pin, LD2_Pin, LD3_Pin, LD4_Pin, LD5_Pin, LD6_Pin };
 int led_port[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
 int states[6] = { GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET };
 
@@ -154,8 +154,8 @@ int main(void)
 	Commander_Init(&hcommander, &huart3, &hdma_usart3_rx, command_callback);
 	Commander_Start(&hcommander);
 
-	RE_Init(&hre1, ENC1B_GPIO_Port, ENC1A_GPIO_Port, ENC1B_Pin, ENC1A_Pin);
-	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin);
+	RE_Init(&hre1, ENC1B_GPIO_Port, ENC1A_GPIO_Port, ENC1B_Pin, ENC1A_Pin, 2);
+	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin, 1);
 
 	EPD_Init(&hepd1);
 	EPD_Clear(&hepd1);
@@ -188,8 +188,8 @@ int main(void)
 		RE_Process(&hre2);
 
 		for (int i = 0; i < 6; i++) {
-			int thr = (hre1.counter + hre2.counter) % 6;
-			HAL_GPIO_WritePin(led_port[i], led_pins[i], i <= thr ? GPIO_PIN_SET : GPIO_PIN_RESET);
+			int thr = (RE_GetCount(&hre1) + RE_GetCount(&hre2)) % 6;
+			HAL_GPIO_WritePin((GPIO_TypeDef *)led_port[i], led_pins[i], i <= thr ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		}
 	}
   /* USER CODE END 3 */
@@ -349,8 +349,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BTN_ENC1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ENC2B_Pin ENC2A_Pin */
-  GPIO_InitStruct.Pin = ENC2B_Pin|ENC2A_Pin;
+  /*Configure GPIO pins : ENC2B_Pin ENC2A_Pin BTN6_Pin BTN5_Pin
+                           BTN1_Pin */
+  GPIO_InitStruct.Pin = ENC2B_Pin|ENC2A_Pin|BTN6_Pin|BTN5_Pin
+                          |BTN1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -362,6 +364,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : BTN4_Pin BTN3_Pin BTN2_Pin BTN_ENC2_Pin
+                           EPD_BUSY_Pin ENC1B_Pin ENC1A_Pin */
+  GPIO_InitStruct.Pin = BTN4_Pin|BTN3_Pin|BTN2_Pin|BTN_ENC2_Pin
+                          |EPD_BUSY_Pin|ENC1B_Pin|ENC1A_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LD3_Pin LD2_Pin LD1_Pin EPD_RST_Pin
                            EPD_DC_Pin */
   GPIO_InitStruct.Pin = LD3_Pin|LD2_Pin|LD1_Pin|EPD_RST_Pin
@@ -369,12 +379,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : BTN_ENC2_Pin EPD_BUSY_Pin ENC1B_Pin ENC1A_Pin */
-  GPIO_InitStruct.Pin = BTN_ENC2_Pin|EPD_BUSY_Pin|ENC1B_Pin|ENC1A_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }

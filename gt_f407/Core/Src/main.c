@@ -54,33 +54,36 @@ DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
 
+// USB
 FATFS usbFatFS;
 extern char USBHPath[4];
-
 extern ApplicationTypeDef Appli_state;
 
+// COMMANDER
 Commander_HandleTypeDef hcommander;
 
+// DAC
 extern AUDIO_DrvTypeDef cs43l22_drv;
+int16_t AUDIO_OUT[4360];
+int16_t DAC_BUFF[64];
 
-int16_t AUDIO_OUT[2180];
+// INTERMEDIATE
+int16_t DSP_BUFF[4];
+// 0: 1st right
+// 1: 1st left
+// 2: 2nd right
+// 3: 2nd left
+
+// ADC EVG
+union _ADC_BUFF {
+	uint8_t ADC8[16];
+	uint16_t ADC16[8];
+	int32_t ADC32[4];
+} ADC_BUFF;
+int32_t BUFF_CONV[4];
 
 int8_t debug_samples[128];
 int8_t samples_count = 0;
-
-// ADC EVG
-
-#define buf_size 4
-
-union _ADC_BUFF {
-	uint8_t ADC8[buf_size*4];
-	uint16_t ADC16[buf_size*2];
-	int32_t ADC32[buf_size];
-} ADC_BUFF;
-
-int32_t BUFF_CONV[buf_size];
-int16_t IN_SAMPLES[2];
-int16_t DAC_BUFF[16];
 
 /* USER CODE END PV */
 
@@ -125,7 +128,7 @@ void command_callback(Command command) {
 
 float wave_gen(char t, u_int32_t i, float tone) {
 
-	float sin_table[128] = { 0.000000F, 0.024541F, 0.049068F, 0.073565F, 0.098017F, 0.122411F, 0.146730F, 0.170962F, 0.195090F, 0.219101F, 0.242980F, 0.266713F, 0.290284F, 0.313681F, 0.336890F, 0.359895F, 0.382683F, 0.405241F, 0.427555F, 0.449611F, 0.471396F, 0.492898F, 0.514102F, 0.534997F, 0.555570F, 0.575808F, 0.595699F, 0.615231F, 0.634393F, 0.653172F, 0.671559F, 0.689540F, 0.707106F, 0.724247F, 0.740951F, 0.757208F, 0.773010F, 0.788346F, 0.803207F, 0.817584F, 0.831469F, 0.844853F, 0.857728F, 0.870087F, 0.881921F, 0.893224F, 0.903989F, 0.914209F, 0.923879F, 0.932992F, 0.941544F, 0.949528F, 0.956940F, 0.963776F, 0.970031F, 0.975702F, 0.980785F, 0.985277F, 0.989176F, 0.992479F, 0.995185F, 0.997290F, 0.998795F, 0.999699F, 1.000000F, 0.999699F, 0.998796F, 0.997291F, 0.995185F, 0.992480F, 0.989177F, 0.985278F, 0.980786F, 0.975702F, 0.970032F, 0.963776F, 0.956941F, 0.949529F, 0.941545F, 0.932993F, 0.923880F, 0.914210F, 0.903990F, 0.893225F, 0.881922F, 0.870088F, 0.857729F, 0.844855F, 0.831471F, 0.817586F, 0.803209F, 0.788348F, 0.773012F, 0.757210F, 0.740952F, 0.724248F, 0.707108F, 0.689542F, 0.671560F, 0.653174F, 0.634395F, 0.615233F, 0.595701F, 0.575810F, 0.555572F, 0.534999F, 0.514105F, 0.492900F, 0.471399F, 0.449613F, 0.427557F, 0.405243F, 0.382685F, 0.359897F, 0.336892F, 0.313684F, 0.290287F, 0.266715F, 0.242982F, 0.219104F, 0.195093F, 0.170964F, 0.146733F, 0.122413F, 0.098019F, 0.073567F, 0.049070F, 0.024544F };
+	static float sin_table[128] = { 0.000000F, 0.024541F, 0.049068F, 0.073565F, 0.098017F, 0.122411F, 0.146730F, 0.170962F, 0.195090F, 0.219101F, 0.242980F, 0.266713F, 0.290284F, 0.313681F, 0.336890F, 0.359895F, 0.382683F, 0.405241F, 0.427555F, 0.449611F, 0.471396F, 0.492898F, 0.514102F, 0.534997F, 0.555570F, 0.575808F, 0.595699F, 0.615231F, 0.634393F, 0.653172F, 0.671559F, 0.689540F, 0.707106F, 0.724247F, 0.740951F, 0.757208F, 0.773010F, 0.788346F, 0.803207F, 0.817584F, 0.831469F, 0.844853F, 0.857728F, 0.870087F, 0.881921F, 0.893224F, 0.903989F, 0.914209F, 0.923879F, 0.932992F, 0.941544F, 0.949528F, 0.956940F, 0.963776F, 0.970031F, 0.975702F, 0.980785F, 0.985277F, 0.989176F, 0.992479F, 0.995185F, 0.997290F, 0.998795F, 0.999699F, 1.000000F, 0.999699F, 0.998796F, 0.997291F, 0.995185F, 0.992480F, 0.989177F, 0.985278F, 0.980786F, 0.975702F, 0.970032F, 0.963776F, 0.956941F, 0.949529F, 0.941545F, 0.932993F, 0.923880F, 0.914210F, 0.903990F, 0.893225F, 0.881922F, 0.870088F, 0.857729F, 0.844855F, 0.831471F, 0.817586F, 0.803209F, 0.788348F, 0.773012F, 0.757210F, 0.740952F, 0.724248F, 0.707108F, 0.689542F, 0.671560F, 0.653174F, 0.634395F, 0.615233F, 0.595701F, 0.575810F, 0.555572F, 0.534999F, 0.514105F, 0.492900F, 0.471399F, 0.449613F, 0.427557F, 0.405243F, 0.382685F, 0.359897F, 0.336892F, 0.313684F, 0.290287F, 0.266715F, 0.242982F, 0.219104F, 0.195093F, 0.170964F, 0.146733F, 0.122413F, 0.098019F, 0.073567F, 0.049070F, 0.024544F };
 	float period_f = 48000.F / tone;
 	u_int32_t period_i = period_f;
 	u_int32_t table_index = (i * 256 / period_i) % 256;
@@ -150,36 +153,56 @@ float wave_gen(char t, u_int32_t i, float tone) {
 
 void Conv_ADC(uint8_t * buf, int32_t *result){
 	*result = 0xFF000000 * ((buf[1]>>7)&1) + (buf[1]<<16) + (buf[0]<<8) + buf[3];
+
 }
 
-
-void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
-{
-
-	Conv_ADC(&ADC_BUFF.ADC8[0], &BUFF_CONV[0]);
-	Conv_ADC(&ADC_BUFF.ADC8[4], &BUFF_CONV[1]);
-
-
+uint32_t counter = 0;
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		//RIGHT
-		int32_t temp = 0 /*ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)]*/;
-		temp >>= 16;
-		IN_SAMPLES[1] = temp;
+		Conv_ADC(&ADC_BUFF.ADC8[0], &BUFF_CONV[0]);
+		Conv_ADC(&ADC_BUFF.ADC8[4], &BUFF_CONV[1]);
+		DSP_BUFF[0] = BUFF_CONV[0];
+		DSP_BUFF[1] = BUFF_CONV[1];
+		//if (samples_count < 128) {
+		//	int16_t temp = BUFF_CONV[0] / 128 + 127;
+		//	debug_samples[samples_count] = temp;
+		//	samples_count++;
+		//}
+		counter++;
 	}
 }
 
-
-void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
-{
-	Conv_ADC(&ADC_BUFF.ADC8[ 8], &BUFF_CONV[2]);
-	Conv_ADC(&ADC_BUFF.ADC8[12], &BUFF_CONV[3]);
-
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		//RIGHT
-		int32_t temp = 0 /*ADC_BUFF[__HAL_DMA_GET_COUNTER(hi2s->hdmarx)]*/;
-		temp >>= 16;
-		IN_SAMPLES[1] = temp;
+		Conv_ADC(&ADC_BUFF.ADC8[ 8], &BUFF_CONV[2]);
+		Conv_ADC(&ADC_BUFF.ADC8[12], &BUFF_CONV[3]);
+		DSP_BUFF[2] = ADC_BUFF.ADC8[ 8]*256+ADC_BUFF.ADC8[ 9]*0; //BUFF_CONV[2];
+		DSP_BUFF[3] = ADC_BUFF.ADC8[12]*256+ADC_BUFF.ADC8[13]*0;//BUFF_CONV[3];
+		//if (samples_count < 128) {
+		//	int16_t temp = BUFF_CONV[2] / 128 + 127;
+		//	debug_samples[samples_count] = temp;
+		//	samples_count++;
+		//}
+		counter++;
 	}
+}
+
+void AUDIO_OUT_HalfTransfer_CallBack() {
+
+	DAC_BUFF[0] = DSP_BUFF[0];
+	DAC_BUFF[1] = DSP_BUFF[1];
+	//DAC_BUFF[2] = DSP_BUFF[2];
+	//DAC_BUFF[3] = DSP_BUFF[3];
+
+}
+
+void AUDIO_OUT_TransferComplete_CallBack() {
+
+	//DAC_BUFF[0] = DSP_BUFF[0];
+	//DAC_BUFF[1] = DSP_BUFF[1];
+	DAC_BUFF[2] = DSP_BUFF[2];
+	DAC_BUFF[3] = DSP_BUFF[3];
+
 }
 
 /*
@@ -259,24 +282,35 @@ int main(void)
 
 
 	// DAC
-	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
 
-	AUDIO_OUT_Init(3, 50,  AUDIO_FREQUENCY_48K);
-	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, 10);
-	cs43l22_SetOutputMode(AUDIO_I2C_ADDRESS,OUTPUT_DEVICE_HEADPHONE ); //OUTPUT_DEVICE_BOTH
-	cs43l22_SetPassThrough(AUDIO_I2C_ADDRESS,0,0);
-	cs43l22_drv.Play(AUDIO_I2C_ADDRESS, (uint16_t *)AUDIO_OUT,2180);
-	//cs43l22_SetPassThrough(AUDIO_I2C_ADDRESS,0,0);
-	// start sound
-
-	for(int i = 0;i < 2180; i++) {
-		float temp = wave_gen('s', i, 220.) * 16000;
+	for(int i = 1;i < 2180; i+=2) {
+		float temp = wave_gen('s', i/2, 220.) * 16000;
 		AUDIO_OUT[i] = temp;
+		AUDIO_OUT[i-1] = temp;
 	}
 
-	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)AUDIO_OUT, 2180);
+	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
+
+	AUDIO_OUT_Init(3, 0,  AUDIO_FREQUENCY_48K);
+	cs43l22_SetOutputMode(AUDIO_I2C_ADDRESS,OUTPUT_DEVICE_HEADPHONE ); //OUTPUT_DEVICE_BOTH
+	cs43l22_SetPassThrough(AUDIO_I2C_ADDRESS,0,0);
+
+	//cs43l22_drv.Play(AUDIO_I2C_ADDRESS, (uint16_t *)AUDIO_OUT, 2180);
+	//cs43l22_SetVolume(AUDIO_I2C_ADDRESS, 200);
+	//HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)AUDIO_OUT, 2180);
+
+	cs43l22_drv.Play(AUDIO_I2C_ADDRESS, (uint16_t *)DAC_BUFF, 4);
+	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, 150);
+	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
+
 	// ADC
 	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
+
+	while(1){
+		HAL_Delay(1000);
+		counter = 0;
+	};
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -310,12 +344,11 @@ int main(void)
 
 		Command command;
 		command.header = 0x05;
-		samples_count = (samples_count + 10) % 50;
 		for(uint8_t i = 0; i < 128; i++) {
-			//debug_samples[i] = 17;
-			command.payload.bytes[i] = samples_count;
+			command.payload.bytes[i] = debug_samples[i];
 		}
 		Commander_Send(&hcommander, &command);
+		samples_count = 0;
 
 		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
@@ -473,7 +506,7 @@ static void MX_I2S3_Init(void)
   /* USER CODE END I2S3_Init 1 */
   hi2s3.Instance = SPI3;
   hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
-  hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s3.Init.Standard = I2S_STANDARD_MSB;
   hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_48K;

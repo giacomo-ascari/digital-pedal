@@ -1,2 +1,3 @@
 ../Drivers/RotaryEncoder/reconder.c:10:6:RE_Init	24	static
-../Drivers/RotaryEncoder/reconder.c:23:9:RE_Process	24	static
+../Drivers/RotaryEncoder/reconder.c:24:9:RE_Process	24	static
+../Drivers/RotaryEncoder/reconder.c:63:9:RE_GetCount	16	static

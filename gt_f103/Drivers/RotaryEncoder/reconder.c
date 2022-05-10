@@ -7,7 +7,7 @@
 
 #include "rencoder.h"
 
-void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, uint16_t pinA, uint16_t pinB) {
+void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, uint16_t pinA, uint16_t pinB, uint16_t divider) {
 	hre->lasttick = 0;
 	hre->lastA = 0;
 	hre->lastB = 0;
@@ -18,6 +18,7 @@ void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, ui
 	hre->portB = portB;
 	hre->pinA = pinA;
 	hre->pinB = pinB;
+	hre->divider = divider;
 }
 
 uint8_t RE_Process(RE_HandleTypeDef *hre) {
@@ -57,4 +58,12 @@ uint8_t RE_Process(RE_HandleTypeDef *hre) {
 		}
 	}
 	return 0;
+}
+
+int16_t RE_GetCount(RE_HandleTypeDef *hre) {
+	if (hre->divider <= 1) {
+		return hre->counter;
+	} else {
+		return hre->counter / hre->divider;
+	}
 }
