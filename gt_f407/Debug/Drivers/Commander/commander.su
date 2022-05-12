@@ -1,5 +1,5 @@
-../Drivers/Commander/commander.c:12:6:Commander_Init	24	static
-../Drivers/Commander/commander.c:22:6:Commander_Start	16	static
-../Drivers/Commander/commander.c:26:6:Commander_Send	16	static
-../Drivers/Commander/commander.c:31:6:Commander_Process	144	static
-../Drivers/Commander/commander.c:51:6:Commander_Enqueue	16	static
+../Drivers/Commander/commander.c:12:6:Commander_Init	0	static
+../Drivers/Commander/commander.c:22:6:Commander_Start	8	static
+../Drivers/Commander/commander.c:26:6:Commander_Send	8	static
+../Drivers/Commander/commander.c:31:6:Commander_Process	136	static
+../Drivers/Commander/commander.c:51:6:Commander_Enqueue	8	static

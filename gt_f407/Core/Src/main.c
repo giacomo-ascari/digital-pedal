@@ -68,7 +68,7 @@ int16_t AUDIO_OUT[4360];
 int16_t DAC_BUFF[64];
 
 // INTERMEDIATE
-int16_t DSP_BUFF[4];
+volatile int16_t DSP_BUFF[4];
 // 0: 1st right
 // 1: 1st left
 // 2: 2nd right
@@ -76,6 +76,7 @@ int16_t DSP_BUFF[4];
 
 // ADC EVG
 union _ADC_BUFF {
+	int8_t _ADC8[16];
 	uint8_t ADC8[16];
 	uint16_t ADC16[8];
 	int32_t ADC32[4];
@@ -152,17 +153,36 @@ float wave_gen(char t, u_int32_t i, float tone) {
 
 
 void Conv_ADC(uint8_t * buf, int32_t *result){
-	*result = 0xFF000000 * ((buf[1]>>7)&1) + (buf[1]<<16) + (buf[0]<<8) + buf[3];
+	//*result = 0xFF000000 * ((buf[1]>>7)&1) + (buf[1]<<16) + (buf[0]<<8) + buf[3];
+	*result = 0xFF000000 * ((buf[1]>>7)&1) + (buf[1]<<24) + (buf[0]<<16) + (buf[3]<<8);
+}
+
+// 0 inter 1 most 2 empty 3 lsb
+void Convert_ADC(uint8_t *buf, int16_t *res) {
+//	if (buf[3] > (uint8_t)127)
+//		*res = 16000;
+//	else
+//		*res = -16000;
+	//*res = 0x0000 + ((buf[1] << 8) + (buf[3]));
+
+//	int32_t tmp = 0xFF000000 * ((buf[1]>>7)&1) + (buf[1]<<16) + (buf[0]<<8) + (buf[3]);
+
+	*res = (buf[1]<<8)+buf[3];
 
 }
 
+#define BT 3
 uint32_t counter = 0;
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		Conv_ADC(&ADC_BUFF.ADC8[0], &BUFF_CONV[0]);
-		Conv_ADC(&ADC_BUFF.ADC8[4], &BUFF_CONV[1]);
-		DSP_BUFF[0] = BUFF_CONV[0];
-		DSP_BUFF[1] = BUFF_CONV[1];
+		//Conv_ADC(&ADC_BUFF.ADC8[0], &BUFF_CONV[0]);
+		//Conv_ADC(&ADC_BUFF.ADC8[4], &BUFF_CONV[1]);
+		//DSP_BUFF[0] = BUFF_CONV[0];
+		//DSP_BUFF[1] = BUFF_CONV[1];
+		Convert_ADC(&ADC_BUFF.ADC8[0], &DSP_BUFF[0]);
+		Convert_ADC(&ADC_BUFF.ADC8[4], &DSP_BUFF[1]);
+		//DSP_BUFF[0] = ADC_BUFF.ADC8[BT];
+		//DSP_BUFF[1] = ADC_BUFF.ADC8[4+BT];
 		//if (samples_count < 128) {
 		//	int16_t temp = BUFF_CONV[0] / 128 + 127;
 		//	debug_samples[samples_count] = temp;
@@ -174,10 +194,14 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		Conv_ADC(&ADC_BUFF.ADC8[ 8], &BUFF_CONV[2]);
-		Conv_ADC(&ADC_BUFF.ADC8[12], &BUFF_CONV[3]);
-		DSP_BUFF[2] = ADC_BUFF.ADC8[ 8]*256+ADC_BUFF.ADC8[ 9]*0; //BUFF_CONV[2];
-		DSP_BUFF[3] = ADC_BUFF.ADC8[12]*256+ADC_BUFF.ADC8[13]*0;//BUFF_CONV[3];
+		//Conv_ADC(&ADC_BUFF.ADC8[ 8], &BUFF_CONV[2]);
+		//Conv_ADC(&ADC_BUFF.ADC8[12], &BUFF_CONV[3]);
+		//DSP_BUFF[2] = BUFF_CONV[2];
+		//DSP_BUFF[3] = BUFF_CONV[3];
+		Convert_ADC(&ADC_BUFF.ADC8[8], &DSP_BUFF[2]);
+		Convert_ADC(&ADC_BUFF.ADC8[12], &DSP_BUFF[3]);
+		//DSP_BUFF[2] = ADC_BUFF.ADC8[8+BT];
+		//DSP_BUFF[3] = ADC_BUFF.ADC8[12+BT];
 		//if (samples_count < 128) {
 		//	int16_t temp = BUFF_CONV[2] / 128 + 127;
 		//	debug_samples[samples_count] = temp;
@@ -506,7 +530,7 @@ static void MX_I2S3_Init(void)
   /* USER CODE END I2S3_Init 1 */
   hi2s3.Instance = SPI3;
   hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
-  hi2s3.Init.Standard = I2S_STANDARD_MSB;
+  hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_48K;
