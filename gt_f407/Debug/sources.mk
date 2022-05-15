@@ -25,6 +25,7 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 Drivers/Commander \
+Drivers/Pedalboard \
 Drivers/STM32F4xx_HAL_Driver/Src \
 FATFS/App \
 FATFS/Target \
