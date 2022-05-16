@@ -26,6 +26,7 @@
 #include "commander.h"
 #include "AUDIO.h"
 #include "pedalboard.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,6 +63,9 @@ extern ApplicationTypeDef Appli_state;
 
 // COMMANDER
 Commander_HandleTypeDef hcommander;
+
+// PEDALBOARD
+Pedalboard_Handler hpedalboard;
 
 // DAC
 extern AUDIO_DrvTypeDef cs43l22_drv;
@@ -139,7 +143,7 @@ void Conv_ADC(uint8_t * buf, uint32_t *res){
 void ADC_Process(uint32_t *_raw, int16_t *out) {
 	int16_t raw = (*_raw >> 16);
 	float mid = (float)raw;
-	mid /= 1.;
+	Pedalboard_Process(&hpedalboard, &mid);
 	*out = (int16_t) mid;
 }
 
@@ -256,6 +260,11 @@ int main(void)
 	// COMMANDER
 	Commander_Init(&hcommander, &huart1, &hdma_usart1_rx, command_callback);
 	Commander_Start(&hcommander);
+
+	// PEDALBOARD
+	Pedalboard_Init(&hpedalboard);
+	Pedalboard_Append(&hpedalboard, OVERDRIVE);
+	Pedalboard_Append(&hpedalboard, LPF);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);

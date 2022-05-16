@@ -106,10 +106,6 @@ void command_callback(Command command) {
 		sprintf(row, "g33ky toad");
 		draw_text(hepd1.image, row, 40, 60);
 
-		for(int i = 0; i < 128; i++) {
-			toggle_single_pixel(hepd1.image, i, command.payload.bytes[i]);
-		}
-
 		EPD_Display(&hepd1);
 		EPD_Sleep(&hepd1);
 	}
@@ -154,7 +150,7 @@ int main(void)
 	Commander_Init(&hcommander, &huart3, &hdma_usart3_rx, command_callback);
 	Commander_Start(&hcommander);
 
-	RE_Init(&hre1, ENC1B_GPIO_Port, ENC1A_GPIO_Port, ENC1B_Pin, ENC1A_Pin, 2);
+	RE_Init(&hre1, ENC1A_GPIO_Port, ENC1B_GPIO_Port, ENC1A_Pin, ENC1B_Pin, 1);
 	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin, 1);
 
 	EPD_Init(&hepd1);

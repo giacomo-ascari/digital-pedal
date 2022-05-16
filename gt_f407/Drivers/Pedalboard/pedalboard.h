@@ -12,13 +12,16 @@
 #define MAX_PEDALS_COUNT 8
 #define INT_PARAM_TYPES 3
 
+// 8 pedals, with 9 float parameters and 3 integers parameters
+// 8 * (9 * 32 + 3 * 32) = 3072 bits
+// 384 bytes
+
 // ENUMERATION
 
 enum pedal_types {
     AMPLIFIER,      // amp
     BITCRUSHER_RS,  // brs
     BYPASS,         // bps
-    DYN_AMPLIFIER,  // damp
     FUZZ,           // fzz
     LPF,            // lpf
     OVERDRIVE,      // ovr
@@ -37,11 +40,11 @@ enum float_param_type {
     THRESHOLD_HIGH,     // high (e.g. clip) threshold
     THRESHOLD_LOW,      // low (e.g. soft) threshold
     SOFTENER,           // softener
-    BALANCE_1,          // gain on primary channel
-    BALANCE_2,          // gain on secondary channel
+    BALANCE_IN,         // gain on input channel
+    BALANCE_OUT,        // gain on output channel
     HEIGHT,             // height
     SPEED,              // speed
-    PAST,              // past
+    PAST,               // past
 };
 
 // PARAMETERS structs _ DO NOT TOUCH
@@ -71,13 +74,13 @@ enum pedal_types pedal_type_parse(char *type_str);
 
 // PEDALBOARD
 
-typedef struct _pedalboard_t {
+typedef struct _Pedalboard_Handler {
     u_int8_t active_pedals;
     pedal_t pedals[MAX_PEDALS_COUNT];
-} pedalboard_t;
+} Pedalboard_Handler;
 
-void pedalboard_init(pedalboard_t *p_pb);
-void pedalboard_append(pedalboard_t *p_pb, enum pedal_types type);
-void pedalboard_process(pedalboard_t *p_pb, float *value);
+void Pedalboard_Init(Pedalboard_Handler *p_pb);
+void Pedalboard_Append(Pedalboard_Handler *p_pb, enum pedal_types type);
+void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
 
 #endif /* PEDALBOARD_PEDALBOARD_H_ */

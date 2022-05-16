@@ -1,8 +1,9 @@
-../Drivers/Painter/painter.c:19:9:read_font_pixel	24	static
-../Drivers/Painter/painter.c:25:6:toggle_single_pixel	24	static
-../Drivers/Painter/painter.c:30:6:toggle_image	24	static
-../Drivers/Painter/painter.c:36:6:draw_rectangle	32	static
-../Drivers/Painter/painter.c:44:6:draw_char	32	static
-../Drivers/Painter/painter.c:55:10:translate	16	static
-../Drivers/Painter/painter.c:79:6:draw_text	40	static
-../Drivers/Painter/painter.c:87:6:draw_clean	24	static
+../Drivers/Painter/painter.c:20:6:map_as_bottom_left_corner	24	static
+../Drivers/Painter/painter.c:26:9:read_font_pixel	24	static
+../Drivers/Painter/painter.c:32:6:toggle_single_pixel	24	static
+../Drivers/Painter/painter.c:40:6:toggle_image	24	static
+../Drivers/Painter/painter.c:46:6:draw_rectangle	32	static
+../Drivers/Painter/painter.c:56:6:draw_char	32	static
+../Drivers/Painter/painter.c:67:10:translate	16	static
+../Drivers/Painter/painter.c:91:6:draw_text	40	static
+../Drivers/Painter/painter.c:99:6:draw_clean	24	static
