@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include Drivers/STM32F1xx_HAL_Driver/Src/subdir.mk
 -include Drivers/RotaryEncoder/subdir.mk
+-include Drivers/Painter2/subdir.mk
 -include Drivers/Painter/subdir.mk
 -include Drivers/EPDDriver/subdir.mk
 -include Drivers/Commander/subdir.mk

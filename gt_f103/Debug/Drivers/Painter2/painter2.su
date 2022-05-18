@@ -1,0 +1,3 @@
+../Drivers/Painter2/painter2.c:12:6:Painter_TogglePixel	32	static
+../Drivers/Painter2/painter2.c:37:6:Painter_ToggleRectangle	32	static
+../Drivers/Painter2/painter2.c:46:6:Painter_Clean	24	static

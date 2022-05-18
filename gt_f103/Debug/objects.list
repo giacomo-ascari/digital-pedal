@@ -8,6 +8,7 @@
 "./Drivers/Commander/commander.o"
 "./Drivers/EPDDriver/epddriver.o"
 "./Drivers/Painter/painter.o"
+"./Drivers/Painter2/painter2.o"
 "./Drivers/RotaryEncoder/reconder.o"
 "./Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.o"
 "./Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.o"

@@ -50,6 +50,7 @@
 									<listOptionValue builtIn="false" value="../Drivers/Painter"/>
 									<listOptionValue builtIn="false" value="../Drivers/EPDDriver"/>
 									<listOptionValue builtIn="false" value="../Drivers/RotaryEncoder"/>
+									<listOptionValue builtIn="false" value="../Drivers/Painter2"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1069885269" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
