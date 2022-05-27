@@ -263,8 +263,8 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	Pedalboard_Append(&hpedalboard, OVERDRIVE);
 	Pedalboard_Append(&hpedalboard, LPF);
+
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);

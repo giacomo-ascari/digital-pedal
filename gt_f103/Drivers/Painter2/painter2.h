@@ -12,7 +12,6 @@
 
 #define CANVAS_WIDTH 128
 #define CANVAS_HEIGHT 296
-#define RESOLUTION 8
 
 
 // remember: origin is a combination of
@@ -22,6 +21,11 @@ enum Origin {
 	TOP_RIGHT,
 	BOT_LEFT,
 	BOT_RIGHT
+};
+
+enum Font {
+	SMALL,
+	LARGE
 };
 
 // TOP LEFT
@@ -64,6 +68,12 @@ void Painter_TogglePixel(uint8_t *image, uint16_t *x, uint16_t *y, enum Origin o
 
 void Painter_ToggleRectangle(uint8_t *image, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, enum Origin origin);
 
+void Painter_WriteString(uint8_t *image, char *text, uint16_t x, uint16_t y, enum Origin origin, enum Font font);
+
+void Painter_WriteChar(uint8_t *image, char c, uint16_t x, uint16_t y, enum Origin origin, enum Font font);
+
 void Painter_Clean(uint8_t *image);
+
+void Painter_ToggleCanvas(uint8_t *image);
 
 #endif /* PAINTER2_PAINTER2_H_ */

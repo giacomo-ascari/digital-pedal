@@ -8,21 +8,22 @@
 #ifndef COMMANDER_COMMANDER_H_
 #define COMMANDER_COMMANDER_H_
 
-#define COMMANDS_COUNT 16
-#define COMMAND_BYTESIZE 130
+#define COMMANDS_COUNT 10
+#define COMMAND_BYTESIZE 259
 
 typedef union {
-	uint8_t bytes[128];
-	int16_t shorts[64];
-	int32_t ints[32];
-	float floats[32];
-	char chars[128];
+	uint8_t bytes[256];
+	int16_t shorts[128];
+	int32_t ints[64];
+	float floats[64];
+	char chars[256];
 } Payload;
 
 typedef struct {
 	uint8_t header; // 1 Byte
 	uint8_t subheader; // 1 Byte
-	Payload payload; // 128 Bytes
+	uint8_t blocking; // 1 Byte
+	Payload payload; // 256 Bytes
 } Command;
 
 typedef struct {

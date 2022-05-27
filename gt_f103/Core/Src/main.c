@@ -103,7 +103,13 @@ void command_callback(Command command) {
 		//draw_clean(hepd1.image);
 		//sprintf(row, "g33ky toad");
 		//draw_text(hepd1.image, row, 40, 60);
-		EPD_Display(&hepd1);
+		char row[16+1];
+		sprintf(row, "g33ky toad @@");
+		Painter_WriteString(hepd1.image, row, 20, 50, TOP_LEFT, LARGE);
+		Painter_ToggleCanvas(hepd1.image);
+		EPD_Display_Partial(&hepd1);
+		Painter_ToggleCanvas(hepd1.image);
+		EPD_Display_Partial(&hepd1);
 		EPD_Sleep(&hepd1);
 	}
 
@@ -154,17 +160,12 @@ int main(void)
 	EPD_Clear(&hepd1);
 
 	Painter_Clean(hepd1.image);
-	Painter_ToggleRectangle(hepd1.image, 10, 10, 20, 20, TOP_LEFT);
-	Painter_ToggleRectangle(hepd1.image, 10, 10, 25, 25, TOP_RIGHT);
-	Painter_ToggleRectangle(hepd1.image, 10, 10, 30, 30, BOT_LEFT);
-	Painter_ToggleRectangle(hepd1.image, 10, 10, 35, 35, BOT_RIGHT);
-	//char row[16+1];
-	//draw_clean(hepd1.image);
-	//draw_rectangle(hepd1.image, 36, 56, 88, 20);
-	//sprintf(row, "g33ky toad");
-	//draw_text(hepd1.image, row, 40, 60);
-	//sprintf(row, "digital pedal");
-	//draw_text(hepd1.image, row, 20, 90);
+
+	char row[16+1];
+
+	sprintf(row, "g33ky toad @@");
+	Painter_WriteString(hepd1.image, row, 10, 20, TOP_LEFT, SMALL);
+	Painter_WriteString(hepd1.image, row, 40, 20, BOT_LEFT, LARGE);
 
 	EPD_Display(&hepd1);
 	EPD_Sleep(&hepd1);
