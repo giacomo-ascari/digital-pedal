@@ -142,19 +142,11 @@ void Conv_ADC(uint8_t * buf, uint32_t *res){
 // 2 empty byte
 // 3 least significant byte
 
-uint32_t counter = 0;
-int16_t val = 2000;
-
 void ADC_Process(uint32_t *_raw, int16_t *out) {
-	//int16_t raw = (*_raw >> 16);
-	//float mid = (float)raw;
-	//Pedalboard_Process(&hpedalboard, &mid);
-	//*out = (int16_t) mid;
-	if (counter % 100 == 0) {
-		val = -val;
-	}
-	counter++;
-	*out = 8000;
+	int16_t raw = (*_raw >> 16);
+	float mid = (float)raw;
+	Pedalboard_Process(&hpedalboard, &mid);
+	*out = (int16_t) mid;
 }
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
@@ -273,31 +265,20 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	Pedalboard_Append(&hpedalboard, LPF);
-	Pedalboard_Append(&hpedalboard, AMPLIFIER);
+	//Pedalboard_Append(&hpedalboard, AMPLIFIER);
 	//Pedalboard_Append(&hpedalboard, LPF);
-
-
-	for(int i = 0; i<4; i++) {
-			DSP_BUFF[i] = 10000;
-		}
-	for(int i = 0; i<8; i++) {
-		DAC_BUFF[i] = 10000;
-		}
 
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
 	cs43l22_Init(0x94, OUTPUT_DEVICE_HEADPHONE, 200, AUDIO_FREQUENCY_48K);
-	cs43l22_Play(AUDIO_I2C_ADDRESS, (uint16_t *)DAC_BUFF, 8);
-	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 8);
+	cs43l22_Play(AUDIO_I2C_ADDRESS, (uint16_t *)DAC_BUFF, 4);
+	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, 4);
 	volume = 220;
 	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, volume);
 
 	// ADC
-	//HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
-
-	while(1) {;}
+	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
 
 	/* USER CODE END 2 */
 
