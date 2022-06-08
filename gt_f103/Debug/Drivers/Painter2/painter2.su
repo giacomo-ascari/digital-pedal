@@ -1,7 +1,0 @@
-../Drivers/Painter2/painter2.c:10:10:Translate	24	static
-../Drivers/Painter2/painter2.c:63:6:Painter_TogglePixel	32	static
-../Drivers/Painter2/painter2.c:88:6:Painter_ToggleRectangle	32	static
-../Drivers/Painter2/painter2.c:96:6:Painter_WriteString	40	static
-../Drivers/Painter2/painter2.c:115:6:Painter_WriteChar	48	static
-../Drivers/Painter2/painter2.c:157:6:Painter_Clean	24	static
-../Drivers/Painter2/painter2.c:162:6:Painter_ToggleCanvas	24	static

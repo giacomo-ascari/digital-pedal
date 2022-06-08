@@ -1,9 +1,0 @@
-../Drivers/Painter/painter.c:19:6:map_as_bottom_left_corner	24	static
-../Drivers/Painter/painter.c:25:9:read_font_pixel	24	static
-../Drivers/Painter/painter.c:31:6:toggle_single_pixel	24	static
-../Drivers/Painter/painter.c:39:6:toggle_image	24	static
-../Drivers/Painter/painter.c:45:6:draw_rectangle	32	static
-../Drivers/Painter/painter.c:53:6:draw_char	32	static
-../Drivers/Painter/painter.c:64:10:translate	16	static
-../Drivers/Painter/painter.c:88:6:draw_text	40	static
-../Drivers/Painter/painter.c:96:6:draw_clean	24	static
