@@ -83,4 +83,8 @@ void Pedalboard_Init(Pedalboard_Handler *p_pb);
 void Pedalboard_Append(Pedalboard_Handler *p_pb, enum pedal_types type);
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
 
+// DSP
+
+void wave_gen(float *out, char t, uint32_t i, float tone);
+
 #endif /* PEDALBOARD_PEDALBOARD_H_ */

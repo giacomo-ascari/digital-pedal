@@ -185,6 +185,7 @@
 ------------------------------------------------------------------------------*/
 /* High Layer codec functions */
 uint32_t cs43l22_Init(uint16_t DeviceAddr, uint16_t OutputDevice, uint8_t Volume, uint32_t AudioFreq);
+void customBeeper();
 void     cs43l22_DeInit(void);
 uint32_t cs43l22_ReadID(uint16_t DeviceAddr);
 uint32_t cs43l22_Play(uint16_t DeviceAddr, uint16_t* pBuffer, uint16_t Size);

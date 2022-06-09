@@ -216,6 +216,15 @@ uint32_t cs43l22_Init(uint16_t DeviceAddr, uint16_t OutputDevice, uint8_t Volume
   return counter;  
 }
 
+void customBeeper() {
+	CODEC_IO_Write(0x94, CS43L22_REG_BEEP_FREQ_ON_TIME, 0xF2);
+	CODEC_IO_Write(0x94, CS43L22_REG_BEEP_VOL_OFF_TIME, 0x60);
+	uint8_t value = 0;
+	value = value | 3;
+	value = value << 6;
+	CODEC_IO_Write(0x94, CS43L22_REG_BEEP_TONE_CFG, value);
+}
+
 /**
   * @brief  Deinitializes the audio codec.
   * @param  None

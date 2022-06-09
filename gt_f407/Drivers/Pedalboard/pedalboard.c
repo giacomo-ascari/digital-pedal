@@ -41,7 +41,6 @@ void mix(float *raw_in, float *raw_out, float *proc_out, pedal_config_t *conf);
 void hard_clip(float *value, pedal_config_t *conf);
 void soft_clip(float *value, pedal_config_t *conf);
 void square_root(float *value);
-void wave_gen(float *out, char t, uint32_t i, float tone);
 
 // PEDALBOARD
 

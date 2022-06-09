@@ -154,9 +154,15 @@ void ADC_Process(uint32_t *_raw, int16_t *out) {
 	*out = (int16_t) mid;
 }
 
+uint32_t wave_counter = 0;
 void ConvertNProcess(uint8_t * buf, uint32_t * res, int16_t * out) {
-	Conv_ADC(&ADC_BUFF.ADC8[4], res);
-	ADC_Process(res, out);
+	//Conv_ADC(&ADC_BUFF.ADC8[4], res);
+	//ADC_Process(res, out);
+	float f;
+	wave_gen(&f, 's', wave_counter, 440.F);
+	f *= 485.F;
+	*out = (int16_t)f;
+	//wave_counter++;
 }
 
 uint32_t rx_half_counter = 0;
@@ -298,6 +304,8 @@ int main(void)
 	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, SAMPLES_QUANTITY);
 	volume = 220;
 	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, volume);
+
+	customBeeper();
 
 	// ADC
 	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
