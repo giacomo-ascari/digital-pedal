@@ -24,7 +24,7 @@ def compacter(in_filename, name, fwidth, fheight, out_filename):
                         res.append(temp)
                         temp = 0
                     i += 1
-            input()
+            #input()
 
             
     s = ""
