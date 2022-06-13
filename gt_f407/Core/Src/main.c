@@ -336,21 +336,12 @@ int main(void)
 			//aaa
 		}
 
-		HAL_Delay(1000);
+		HAL_Delay(900);
 
 		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-		cs43l22_SetVolume(AUDIO_I2C_ADDRESS, volume);
-		HAL_Delay(50);
-
-		/*Command command;
-		command.header = 0x05;
-		for(uint8_t i = 0; i < 128; i++) {
-			command.payload.bytes[i] = debug_samples[i];
-		}
-		Commander_Send(&hcommander, &command);
-		samples_count = 0;*/
+		HAL_Delay(100);
 
 		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);

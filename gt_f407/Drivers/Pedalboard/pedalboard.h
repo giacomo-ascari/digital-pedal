@@ -8,32 +8,36 @@
 #ifndef PEDALBOARD_PEDALBOARD_H_
 #define PEDALBOARD_PEDALBOARD_H_
 
-#define FLOAT_PARAM_TYPES 9
 #define MAX_PEDALS_COUNT 8
-#define INT_PARAM_TYPES 3
 
 // 8 pedals, with 9 float parameters and 3 integers parameters
 // 8 * (9 * 32 + 3 * 32) = 3072 bits
 // 384 bytes
+// 1152 byte with value alongside max and min
 
 // ENUMERATION
 
 enum pedal_types {
-    AMPLIFIER,      // amp
-    BITCRUSHER_RS,  // brs
-    BYPASS,         // bps
-    FUZZ,           // fzz
-    LPF,            // lpf
-    OVERDRIVE,      // ovr
-    OVERDRIVE_SQRT, // ovrs
-    TREMOLO,        // trm
+    AMPLIFIER,      // AMP
+    BITCRUSHER_RS,  // BIT
+    BYPASS,         //  -
+    FUZZ,           // FZZ
+    LPF,            // LPF
+    OVERDRIVE,      // OVR
+    OVERDRIVE_SQRT, // OVRS
+    TREMOLO,        // TRM
+	NOISE_GATE		// NGT
 };
+
+#define INT_PARAM_TYPES 3
 
 enum int_param_type {
     WIDTH,              // width
     COUNTER,            // multipurpose counter
     REDUCT_INTENSITY,   // reduction intensity
 };
+
+#define FLOAT_PARAM_TYPES 9
 
 enum float_param_type {
     INTENSITY,          // gain intensity
@@ -47,14 +51,14 @@ enum float_param_type {
     PAST,               // past
 };
 
-// PARAMETERS structs _ DO NOT TOUCH
+// PARAMETERS structs
 
 typedef struct _int_parameter_t {
-    int32_t value, min, max, step;
+    int32_t value, min, max;
 } int_parameter_t;
 
 typedef struct _float_parameter_t {
-    float value, min, max, step;
+    float value, min, max;
 } float_parameter_t;
 
 // PEDALS structs
@@ -82,9 +86,5 @@ typedef struct _Pedalboard_Handler {
 void Pedalboard_Init(Pedalboard_Handler *p_pb);
 void Pedalboard_Append(Pedalboard_Handler *p_pb, enum pedal_types type);
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
-
-// DSP
-
-void wave_gen(float *out, char t, uint32_t i, float tone);
 
 #endif /* PEDALBOARD_PEDALBOARD_H_ */
