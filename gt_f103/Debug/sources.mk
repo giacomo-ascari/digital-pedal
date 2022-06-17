@@ -24,10 +24,6 @@ OBJCOPY_BIN :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
-Drivers/Commander \
-Drivers/EPDDriver \
-Drivers/Painter \
-Drivers/Painter2 \
-Drivers/RotaryEncoder \
 Drivers/STM32F1xx_HAL_Driver/Src \
+gt_common/Src \
 

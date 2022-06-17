@@ -21,8 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "commander.h"
 #include "epddriver.h"
+#include "commander.h"
 #include "painter2.h"
 #include "rencoder.h"
 #include <string.h>

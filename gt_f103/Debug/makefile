@@ -9,12 +9,8 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include gt_common/Src/subdir.mk
 -include Drivers/STM32F1xx_HAL_Driver/Src/subdir.mk
--include Drivers/RotaryEncoder/subdir.mk
--include Drivers/Painter2/subdir.mk
--include Drivers/Painter/subdir.mk
--include Drivers/EPDDriver/subdir.mk
--include Drivers/Commander/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk

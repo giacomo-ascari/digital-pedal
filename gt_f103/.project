@@ -29,4 +29,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>gt_common</name>
+			<type>2</type>
+			<location>/home/asky/Desktop/digital-pedal/gt_common</location>
+		</link>
+	</linkedResources>
 </projectDescription>
