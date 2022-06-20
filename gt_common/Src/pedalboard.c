@@ -37,8 +37,8 @@ void fuzz_pedal_process(float *value, pedal_config_t *conf);
 void noise_gate_pedal_init(pedal_config_t *conf);
 void noise_gate_pedal_process(float *value, pedal_config_t *conf);
 
-void bypass_pedal_init(pedal_config_t *conf);
-void bypass_pedal_process(float *value, pedal_config_t *conf);
+//void bypass_pedal_init(pedal_config_t *conf);
+//void bypass_pedal_process(float *value, pedal_config_t *conf);
 
 void mix(float *raw_in, float *raw_out, float *proc_out, pedal_config_t *conf);
 void hard_clip(float *value, pedal_config_t *conf);
@@ -49,11 +49,12 @@ void wave_gen(float *out, char t, uint32_t i, float tone);
 // PEDALBOARD
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb) {
-	p_pb->active_pedals = 0;
+	for (u_int8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+		p_pb->pedals[i].pedal_formatted.type = BYPASS;
+	}
 }
 
-void Pedalboard_Append(Pedalboard_Handler *p_pb, enum pedal_types type) {
-    uint8_t i = p_pb->active_pedals;
+void Pedalboard_InsertPedal(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i) {
 
     if (i < MAX_PEDALS_COUNT) {
         p_pb->pedals[i].pedal_formatted.type = type;
@@ -101,19 +102,26 @@ void Pedalboard_Append(Pedalboard_Handler *p_pb, enum pedal_types type) {
         else
         {
             // BYPASS AS DEFAULT
-            bypass_pedal_init(&(p_pb->pedals[i].pedal_formatted.config));
-            p_pb->pedals[i].pedal_formatted.pedal_process = bypass_pedal_process;
+            //bypass_pedal_init(&(p_pb->pedals[i].pedal_formatted.config));
+            //p_pb->pedals[i].pedal_formatted.pedal_process = bypass_pedal_process;
         }
-        p_pb->active_pedals++;
     }
+}
+
+void Pedalboard_DeletePedal(Pedalboard_Handler *p_pb, uint8_t i) {
+	if (i < MAX_PEDALS_COUNT) {
+		p_pb->pedals[i].pedal_formatted.type = BYPASS;
+	}
 }
 
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value) {
     float pre;
-	for (u_int8_t i = 0; i < p_pb->active_pedals; i++) {
-    	pre = *value;
-        p_pb->pedals[i].pedal_formatted.pedal_process(value, &(p_pb->pedals[i].pedal_formatted.config));
-        mix(&pre, value, value, &(p_pb->pedals[i].pedal_formatted.config));
+	for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+		if (p_pb->pedals[i].pedal_formatted.type != BYPASS) {
+			pre = *value;
+			p_pb->pedals[i].pedal_formatted.pedal_process(value, &(p_pb->pedals[i].pedal_formatted.config));
+			mix(&pre, value, value, &(p_pb->pedals[i].pedal_formatted.config));
+		}
     }
 }
 
@@ -252,13 +260,13 @@ void noise_gate_pedal_process(float *value, pedal_config_t *conf) {
 
 // BYPASS
 
-void bypass_pedal_init(pedal_config_t *conf) {
-    return;
-}
+//void bypass_pedal_init(pedal_config_t *conf) {
+//    return;
+//}
 
-void bypass_pedal_process(float *value, pedal_config_t *conf) {
-    return;
-}
+//void bypass_pedal_process(float *value, pedal_config_t *conf) {
+//    return;
+//}
 
 // DSP
 

@@ -8,12 +8,10 @@
 #ifndef PEDALBOARD_PEDALBOARD_H_
 #define PEDALBOARD_PEDALBOARD_H_
 
-#define MAX_PEDALS_COUNT 8
+#define MAX_PEDALS_COUNT 6
 
-// 8 pedals, with 9 float parameters and 3 integers parameters
-// 8 * (9 * 32 + 3 * 32) = 3072 bits
-// 384 bytes
-// 1152 byte with value alongside max and min
+#define RAW_PEDAL_SIZE 145
+// hopefully 144 for params, 1 for type and 0 for function pointer
 
 // ENUMERATION
 
@@ -70,24 +68,24 @@ typedef struct _pedal_config_t {
 
 typedef struct _pedal_t {
     pedal_config_t config;
-    enum pedal_types type;
+    uint8_t type;
     void (*pedal_process)(float *value, pedal_config_t *p_config);
 } pedal_t;
 
 typedef union _pedal_union_t {
 	pedal_t pedal_formatted;
-	uint8_t pedal_raw[144+2];
+	uint8_t pedal_raw[RAW_PEDAL_SIZE];
 } pedal_union_t;
 
 // PEDALBOARD
 
 typedef struct _Pedalboard_Handler {
-    uint8_t active_pedals;
     pedal_union_t pedals[MAX_PEDALS_COUNT];
 } Pedalboard_Handler;
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb);
-void Pedalboard_Append(Pedalboard_Handler *p_pb, enum pedal_types type);
+void Pedalboard_InsertPedal(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i);
+void Pedalboard_DeletePedal(Pedalboard_Handler *p_pb, uint8_t i);
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
 
 #endif /* PEDALBOARD_PEDALBOARD_H_ */

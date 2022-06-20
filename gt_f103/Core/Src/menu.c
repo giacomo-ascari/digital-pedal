@@ -11,15 +11,7 @@
 #include <stdio.h>
 
 void Menu_Init(Menu_HandleTypeDef *hm) {
-	hm->active_pedals = 0;
 	hm->selected_page = OVERVIEW;
-}
-
-void Menu_ParsePedal(Menu_HandleTypeDef *hm, uint8_t *data) {
-
-	uint16_t pedal_index = data[255];
-	memcpy(hm->pedals[pedal_index].pedal_raw, data, 146);
-
 }
 
 void Menu_ParseSignal(Menu_HandleTypeDef *hm, uint8_t *data) {
@@ -43,30 +35,35 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 
 		sprintf(row, "overview");
 		Painter_WriteString(image, row, 10, 10, BOT_LEFT, LARGE);
-		sprintf(row, "%d/%d", hm->active_pedals, MAX_PEDALS_COUNT);
-		Painter_WriteString(image, row, 127, 10, BOT_LEFT, SMALL);
+		uint8_t active_pedals = 0;
 
 		for (uint16_t i = 0; i < MAX_PEDALS_COUNT; i++) {
 			enum pedal_types t = hm->pedals[i].pedal_formatted.type;
+			uint16_t width = CANVAS_HEIGHT / MAX_PEDALS_COUNT;
 			if (t == BYPASS) {
-				Painter_ToggleRectangle(image, CANVAS_WIDTH / MAX_PEDALS_COUNT * i + 5, 31, CANVAS_WIDTH / MAX_PEDALS_COUNT  * (i+1) - 5, 95, BOT_LEFT);
-				Painter_ToggleRectangle(image, CANVAS_WIDTH / MAX_PEDALS_COUNT * i + 6, 32, CANVAS_WIDTH / MAX_PEDALS_COUNT  * (i+1) - 6, 94, BOT_LEFT);
+				Painter_ToggleRectangle(image, width * i + 4, 35, width * (i+1) - 4, 95, BOT_LEFT);
+				Painter_ToggleRectangle(image, width * i + 5, 36, width * (i+1) - 5, 94, BOT_LEFT);
 			} else {
-				Painter_ToggleRectangle(image, CANVAS_WIDTH / MAX_PEDALS_COUNT * i + 5, 31, CANVAS_WIDTH / MAX_PEDALS_COUNT  * (i+1) - 5, 95, BOT_LEFT);
+				active_pedals++;
+				Painter_ToggleRectangle(image, width * i + 4, 35, width * (i+1) - 4, 95, BOT_LEFT);
 				switch(t) {
 				case AMPLIFIER: sprintf(row, "amp"); break;
 				case BITCRUSHER_RS: sprintf(row, "bit"); break;
 				case FUZZ: sprintf(row, "fzz"); break;
-				case LPF: sprintf(row, "amp"); break;
+				case LPF: sprintf(row, "lpf"); break;
 				case NOISE_GATE: sprintf(row, "ngt"); break;
 				case OVERDRIVE: sprintf(row, "ovr"); break;
 				case OVERDRIVE_SQRT: sprintf(row, "ovrs"); break;
 				case TREMOLO: sprintf(row, "trm"); break;
 				default: sprintf(row, "@@@");
 				}
-				Painter_WriteString(image, row, 64, CANVAS_WIDTH / MAX_PEDALS_COUNT * i + 12, BOT_RIGHT, SMALL);
+				Painter_WriteString(image, row, 40, width * i + width / 2 - 6, BOT_RIGHT, SMALL);
 			}
 		}
+
+		sprintf(row, "%d/%d", active_pedals, MAX_PEDALS_COUNT);
+		Painter_WriteString(image, row, 260, 14, BOT_LEFT, SMALL);
+
 	} else {
 		sprintf(row, "what");
 		Painter_WriteString(image, row, 120, 60, BOT_LEFT, LARGE);

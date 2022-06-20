@@ -25,6 +25,7 @@
 #include "commander.h"
 #include "painter2.h"
 #include "rencoder.h"
+#include "menu.h"
 #include <string.h>
 #include <stdio.h>
 /* USER CODE END Includes */
@@ -52,6 +53,8 @@ DMA_HandleTypeDef hdma_usart3_rx;
 /* USER CODE BEGIN PV */
 
 Commander_HandleTypeDef hcommander;
+
+Menu_HandleTypeDef hmenu;
 
 uint16_t led_pins[6] = { LD1_Pin, LD2_Pin, LD3_Pin, LD4_Pin, LD5_Pin, LD6_Pin };
 int led_port[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
@@ -95,22 +98,23 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	Commander_Enqueue(&hcommander, &command);
 }
 
+Command _command;
+
 void command_callback(Command command) {
 
-	if (command.header == 0x05) {
-		EPD_Init(&hepd1);
-		//char row[16+1];
-		//draw_clean(hepd1.image);
-		//sprintf(row, "g33ky toad");
-		//draw_text(hepd1.image, row, 40, 60);
-		char row[16+1];
-		sprintf(row, "g33ky toad @@");
-		Painter_WriteString(hepd1.image, row, 20, 50, TOP_LEFT, LARGE);
-		Painter_ToggleCanvas(hepd1.image);
-		EPD_Display_Partial(&hepd1);
-		Painter_ToggleCanvas(hepd1.image);
-		EPD_Display_Partial(&hepd1);
-		EPD_Sleep(&hepd1);
+	if (command.header == 0x01) {
+
+		memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
+
+		if (command.subheader == MAX_PEDALS_COUNT - 1) {
+			EPD_Init(&hepd1);
+			Menu_Render(&hmenu, hepd1.image);
+			Painter_ToggleCanvas(hepd1.image);
+			EPD_Display_Partial(&hepd1);
+			Painter_ToggleCanvas(hepd1.image);
+			EPD_Display_Partial(&hepd1);
+			EPD_Sleep(&hepd1);
+		}
 	}
 
 }
@@ -153,6 +157,8 @@ int main(void)
 	Commander_Init(&hcommander, &huart3, &hdma_usart3_rx, command_callback);
 	Commander_Start(&hcommander);
 
+	Menu_Init(&hmenu);
+
 	RE_Init(&hre1, ENC1A_GPIO_Port, ENC1B_GPIO_Port, ENC1A_Pin, ENC1B_Pin, 1);
 	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin, 1);
 
@@ -161,14 +167,26 @@ int main(void)
 
 	Painter_Clean(hepd1.image);
 
-	char row[16+1];
-
-	sprintf(row, "g33ky toad @@");
-	Painter_WriteString(hepd1.image, row, 10, 20, TOP_LEFT, SMALL);
-	Painter_WriteString(hepd1.image, row, 40, 20, BOT_LEFT, LARGE);
+	char row[24];
+	sprintf(row, "G33KY TOAD");
+	Painter_WriteString(hepd1.image, row, (296 - 10 * 12) / 2, 30, BOT_LEFT, LARGE);
+	sprintf(row, "@");
+	Painter_WriteString(hepd1.image, row, 50, (296 - 1 * 18) / 2, TOP_LEFT, LARGE);
+	sprintf(row, "BY GIACOMO ASCARI");
+	Painter_WriteString(hepd1.image, row, (296 - 17 * 8) / 2, 70, BOT_LEFT, SMALL);
+	sprintf(row, "AND EVGENY DEMENEV");
+	Painter_WriteString(hepd1.image, row, (296 - 18 * 8) / 2, 90, BOT_LEFT, SMALL);
 
 	EPD_Display(&hepd1);
 	EPD_Sleep(&hepd1);
+
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+	_command.header = 0x02;
+	_command.subheader = 0x01;
+	Commander_Send(&hcommander, &_command);
+
+	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 
   /* USER CODE END 2 */
 
@@ -183,11 +201,6 @@ int main(void)
 
 		RE_Process(&hre1);
 		RE_Process(&hre2);
-
-		for (int i = 0; i < 6; i++) {
-			int thr = (RE_GetCount(&hre1) + RE_GetCount(&hre2)) % 6;
-			HAL_GPIO_WritePin((GPIO_TypeDef *)led_port[i], led_pins[i], i <= thr ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		}
 	}
   /* USER CODE END 3 */
 }

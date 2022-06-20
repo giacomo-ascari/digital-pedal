@@ -68,14 +68,14 @@ void Painter_TogglePixel(uint8_t *image, uint16_t *x, uint16_t *y, enum Origin o
 		_x = *x;
 		_y = *y;
 	} else if (origin == TOP_RIGHT) {
-		_x = CANVAS_WIDTH - *x -1;
-		_y = *y;
+		_x = CANVAS_WIDTH - *y -1;
+		_y = *x;
 	} else if (origin == BOT_RIGHT) {
 		_x = CANVAS_WIDTH - *x -1;
 		_y = CANVAS_HEIGHT - *y -1;
 	} else if (origin == BOT_LEFT) {
-		_x = *x;
-		_y = CANVAS_HEIGHT - *y -1;
+		_x = *y;
+		_y = CANVAS_HEIGHT - *x -1;
 	}
 
 	if (_x < CANVAS_WIDTH && _y < CANVAS_HEIGHT) {

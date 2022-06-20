@@ -25,15 +25,12 @@ enum page_types {
 typedef struct _Menu_HandleTypeDef {
 	enum page_types selected_page;
 	uint8_t usb_ready;
-	uint8_t active_pedals;
 	pedal_union_t pedals[MAX_PEDALS_COUNT];
 	uint8_t signal_in[SIGNAL_SIZE];
 	uint8_t signal_out[SIGNAL_SIZE];
 } Menu_HandleTypeDef;
 
 void Menu_Init(Menu_HandleTypeDef *hm);
-
-void Menu_ParsePedal(Menu_HandleTypeDef *hm, uint8_t *data);
 
 void Menu_ParseSignal(Menu_HandleTypeDef *hm, uint8_t *data);
 

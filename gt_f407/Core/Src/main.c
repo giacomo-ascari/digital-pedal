@@ -92,11 +92,6 @@ union _ADC_BUFF {
 } ADC_BUFF;
 int32_t BUFF_CONV[4];
 
-uint32_t debug_samples[128];
-int8_t samples_count = 0;
-
-uint8_t volume = 0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,8 +129,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	Commander_Enqueue(&hcommander, &command);
 }
 
+Command _command;
+
 void command_callback(Command command) {
-	//states[0] = states[0] == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+
+	if (command.header == 0x02) {
+
+		if (command.subheader == 0x01) {
+			_command.header = 0x01;
+			_command.blocking = 0x00;
+			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+				_command.subheader = i;
+				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+				Commander_Send(&hcommander, &_command);
+			}
+		}
+	}
 }
 
 // 0 medium significant byte
@@ -293,19 +302,15 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	//Pedalboard_Append(&hpedalboard, AMPLIFIER);
-	//Pedalboard_Append(&hpedalboard, LPF);
-
+	Pedalboard_InsertPedal(&hpedalboard, AMPLIFIER, 0);
+	Pedalboard_InsertPedal(&hpedalboard, LPF, 5);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
 	cs43l22_Init(0x94, OUTPUT_DEVICE_HEADPHONE, 200, AUDIO_FREQUENCY_48K);
 	cs43l22_Play(AUDIO_I2C_ADDRESS, (uint16_t *)DAC_BUFF, SAMPLES_QUANTITY);
 	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, SAMPLES_QUANTITY);
-	volume = 220;
-	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, volume);
-
-	//customBeeper();
+	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, 220);
 
 	// ADC
 	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
@@ -322,6 +327,8 @@ int main(void)
 		/* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
+		Commander_Process(&hcommander);
+
 		if (Appli_state == APPLICATION_START) {
 			if(f_mount(&usbFatFS, (TCHAR const*)USBHPath, 0) == FR_OK)
 			{
@@ -335,16 +342,6 @@ int main(void)
 		} else {
 			//aaa
 		}
-
-		HAL_Delay(900);
-
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-
-		HAL_Delay(100);
-
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
 	}
 	/* USER CODE END 3 */
