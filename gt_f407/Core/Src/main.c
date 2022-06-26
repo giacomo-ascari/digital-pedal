@@ -201,13 +201,13 @@ uint32_t tx_cplt_counter = 0;
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		//uint32_t left;
-		uint32_t right;
+		//uint32_t left; // ring
+		uint32_t right; // tip
 
 		if (dsp_index < HALF_QUANTITY) {
 			//ConvertNProcess(&ADC_BUFF.ADC8[0], &left, &DSP_BUFF[dsp_index]);
 			ConvertNProcess(&ADC_BUFF.ADC8[4], &right, &DSP_BUFF[dsp_index + 1]);
-			DSP_BUFF[dsp_index] = DSP_BUFF[dsp_index + 1];
+			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
 			dsp_index += 2;
 			rx_half_counter++;
 		}
@@ -216,13 +216,13 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		//uint32_t left;
-		uint32_t right;
+		//uint32_t left; // ring
+		uint32_t right; // tip
 
 		if (dsp_index < HALF_QUANTITY) {
 			//ConvertNProcess(&ADC_BUFF.ADC8[8], &left, &DSP_BUFF[dsp_index]);
 			ConvertNProcess(&ADC_BUFF.ADC8[12], &right, &DSP_BUFF[dsp_index + 1]);
-			DSP_BUFF[dsp_index] = DSP_BUFF[dsp_index + 1];
+			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
 			dsp_index += 2;
 			rx_cplt_counter++;
 		}
