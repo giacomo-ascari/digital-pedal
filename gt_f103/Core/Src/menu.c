@@ -6,24 +6,11 @@
  */
 
 #include "menu.h"
-#include "painter2.h"
 #include <string.h>
 #include <stdio.h>
 
 void Menu_Init(Menu_HandleTypeDef *hm) {
 	hm->selected_page = OVERVIEW;
-}
-
-void Menu_ParseSignal(Menu_HandleTypeDef *hm, uint8_t *data) {
-
-	uint8_t *buffer;
-
-	if (data[255] == 0) buffer = hm->signal_in;
-	else buffer = hm->signal_out;
-
-	for (uint16_t i = 0; i < SIGNAL_SIZE; i++) {
-		buffer[i] = data[i];
-	}
 }
 
 void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
@@ -64,8 +51,28 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 		sprintf(row, "%d/%d", active_pedals, MAX_PEDALS_COUNT);
 		Painter_WriteString(image, row, 260, 14, BOT_LEFT, SMALL);
 
+	} else if (hm->selected_page == PLOT) {
+
+		sprintf(row, "PLOT");
+		Painter_WriteString(image, row, 10, 10, BOT_LEFT, LARGE);
+
 	} else {
-		sprintf(row, "what");
+
+		sprintf(row, "what the %d", hm->selected_page);
 		Painter_WriteString(image, row, 120, 60, BOT_LEFT, LARGE);
 	}
+}
+
+void Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page) {
+	if (new_page == OVERVIEW) {
+		hm->command.header = 1;
+		hm->command.subheader = 1;
+		Commander_Send(hm->hcommander, &(hm->command));
+	} else if (new_page == PLOT) {
+		hm->command.header = 2;
+		hm->command.subheader = 1;
+		Commander_Send(hm->hcommander, &(hm->command));
+	}
+
+	hm->selected_page = new_page;
 }

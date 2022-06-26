@@ -56,9 +56,11 @@ Commander_HandleTypeDef hcommander;
 
 Menu_HandleTypeDef hmenu;
 
+uint16_t btn_pins[8] = { BTN1_Pin, BTN2_Pin, BTN3_Pin, BTN4_Pin, BTN5_Pin, BTN6_Pin, BTN_ENC1_Pin, BTN_ENC2_Pin };
+GPIO_TypeDef * btn_ports[8] = { BTN1_GPIO_Port, BTN2_GPIO_Port, BTN3_GPIO_Port, BTN4_GPIO_Port, BTN5_GPIO_Port, BTN6_GPIO_Port, BTN_ENC1_GPIO_Port, BTN_ENC2_GPIO_Port };
+
 uint16_t led_pins[6] = { LD1_Pin, LD2_Pin, LD3_Pin, LD4_Pin, LD5_Pin, LD6_Pin };
-int led_port[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
-int states[6] = { GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET, GPIO_PIN_RESET };
+GPIO_TypeDef * led_ports[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
 
 //float display_array[296];
 EPD_HandleTypeDef hepd1;
@@ -81,6 +83,13 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void blink() {
+	for (uint8_t i = 0; i < 6; i++) HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_SET);
+	for (uint32_t i = 0; i < 1000000; i++) {};
+	for (uint8_t i = 0; i < 6; i++) HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_RESET);
+	for (uint32_t i = 0; i < 1000000; i++) {}
+}
+
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
@@ -98,14 +107,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	Commander_Enqueue(&hcommander, &command);
 }
 
-Command _command;
+
 
 void command_callback(Command command) {
 
-	if (command.header == 0x01) {
+	//blink();
+
+	if (command.header == 1) {
 
 		memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
-
 		if (command.subheader == MAX_PEDALS_COUNT - 1) {
 			EPD_Init(&hepd1);
 			Menu_Render(&hmenu, hepd1.image);
@@ -115,6 +125,18 @@ void command_callback(Command command) {
 			EPD_Display_Partial(&hepd1);
 			EPD_Sleep(&hepd1);
 		}
+
+	} else if (command.header == 2) {
+
+		// plot signal
+		EPD_Init(&hepd1);
+		Menu_Render(&hmenu, hepd1.image);
+		Painter_ToggleCanvas(hepd1.image);
+		EPD_Display_Partial(&hepd1);
+		Painter_ToggleCanvas(hepd1.image);
+		EPD_Display_Partial(&hepd1);
+		EPD_Sleep(&hepd1);
+
 	}
 
 }
@@ -154,10 +176,14 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+  	for (uint8_t i = 0; i < 6; i++) HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_SET);
+
 	Commander_Init(&hcommander, &huart3, &hdma_usart3_rx, command_callback);
 	Commander_Start(&hcommander);
 
 	Menu_Init(&hmenu);
+	hmenu.hcommander = &hcommander;
+	uint8_t new_page;
 
 	RE_Init(&hre1, ENC1A_GPIO_Port, ENC1B_GPIO_Port, ENC1A_Pin, ENC1B_Pin, 1);
 	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin, 1);
@@ -180,13 +206,12 @@ int main(void)
 	EPD_Display(&hepd1);
 	EPD_Sleep(&hepd1);
 
-	HAL_Delay(1000);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	_command.header = 0x02;
-	_command.subheader = 0x01;
-	Commander_Send(&hcommander, &_command);
+	for (uint8_t i = 0; i < 6; i++) HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_RESET);
 
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	HAL_Delay(50);
+
+	Menu_GoTo(&hmenu, OVERVIEW);
+	new_page = hmenu.selected_page;
 
   /* USER CODE END 2 */
 
@@ -201,6 +226,20 @@ int main(void)
 
 		RE_Process(&hre1);
 		RE_Process(&hre2);
+
+		for (uint8_t i = 0; i < 6; i++) {
+			if (HAL_GPIO_ReadPin(btn_ports[i], btn_pins[i]) == GPIO_PIN_RESET) {
+				new_page = i;
+			}
+		}
+
+		if (new_page != hmenu.selected_page) {
+			Menu_GoTo(&hmenu, new_page);
+		}
+
+		for (uint8_t i = 0; i < 6; i++)  {
+			HAL_GPIO_WritePin(led_ports[i], led_pins[i], i == hmenu.selected_page ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		}
 	}
   /* USER CODE END 3 */
 }

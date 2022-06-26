@@ -206,7 +206,7 @@ void amplifier_pedal_process(float *value, pedal_config_t *conf) {
 // LPF
 
 void low_pass_filter_pedal_init(pedal_config_t *conf) {
-    conf->float_params[SOFTENER] = (float_parameter_t){0.9F, 0.0F, 1.0F};
+    conf->float_params[SOFTENER] = (float_parameter_t){0.01F, 0.0F, 1.0F};
     conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F};
     conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F};
     conf->float_params[PAST] = (float_parameter_t){0.F, 0.F, 0.F};
