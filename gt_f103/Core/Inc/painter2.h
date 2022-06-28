@@ -78,6 +78,8 @@ void Painter_TogglePixel(uint8_t *image, uint16_t *x, uint16_t *y, enum Origin o
 
 void Painter_ToggleRectangle(uint8_t *image, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, enum Origin origin);
 
+void Painter_ToggleDottedRectangle(uint8_t *image, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, enum Origin origin);
+
 void Painter_WriteString(uint8_t *image, char *text, uint16_t x, uint16_t y, enum Origin origin, enum Font font);
 
 void Painter_WriteChar(uint8_t *image, char c, uint16_t x, uint16_t y, enum Origin origin, enum Font font);

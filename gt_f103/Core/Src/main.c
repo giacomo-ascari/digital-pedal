@@ -111,12 +111,29 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void command_callback(Command command) {
 
-	//blink();
+	// MENU RESPONSE EVENTS
 
 	if (command.header == 1) {
 
 		memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
 		if (command.subheader == MAX_PEDALS_COUNT - 1) {
+			EPD_Init(&hepd1);
+			Menu_Render(&hmenu, hepd1.image);
+			EPD_Display(&hepd1);
+			EPD_Sleep(&hepd1);
+		}
+
+	} else if (command.header == 2) {
+
+		// plot signal
+		memcpy(hmenu.signal_in, command.payload.bytes, SIGNAL_SIZE);
+		memcpy(hmenu.signal_out, command.payload.bytes + SIGNAL_SIZE, SIGNAL_SIZE);
+		if (command.subheader == 1) {
+			EPD_Init(&hepd1);
+			Menu_Render(&hmenu, hepd1.image);
+			EPD_Display(&hepd1);
+			EPD_Sleep(&hepd1);
+		} else {
 			EPD_Init(&hepd1);
 			Menu_Render(&hmenu, hepd1.image);
 			Painter_ToggleCanvas(hepd1.image);
@@ -125,18 +142,6 @@ void command_callback(Command command) {
 			EPD_Display_Partial(&hepd1);
 			EPD_Sleep(&hepd1);
 		}
-
-	} else if (command.header == 2) {
-
-		// plot signal
-		EPD_Init(&hepd1);
-		Menu_Render(&hmenu, hepd1.image);
-		Painter_ToggleCanvas(hepd1.image);
-		EPD_Display_Partial(&hepd1);
-		Painter_ToggleCanvas(hepd1.image);
-		EPD_Display_Partial(&hepd1);
-		EPD_Sleep(&hepd1);
-
 	}
 
 }
@@ -187,6 +192,10 @@ int main(void)
 
 	RE_Init(&hre1, ENC1A_GPIO_Port, ENC1B_GPIO_Port, ENC1A_Pin, ENC1B_Pin, 1);
 	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin, 1);
+	uint8_t enc1_old = HAL_GPIO_ReadPin(btn_ports[6], btn_pins[6]);
+	uint8_t enc2_old = HAL_GPIO_ReadPin(btn_ports[7], btn_pins[7]);
+	uint8_t enc1_new = enc1_old;
+	uint8_t enc2_new = enc2_old;
 
 	EPD_Init(&hepd1);
 	EPD_Clear(&hepd1);
@@ -210,8 +219,7 @@ int main(void)
 
 	HAL_Delay(50);
 
-	Menu_GoTo(&hmenu, OVERVIEW);
-	new_page = hmenu.selected_page;
+	Menu_GoTo(&hmenu, OVERVIEW, 0);
 
   /* USER CODE END 2 */
 
@@ -227,6 +235,7 @@ int main(void)
 		RE_Process(&hre1);
 		RE_Process(&hre2);
 
+		new_page = hmenu.selected_page;
 		for (uint8_t i = 0; i < 6; i++) {
 			if (HAL_GPIO_ReadPin(btn_ports[i], btn_pins[i]) == GPIO_PIN_RESET) {
 				new_page = i;
@@ -234,7 +243,23 @@ int main(void)
 		}
 
 		if (new_page != hmenu.selected_page) {
-			Menu_GoTo(&hmenu, new_page);
+			// MENU PAGE BUTTON EVENT
+			Menu_GoTo(&hmenu, new_page, VISIBLE);
+			hmenu.tick = HAL_GetTick();
+		} else {
+			// MENU TIMER EVENTS
+			if (hmenu.selected_page == PLOT) {
+				enc1_new = HAL_GPIO_ReadPin(btn_ports[6], btn_pins[6]);
+				enc2_new = HAL_GPIO_ReadPin(btn_ports[7], btn_pins[7]);
+				if (enc1_new == GPIO_PIN_RESET && enc1_old == GPIO_PIN_SET) hmenu.plot_multiplier--;
+				if (enc2_new == GPIO_PIN_RESET && enc2_old == GPIO_PIN_SET) hmenu.plot_multiplier++;
+				enc1_old = enc1_new;
+				enc2_old = enc2_new;
+				if (hmenu.tick + 3000 < HAL_GetTick()) {
+					hmenu.tick = HAL_GetTick();
+					Menu_GoTo(&hmenu, PLOT, HIDDEN);
+				}
+			}
 		}
 
 		for (uint8_t i = 0; i < 6; i++)  {

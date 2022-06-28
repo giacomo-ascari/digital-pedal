@@ -70,6 +70,11 @@ Pedalboard_Handler hpedalboard;
 #define SAMPLES_QUANTITY 64 // two halves combined
 #define HALF_QUANTITY 32 // which 16 are left and 16 are right
 
+#define SIGNAL_SIZE 128
+uint16_t signal_index = 0;
+int8_t signal_in[SIGNAL_SIZE];
+int8_t signal_out[SIGNAL_SIZE];
+
 // DAC
 extern AUDIO_DrvTypeDef cs43l22_drv;
 int16_t DAC_BUFF[SAMPLES_QUANTITY + SAMPLES_QUANTITY];
@@ -159,8 +164,11 @@ void command_callback(Command command) {
 
 		_command.header = 2;
 		_command.blocking = 0;
+		_command.subheader = command.subheader;
+		memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
+		memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
 		Commander_Send(&hcommander, &_command);
-
+		signal_index = 0;
 	}
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
@@ -172,7 +180,7 @@ void command_callback(Command command) {
 // 2 empty byte
 // 3 least significant byte
 
-void Conv_ADC(uint8_t * buf, uint32_t *res){
+/*void Conv_ADC(uint8_t * buf, uint32_t *res){
 	*res = 0x00000000 + (buf[1]<<24) + (buf[0]<<16) + (buf[3]<<8);
 }
 
@@ -183,48 +191,58 @@ void ADC_Process(uint32_t *_raw, int16_t *out) {
 	*out = (int16_t) mid;
 }
 
-uint32_t wave_counter = 0;
-void ConvertNProcess(uint8_t * buf, uint32_t * res, int16_t * out) {
-	Conv_ADC(&ADC_BUFF.ADC8[4], res);
-	ADC_Process(res, out);
-	//float f;
-	//wave_gen(&f, 's', wave_counter, 440.F);
-	//f *= 485.F;
-	//*out = (int16_t)f;
-	//wave_counter++;
-}
+Conv_ADC(&ADC_BUFF.ADC8[4], res);
+ADC_Process(res, out);
+*/
 
-uint32_t rx_half_counter = 0;
-uint32_t rx_cplt_counter = 0;
-uint32_t tx_half_counter = 0;
-uint32_t tx_cplt_counter = 0;
+
+void DSP(uint8_t * buf, int16_t * out) {
+
+	// RAW (int16) and OUT (int16*) are input and output
+
+	// conversion of terrible adc i2s frame
+	uint32_t adc = 0x00000000 + (buf[1]<<24) + (buf[0]<<16) + (buf[3]<<8);
+
+	// cutting 24bits on 32bits frame to 16bits
+	int16_t raw = (adc >> 16);
+
+	// casting 16bits to 32bits float
+	// this leaves room for dsp operations
+	// that requires additional precision
+	float mid = (float)raw;
+
+	// processing intermediate value
+	Pedalboard_Process(&hpedalboard, &mid);
+
+	// casting float to 16bits
+	*out = (int16_t)mid;
+
+	// saving for debugging thingies
+	if (signal_index < SIGNAL_SIZE) {
+		signal_in[signal_index] = raw >> 8;
+		signal_out[signal_index] = (*out) >> 8;
+		signal_index++;
+	}
+}
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		//uint32_t left; // ring
-		uint32_t right; // tip
-
 		if (dsp_index < HALF_QUANTITY) {
-			//ConvertNProcess(&ADC_BUFF.ADC8[0], &left, &DSP_BUFF[dsp_index]);
-			ConvertNProcess(&ADC_BUFF.ADC8[4], &right, &DSP_BUFF[dsp_index + 1]);
+			//DSP(&ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index]); // ring (left)
+			DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[dsp_index + 1]); // tip (right)
 			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
 			dsp_index += 2;
-			rx_half_counter++;
 		}
 	}
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		//uint32_t left; // ring
-		uint32_t right; // tip
-
 		if (dsp_index < HALF_QUANTITY) {
-			//ConvertNProcess(&ADC_BUFF.ADC8[8], &left, &DSP_BUFF[dsp_index]);
-			ConvertNProcess(&ADC_BUFF.ADC8[12], &right, &DSP_BUFF[dsp_index + 1]);
+			//DSP(&ADC_BUFF.ADC8[8], &DSP_BUFF[dsp_index]); // ring (left)
+			DSP(&ADC_BUFF.ADC8[12], &DSP_BUFF[dsp_index + 1]); // tip (right)
 			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
 			dsp_index += 2;
-			rx_cplt_counter++;
 		}
 
 	}
@@ -235,7 +253,6 @@ void AUDIO_OUT_HalfTransfer_CallBack() {
 		DAC_BUFF[i] = DSP_BUFF[i];
 	}
 	dsp_index = 0;
-	tx_half_counter++;
 }
 
 void AUDIO_OUT_TransferComplete_CallBack() {
@@ -243,7 +260,6 @@ void AUDIO_OUT_TransferComplete_CallBack() {
 			DAC_BUFF[HALF_QUANTITY + i] = DSP_BUFF[i];
 	}
 	dsp_index = 0;
-	tx_cplt_counter++;
 }
 
 /*
