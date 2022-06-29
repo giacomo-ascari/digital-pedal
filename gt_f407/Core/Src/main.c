@@ -71,7 +71,10 @@ Pedalboard_Handler hpedalboard;
 #define HALF_QUANTITY 32 // which 16 are left and 16 are right
 
 #define SIGNAL_SIZE 128
-uint16_t signal_index = 0;
+volatile uint8_t plot_xscale = 1;
+volatile uint8_t plot_yscale = 1;
+volatile uint16_t signal_index = 0;
+volatile uint32_t signal_samples = 0;
 int8_t signal_in[SIGNAL_SIZE];
 int8_t signal_out[SIGNAL_SIZE];
 
@@ -117,15 +120,6 @@ void MX_USB_HOST_Process(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void blink() {
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	for (uint32_t i = 0; i < 20000000; i++) {}
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-	for (uint32_t i = 0; i < 20000000; i++) {}
-}
-
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
@@ -153,7 +147,6 @@ void command_callback(Command command) {
 	if (command.header == 1) {
 
 		_command.header = 1;
-		_command.blocking = 0;
 		for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
 			_command.subheader = i;
 			memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
@@ -163,12 +156,25 @@ void command_callback(Command command) {
 	} else if (command.header == 2) {
 
 		_command.header = 2;
-		_command.blocking = 0;
 		_command.subheader = command.subheader;
+		plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
+		plot_yscale = command.payload.bytes[1];
+		signal_index = 0;
+
+		while (signal_index < SIGNAL_SIZE);
+
 		memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
 		memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
 		Commander_Send(&hcommander, &_command);
-		signal_index = 0;
+
+	} else if (command.header == 3) {
+
+		_command.header = 3;
+		for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+			_command.subheader = i;
+			memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+			Commander_Send(&hcommander, &_command);
+		}
 	}
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
@@ -218,11 +224,12 @@ void DSP(uint8_t * buf, int16_t * out) {
 	*out = (int16_t)mid;
 
 	// saving for debugging thingies
-	if (signal_index < SIGNAL_SIZE) {
-		signal_in[signal_index] = raw >> 8;
-		signal_out[signal_index] = (*out) >> 8;
+	if (signal_index < SIGNAL_SIZE && signal_samples % plot_xscale == 0) {
+		signal_in[signal_index] = (raw * plot_yscale) >> 8;
+		signal_out[signal_index] = (*out * plot_yscale) >> 8;
 		signal_index++;
 	}
+	signal_samples++;
 }
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {

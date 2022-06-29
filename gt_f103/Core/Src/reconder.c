@@ -8,7 +8,7 @@
 #include "rencoder.h"
 
 void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, uint16_t pinA, uint16_t pinB, uint16_t divider) {
-	hre->lasttick = 0;
+	//hre->lasttick = 0;
 	hre->lastA = 0;
 	hre->lastB = 0;
 	hre->currentA = 0;
@@ -22,8 +22,8 @@ void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, ui
 }
 
 uint8_t RE_Process(RE_HandleTypeDef *hre) {
-	if (HAL_GetTick() != hre->lasttick) {
-		hre->lasttick = HAL_GetTick();
+	//if (HAL_GetTick() != hre->lasttick) {
+		//hre->lasttick = HAL_GetTick();
 		hre->lastA = hre->currentA;
 		hre->lastB = hre->currentB;
 
@@ -56,7 +56,7 @@ uint8_t RE_Process(RE_HandleTypeDef *hre) {
 			return 1;
 
 		}
-	}
+	//}
 	return 0;
 }
 

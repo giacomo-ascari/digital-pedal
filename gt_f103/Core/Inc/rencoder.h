@@ -11,7 +11,7 @@
 #include "stm32f1xx_hal.h"
 
 typedef struct _RE_HandleTypeDef {
-	uint32_t lasttick;
+	//uint32_t lasttick;
 	uint16_t lastA, lastB;
 	uint16_t currentA, currentB;
 	GPIO_TypeDef *portA, *portB;

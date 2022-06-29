@@ -37,9 +37,12 @@ typedef struct _Menu_HandleTypeDef {
 	Command command;
 	Commander_HandleTypeDef *hcommander;
 	// state related variables
-	uint8_t plot_multiplier;
+	uint8_t plot_xscale;
+	uint8_t plot_yscale;
 	uint8_t usb_ready;
 	uint32_t tick;
+	// desperate debug
+	uint32_t debug;
 } Menu_HandleTypeDef;
 
 void Menu_Init(Menu_HandleTypeDef *hm);

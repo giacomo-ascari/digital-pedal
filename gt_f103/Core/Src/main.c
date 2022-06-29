@@ -142,6 +142,16 @@ void command_callback(Command command) {
 			EPD_Display_Partial(&hepd1);
 			EPD_Sleep(&hepd1);
 		}
+	} else if (command.header == 3) {
+
+		// edit pedals
+		memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
+		if (command.subheader == MAX_PEDALS_COUNT - 1) {
+			EPD_Init(&hepd1);
+			Menu_Render(&hmenu, hepd1.image);
+			EPD_Display(&hepd1);
+			EPD_Sleep(&hepd1);
+		}
 	}
 
 }
@@ -192,10 +202,8 @@ int main(void)
 
 	RE_Init(&hre1, ENC1A_GPIO_Port, ENC1B_GPIO_Port, ENC1A_Pin, ENC1B_Pin, 1);
 	RE_Init(&hre2, ENC2A_GPIO_Port, ENC2B_GPIO_Port, ENC2A_Pin, ENC2B_Pin, 1);
-	uint8_t enc1_old = HAL_GPIO_ReadPin(btn_ports[6], btn_pins[6]);
-	uint8_t enc2_old = HAL_GPIO_ReadPin(btn_ports[7], btn_pins[7]);
-	uint8_t enc1_new = enc1_old;
-	uint8_t enc2_new = enc2_old;
+	uint8_t enc1_old = 0;
+	uint8_t enc2_old = 0;
 
 	EPD_Init(&hepd1);
 	EPD_Clear(&hepd1);
@@ -232,9 +240,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		Commander_Process(&hcommander);
 
-		RE_Process(&hre1);
-		RE_Process(&hre2);
-
 		new_page = hmenu.selected_page;
 		for (uint8_t i = 0; i < 6; i++) {
 			if (HAL_GPIO_ReadPin(btn_ports[i], btn_pins[i]) == GPIO_PIN_RESET) {
@@ -246,15 +251,19 @@ int main(void)
 			// MENU PAGE BUTTON EVENT
 			Menu_GoTo(&hmenu, new_page, VISIBLE);
 			hmenu.tick = HAL_GetTick();
+			enc1_old = RE_GetCount(&hre1);
+			enc2_old = RE_GetCount(&hre2);
 		} else {
 			// MENU TIMER EVENTS
 			if (hmenu.selected_page == PLOT) {
-				enc1_new = HAL_GPIO_ReadPin(btn_ports[6], btn_pins[6]);
-				enc2_new = HAL_GPIO_ReadPin(btn_ports[7], btn_pins[7]);
-				if (enc1_new == GPIO_PIN_RESET && enc1_old == GPIO_PIN_SET) hmenu.plot_multiplier--;
-				if (enc2_new == GPIO_PIN_RESET && enc2_old == GPIO_PIN_SET) hmenu.plot_multiplier++;
-				enc1_old = enc1_new;
-				enc2_old = enc2_new;
+				if (RE_Process(&hre1)) {
+					hmenu.plot_xscale += RE_GetCount(&hre1) - enc1_old;
+					enc1_old = RE_GetCount(&hre1);
+				}
+				if (RE_Process(&hre2)) {
+					hmenu.plot_yscale += RE_GetCount(&hre2) - enc2_old;
+					enc2_old = RE_GetCount(&hre2);
+				}
 				if (hmenu.tick + 3000 < HAL_GetTick()) {
 					hmenu.tick = HAL_GetTick();
 					Menu_GoTo(&hmenu, PLOT, HIDDEN);
