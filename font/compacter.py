@@ -33,5 +33,5 @@ def compacter(in_filename, name, fwidth, fheight, out_filename):
     with open(out_filename, "w") as f:
         f.write("uint8_t {}[{}] = {} {}{};".format(name, len(res), "{", s, "}"))
 
-#compacter("font8x12.png", "font_8_12", 8, 12, "font8x12.txt")
+compacter("font8x12.png", "font_8_12", 8, 12, "font8x12.txt")
 compacter("font12x18.png", "font_12_18", 12, 18, "font12x18.txt")

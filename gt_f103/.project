@@ -33,7 +33,7 @@
 		<link>
 			<name>gt_common</name>
 			<type>2</type>
-			<location>/home/asky/Desktop/digital-pedal/gt_common</location>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/gt_common</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
