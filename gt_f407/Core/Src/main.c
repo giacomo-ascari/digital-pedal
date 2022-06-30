@@ -26,6 +26,7 @@
 #include "commander.h"
 #include "AUDIO.h"
 #include "pedalboard.h"
+#include "mode.h"
 
 /* USER CODE END Includes */
 
@@ -55,6 +56,9 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
+
+// MODE
+uint8_t mode = TS_TO_TS;
 
 // USB
 FATFS usbFatFS;
@@ -144,38 +148,69 @@ void command_callback(Command command) {
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (command.header == 1) {
+	if (command.header < 8 && command.subheader < 16 && command.update <= 1) {
 
-		_command.header = 1;
-		for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-			_command.subheader = i;
-			memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+		// ok-ish command
+
+		if (command.header == 1) {
+
+			_command.header = 1;
+			_command.update = command.update;
+			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+				_command.subheader = i;
+				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+				Commander_Send(&hcommander, &_command);
+			}
+
+		} else if (command.header == 2) {
+
+			_command.header = 2;
+			_command.update = command.update;
+			plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
+			plot_yscale = command.payload.bytes[1];
+			signal_index = 0;
+
+			while (signal_index < SIGNAL_SIZE);
+
+			memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
+			memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
 			Commander_Send(&hcommander, &_command);
+
+		} else if (command.header == 3) {
+
+			_command.header = 3;
+			_command.update = command.update;
+			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+				_command.subheader = i;
+				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+				Commander_Send(&hcommander, &_command);
+			}
+
+		} else if (command.header == 4) {
+
+			if (_command.subheader == 0) {
+				// update local mode
+				mode = command.payload.bytes[0];
+			} else {
+				// send local mode
+				_command.header = 4;
+				_command.update = command.update;
+				_command.subheader = 1;
+				_command.payload.bytes[0] = mode;
+				Commander_Send(&hcommander, &_command);
+			}
+
 		}
 
-	} else if (command.header == 2) {
+	} else {
 
-		_command.header = 2;
-		_command.subheader = command.subheader;
-		plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
-		plot_yscale = command.payload.bytes[1];
-		signal_index = 0;
-
-		while (signal_index < SIGNAL_SIZE);
-
-		memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
-		memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
-		Commander_Send(&hcommander, &_command);
-
-	} else if (command.header == 3) {
-
-		_command.header = 3;
-		for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-			_command.subheader = i;
-			memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-			Commander_Send(&hcommander, &_command);
-		}
+		// surely faulty command
+		Commander_Pause(&hcommander);
+		HAL_Delay(500);
+		Commander_Resume(&hcommander);
 	}
+
+
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
@@ -185,22 +220,6 @@ void command_callback(Command command) {
 // 1 most significant byte
 // 2 empty byte
 // 3 least significant byte
-
-/*void Conv_ADC(uint8_t * buf, uint32_t *res){
-	*res = 0x00000000 + (buf[1]<<24) + (buf[0]<<16) + (buf[3]<<8);
-}
-
-void ADC_Process(uint32_t *_raw, int16_t *out) {
-	int16_t raw = (*_raw >> 16);
-	float mid = (float)raw;
-	Pedalboard_Process(&hpedalboard, &mid);
-	*out = (int16_t) mid;
-}
-
-Conv_ADC(&ADC_BUFF.ADC8[4], res);
-ADC_Process(res, out);
-*/
-
 
 void DSP(uint8_t * buf, int16_t * out) {
 
@@ -235,6 +254,25 @@ void DSP(uint8_t * buf, int16_t * out) {
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
 		if (dsp_index < HALF_QUANTITY) {
+
+			if (mode == TS_TO_TS) {
+
+			} else if (mode == TS_TO_RS) {
+
+			} else if (mode == RS_TO_TS) {
+
+			} else if (mode == RS_TO_RS) {
+
+			} else if (mode == TS_TO_TRS_BALANCED) {
+
+			} else if (mode == TS_TO_TRS_UNBALANCED) {
+
+			} else if (mode == RS_TO_TRS_BALANCED) {
+
+			} else if (mode == RS_TO_TRS_UNBALANCED) {
+
+			}
+
 			//DSP(&ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index]); // ring (left)
 			DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[dsp_index + 1]); // tip (right)
 			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
@@ -246,6 +284,25 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
 		if (dsp_index < HALF_QUANTITY) {
+
+			if (mode == TS_TO_TS) {
+
+			} else if (mode == TS_TO_RS) {
+
+			} else if (mode == RS_TO_TS) {
+
+			} else if (mode == RS_TO_RS) {
+
+			} else if (mode == TS_TO_TRS_BALANCED) {
+
+			} else if (mode == TS_TO_TRS_UNBALANCED) {
+
+			} else if (mode == RS_TO_TRS_BALANCED) {
+
+			} else if (mode == RS_TO_TRS_UNBALANCED) {
+
+			}
+
 			//DSP(&ADC_BUFF.ADC8[8], &DSP_BUFF[dsp_index]); // ring (left)
 			DSP(&ADC_BUFF.ADC8[12], &DSP_BUFF[dsp_index + 1]); // tip (right)
 			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
@@ -346,7 +403,7 @@ int main(void)
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
 	Pedalboard_InsertPedal(&hpedalboard, AMPLIFIER, 0);
-	Pedalboard_InsertPedal(&hpedalboard, LPF, 4);
+	Pedalboard_InsertPedal(&hpedalboard, LPF, 2);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);

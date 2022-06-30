@@ -8,12 +8,11 @@
 #ifndef PEDALBOARD_PEDALBOARD_H_
 #define PEDALBOARD_PEDALBOARD_H_
 
-#define MAX_PEDALS_COUNT 6
-
-#define RAW_PEDAL_SIZE 145
-// hopefully 144 for params, 1 for type and 0 for function pointer
+#define MAX_PEDALS_COUNT 4
 
 // ENUMERATION
+
+#define PEDAL_TYPES 9
 
 enum pedal_types {
     AMPLIFIER,      // AMP
@@ -51,15 +50,21 @@ enum float_param_type {
 
 // PARAMETERS structs
 
+#define PARAM_BYTE_SIZE 16
+
 typedef struct _int_parameter_t {
     int32_t value, min, max;
+    uint32_t visible;
 } int_parameter_t;
 
 typedef struct _float_parameter_t {
     float value, min, max;
+    uint32_t visible;
 } float_parameter_t;
 
 // PEDALS structs
+
+#define RAW_PEDAL_SIZE (PARAM_BYTE_SIZE * (INT_PARAM_TYPES + FLOAT_PARAM_TYPES) + 1)
 
 typedef struct _pedal_config_t {
     int_parameter_t int_params[INT_PARAM_TYPES];
@@ -67,8 +72,8 @@ typedef struct _pedal_config_t {
 } pedal_config_t;
 
 typedef struct _pedal_t {
+	uint8_t type;
     pedal_config_t config;
-    uint8_t type;
     void (*pedal_process)(float *value, pedal_config_t *p_config);
 } pedal_t;
 
@@ -76,6 +81,13 @@ typedef union _pedal_union_t {
 	pedal_t pedal_formatted;
 	uint8_t pedal_raw[RAW_PEDAL_SIZE];
 } pedal_union_t;
+
+typedef struct _pedal_manifest_t {
+    char short_name[8];
+    char long_name[24];
+} pedal_manifest_t;
+
+void Pedal_Manifest_Init(pedal_manifest_t *pedal_manifest);
 
 // PEDALBOARD
 

@@ -30,7 +30,7 @@ typedef union {
 typedef struct {
 	uint8_t header; // 1 Byte
 	uint8_t subheader; // 1 Byte
-	uint8_t blocking; // 1 Byte
+	uint8_t update; // 1 Byte
 	Payload payload; // 256 Bytes
 } Command;
 
@@ -49,6 +49,10 @@ typedef struct {
 void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_uart_rx, void (*command_callback)(Command command));
 
 void Commander_Start(Commander_HandleTypeDef *hcommander);
+
+void Commander_Pause(Commander_HandleTypeDef *hcommander);
+
+void Commander_Resume(Commander_HandleTypeDef *hcommander);
 
 void Commander_Send(Commander_HandleTypeDef *hcommander, Command *command);
 

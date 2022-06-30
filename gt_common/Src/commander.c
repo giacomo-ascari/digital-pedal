@@ -24,6 +24,14 @@ void Commander_Start(Commander_HandleTypeDef *hcommander) {
 	HAL_UART_Receive_DMA(hcommander->huart, hcommander->uart_rx_buffer, COMMAND_BYTESIZE * 2);
 }
 
+void Commander_Pause(Commander_HandleTypeDef *hcommander) {
+	HAL_UART_DMAPause(hcommander->huart);
+}
+
+void Commander_Resume(Commander_HandleTypeDef *hcommander) {
+	HAL_UART_DMAResume(hcommander->huart);
+}
+
 void Commander_Send(Commander_HandleTypeDef *hcommander, Command *command) {
 	//HAL_StatusTypeDef status;
 	/*status = */HAL_UART_Transmit(hcommander->huart, (uint8_t *)command, COMMAND_BYTESIZE, 1000);

@@ -46,6 +46,21 @@ void soft_clip(float *value, pedal_config_t *conf);
 void square_root(float *value);
 void wave_gen(float *out, char t, uint32_t i, float tone);
 
+// PEDAL MANIFEST
+
+void Pedal_Manifest_Init(pedal_manifest_t *pedal_manifest) {
+	pedal_manifest[AMPLIFIER] = (pedal_manifest_t){"amp", "amplifier"};
+	pedal_manifest[BITCRUSHER_RS] = (pedal_manifest_t){"brs", "bitcrusher rs"};
+	pedal_manifest[BYPASS] = (pedal_manifest_t){"", "bypass"};
+	pedal_manifest[FUZZ] = (pedal_manifest_t){"fzz", "fuzz"};
+	pedal_manifest[LPF] = (pedal_manifest_t){"lpf", "low pass filter"};
+	pedal_manifest[NOISE_GATE] = (pedal_manifest_t){"ngt", "noise gate"};
+	pedal_manifest[OVERDRIVE] = (pedal_manifest_t){"ovr", "overdrive"};
+	pedal_manifest[OVERDRIVE_SQRT] = (pedal_manifest_t){"ovrs", "overdrive s"};
+	pedal_manifest[TREMOLO] = (pedal_manifest_t){"trm", "tremolo"};
+}
+
+
 // PEDALBOARD
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb) {
@@ -128,12 +143,12 @@ void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value) {
 // OVERDRIVE
 
 void overdrive_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){100.F, 1.F, 10.F};
-    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F};
-    conf->float_params[THRESHOLD_LOW] = (float_parameter_t){28000.F, 0.F, 32767.F};
-    conf->float_params[SOFTENER] = (float_parameter_t){4.F, 1.F, 10.F};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F};
-    conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F};
+    conf->float_params[INTENSITY] = (float_parameter_t){100.F, 1.F, 10.F, 1};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1};
+    conf->float_params[THRESHOLD_LOW] = (float_parameter_t){28000.F, 0.F, 32767.F, 1};
+    conf->float_params[SOFTENER] = (float_parameter_t){4.F, 1.F, 10.F, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F, 1};
+    conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F, 1};
 }
 
 void overdrive_pedal_process(float *value, pedal_config_t *conf) {
@@ -145,9 +160,9 @@ void overdrive_pedal_process(float *value, pedal_config_t *conf) {
 // BITCRUSHER resolution
 
 void bitcrusher_rs_pedal_init(pedal_config_t *conf) {
-    conf->int_params[REDUCT_INTENSITY] = (int_parameter_t){12, 1, 16};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){0.5F, 0.F, 1.F};
-    conf->float_params[BALANCE_OUT] = (float_parameter_t){0.5F, 0.F, 1.F};
+    conf->int_params[REDUCT_INTENSITY] = (int_parameter_t){12, 1, 16, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){0.5F, 0.F, 1.F, 1};
+    conf->float_params[BALANCE_OUT] = (float_parameter_t){0.5F, 0.F, 1.F, 1};
 }
 
 void bitcrusher_rs_pedal_process(float *value, pedal_config_t *conf) {
@@ -162,10 +177,10 @@ void bitcrusher_rs_pedal_process(float *value, pedal_config_t *conf) {
 // TREMOLO
 
 void tremolo_pedal_init(pedal_config_t *conf) {
-    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0};
-    conf->float_params[SPEED] = (float_parameter_t){2.F, 0.1F, 10.F};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){1.0F, 0.F, 1.F};
-    conf->float_params[BALANCE_OUT] = (float_parameter_t){0.0F, 0.F, 1.F};
+    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0, 0};
+    conf->float_params[SPEED] = (float_parameter_t){2.F, 0.1F, 10.F, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){1.0F, 0.F, 1.F, 1};
+    conf->float_params[BALANCE_OUT] = (float_parameter_t){0.0F, 0.F, 1.F, 1};
 }
 
 void tremolo_pedal_process(float *value, pedal_config_t *conf) {
@@ -177,10 +192,10 @@ void tremolo_pedal_process(float *value, pedal_config_t *conf) {
 // OVERDRIVE_SQRT
 
 void overdrive_sqrt_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){500.F, 0.F, 2000.F};
-    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){0.75F, 0.F, 1.F};
-    conf->float_params[BALANCE_OUT] = (float_parameter_t){0.25F, 0.F, 1.F};
+    conf->float_params[INTENSITY] = (float_parameter_t){500.F, 0.F, 2000.F, 1};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){0.75F, 0.F, 1.F, 1};
+    conf->float_params[BALANCE_OUT] = (float_parameter_t){0.25F, 0.F, 1.F, 1};
 }
 
 void overdrive_sqrt_pedal_process(float *value, pedal_config_t *conf) {
@@ -192,10 +207,10 @@ void overdrive_sqrt_pedal_process(float *value, pedal_config_t *conf) {
 // AMPLIFIER
 
 void amplifier_pedal_init(pedal_config_t *conf) {
-    conf->float_params[INTENSITY] = (float_parameter_t){1.F, 0.1F, 10.F};
-    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F};
-	conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F};
+    conf->float_params[INTENSITY] = (float_parameter_t){1.F, 0.1F, 10.F, 1};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F, 0};
+	conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F, 0};
 }
 
 void amplifier_pedal_process(float *value, pedal_config_t *conf) {
@@ -206,10 +221,10 @@ void amplifier_pedal_process(float *value, pedal_config_t *conf) {
 // LPF
 
 void low_pass_filter_pedal_init(pedal_config_t *conf) {
-    conf->float_params[SOFTENER] = (float_parameter_t){0.01F, 0.0F, 1.0F};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F};
-    conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F};
-    conf->float_params[PAST] = (float_parameter_t){0.F, 0.F, 0.F};
+    conf->float_params[SOFTENER] = (float_parameter_t){0.01F, 0.0F, 1.0F, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F, 1};
+    conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F, 1};
+    conf->float_params[PAST] = (float_parameter_t){0.F, 0.F, 0.F, 0};
 }
 
 void low_pass_filter_pedal_process(float *value, pedal_config_t *conf) {
@@ -221,13 +236,13 @@ void low_pass_filter_pedal_process(float *value, pedal_config_t *conf) {
 // FUZZ
 
 void fuzz_pedal_init(pedal_config_t *conf) {
-    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0};
-    conf->float_params[INTENSITY] = (float_parameter_t){4.F, 1.F, 10.F};
-    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F};
-    conf->float_params[HEIGHT] = (float_parameter_t){2048.F, 0.F, 8192.F};
-    conf->float_params[SPEED] = (float_parameter_t){1.F, 0.1F, 10.F,};
-    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F};
-    conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F};
+    conf->int_params[COUNTER] = (int_parameter_t){0, 1, 0, 0};
+    conf->float_params[INTENSITY] = (float_parameter_t){4.F, 1.F, 10.F, 1};
+    conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){32767.F, 0.F, 32767.F, 1};
+    conf->float_params[HEIGHT] = (float_parameter_t){2048.F, 0.F, 8192.F, 1};
+    conf->float_params[SPEED] = (float_parameter_t){1.F, 0.1F, 10.F, 1};
+    conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F, 1};
+    conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F, 1};
 }
 
 void fuzz_pedal_process(float *value, pedal_config_t *conf) {
@@ -247,9 +262,9 @@ void fuzz_pedal_process(float *value, pedal_config_t *conf) {
 // NOISE GATE
 
 void noise_gate_pedal_init(pedal_config_t *conf) {
-	conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){50.F, 0.F, 32767.F};
-	conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F};
-	conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F};
+	conf->float_params[THRESHOLD_HIGH] = (float_parameter_t){50.F, 0.F, 32767.F, 1};
+	conf->float_params[BALANCE_IN] = (float_parameter_t){0.F, 0.F, 1.F, 1};
+	conf->float_params[BALANCE_OUT] = (float_parameter_t){1.F, 0.F, 1.F, 1};
 }
 
 void noise_gate_pedal_process(float *value, pedal_config_t *conf) {
