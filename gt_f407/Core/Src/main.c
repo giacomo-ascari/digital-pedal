@@ -151,11 +151,11 @@ void command_callback(Command command) {
 	if (command.header < 8 && command.subheader < 16 && command.update <= 1) {
 
 		// ok-ish command
+		_command.header = command.header;
+		_command.update = command.update;
 
 		if (command.header == 1) {
 
-			_command.header = 1;
-			_command.update = command.update;
 			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
 				_command.subheader = i;
 				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
@@ -164,22 +164,16 @@ void command_callback(Command command) {
 
 		} else if (command.header == 2) {
 
-			_command.header = 2;
-			_command.update = command.update;
 			plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
 			plot_yscale = command.payload.bytes[1];
 			signal_index = 0;
-
 			while (signal_index < SIGNAL_SIZE);
-
 			memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
 			memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
 			Commander_Send(&hcommander, &_command);
 
 		} else if (command.header == 3) {
 
-			_command.header = 3;
-			_command.update = command.update;
 			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
 				_command.subheader = i;
 				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
@@ -188,14 +182,12 @@ void command_callback(Command command) {
 
 		} else if (command.header == 4) {
 
-			if (_command.subheader == 0) {
+			if (_command.subheader == 1) {
 				// update local mode
 				mode = command.payload.bytes[0];
 			} else {
 				// send local mode
-				_command.header = 4;
-				_command.update = command.update;
-				_command.subheader = 1;
+				_command.subheader = 2;
 				_command.payload.bytes[0] = mode;
 				Commander_Send(&hcommander, &_command);
 			}
@@ -209,8 +201,6 @@ void command_callback(Command command) {
 		HAL_Delay(500);
 		Commander_Resume(&hcommander);
 	}
-
-
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
@@ -251,31 +241,54 @@ void DSP(uint8_t * buf, int16_t * out) {
 	signal_samples++;
 }
 
+// TS: Tip Sleeve
+// TRS: Tip Ring Sleeve
+// TIP is RIGHT
+// RING is LEFT
+
+void Mode_N_DSP(uint8_t * buf_tip, uint8_t * buf_ring, int16_t * out_tip, int16_t * out_ring) {
+
+	if (mode == TS_TO_TS) {
+		DSP(buf_tip, out_tip);
+		*out_ring = 0;
+
+	} else if (mode == TS_TO_RS) {
+		DSP(buf_tip, out_ring);
+		*out_tip = 0;
+
+	} else if (mode == RS_TO_TS) {
+		DSP(buf_ring, out_tip);
+		*out_ring = 0;
+
+	} else if (mode == RS_TO_RS) {
+		DSP(buf_ring, out_ring);
+		*out_tip = 0;
+
+	} else if (mode == TS_TO_TRS_BALANCED) {
+		DSP(buf_tip, out_tip);
+		*out_ring = - *out_tip;
+
+	} else if (mode == TS_TO_TRS_UNBALANCED) {
+		DSP(buf_tip, out_tip);
+		*out_ring = *out_tip;
+
+	} else if (mode == RS_TO_TRS_BALANCED) {
+		DSP(buf_ring, out_tip);
+		*out_ring = *out_tip;
+
+	} else if (mode == RS_TO_TRS_UNBALANCED) {
+		DSP(buf_ring, out_tip);
+		*out_ring = *out_tip;
+	}
+}
+
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
 		if (dsp_index < HALF_QUANTITY) {
-
-			if (mode == TS_TO_TS) {
-
-			} else if (mode == TS_TO_RS) {
-
-			} else if (mode == RS_TO_TS) {
-
-			} else if (mode == RS_TO_RS) {
-
-			} else if (mode == TS_TO_TRS_BALANCED) {
-
-			} else if (mode == TS_TO_TRS_UNBALANCED) {
-
-			} else if (mode == RS_TO_TRS_BALANCED) {
-
-			} else if (mode == RS_TO_TRS_UNBALANCED) {
-
-			}
-
+			Mode_N_DSP(&ADC_BUFF.ADC8[4], &ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index + 1], &DSP_BUFF[dsp_index]);
 			//DSP(&ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index]); // ring (left)
-			DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[dsp_index + 1]); // tip (right)
-			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
+			//DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[dsp_index + 1]); // tip (right)
+			//DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
 			dsp_index += 2;
 		}
 	}
@@ -284,28 +297,10 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
 		if (dsp_index < HALF_QUANTITY) {
-
-			if (mode == TS_TO_TS) {
-
-			} else if (mode == TS_TO_RS) {
-
-			} else if (mode == RS_TO_TS) {
-
-			} else if (mode == RS_TO_RS) {
-
-			} else if (mode == TS_TO_TRS_BALANCED) {
-
-			} else if (mode == TS_TO_TRS_UNBALANCED) {
-
-			} else if (mode == RS_TO_TRS_BALANCED) {
-
-			} else if (mode == RS_TO_TRS_UNBALANCED) {
-
-			}
-
+			Mode_N_DSP(&ADC_BUFF.ADC8[12], &ADC_BUFF.ADC8[8], &DSP_BUFF[dsp_index + 1], &DSP_BUFF[dsp_index]);
 			//DSP(&ADC_BUFF.ADC8[8], &DSP_BUFF[dsp_index]); // ring (left)
-			DSP(&ADC_BUFF.ADC8[12], &DSP_BUFF[dsp_index + 1]); // tip (right)
-			DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
+			//DSP(&ADC_BUFF.ADC8[12], &DSP_BUFF[dsp_index + 1]); // tip (right)
+			//DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
 			dsp_index += 2;
 		}
 

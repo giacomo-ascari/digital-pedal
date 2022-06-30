@@ -32,8 +32,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 	if (hm->selected_page == OVERVIEW) {
 
 		// title
-		sprintf(row, "overview");
-		Painter_WriteString(image, row, 20, 0, BOT_LEFT, LARGE);
+		Painter_WriteString(image, "overview", 20, 0, BOT_LEFT, LARGE);
 		uint8_t active_pedals = 0;
 
 		// content
@@ -54,14 +53,11 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 	} else if (hm->selected_page == PLOT) {
 
 		// title
-		sprintf(row, "PLOT");
-		Painter_WriteString(image, row, 20, 0, BOT_LEFT, LARGE);
+		Painter_WriteString(image, "plot", 20, 0, BOT_LEFT, LARGE);
 
 		// commands
-		sprintf(row, "^y");
-		Painter_WriteString(image, row, 0, 0, BOT_LEFT, SMALL);
-		sprintf(row, "<x");
-		Painter_WriteString(image, row, 0, 116, BOT_LEFT, SMALL);
+		Painter_WriteString(image, "^y", 0, 0, BOT_LEFT, SMALL);
+		Painter_WriteString(image, "<x", 0, 116, BOT_LEFT, SMALL);
 
 		// content
 		uint16_t x, y;
@@ -82,8 +78,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 	} else if (hm->selected_page == EDIT) {
 
 		// title
-		sprintf(row, "EDIT");
-		Painter_WriteString(image, row, 20, 0, BOT_LEFT, LARGE);
+		Painter_WriteString(image, "edit", 20, 0, BOT_LEFT, LARGE);
 
 		// content
 		for (uint16_t i = 0; i < MAX_PEDALS_COUNT; i++) {
@@ -103,8 +98,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 	} else if (hm->selected_page == MODE) {
 
 		// title
-		sprintf(row, "MODE");
-		Painter_WriteString(image, row, 20, 0, BOT_LEFT, LARGE);
+		Painter_WriteString(image, "mode", 20, 0, BOT_LEFT, LARGE);
 
 		// content
 		for (uint16_t i = 0; i < MODE_TYPES; i++) {
@@ -113,8 +107,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 				Painter_ToggleRectangle(image, i%2?156:8, i/2*18+28, i%2?294:146, i/2*18+44, BOT_LEFT);
 			}
 			if (i == hm->mode_selected % MODE_TYPES) {
-				sprintf(row, ">");
-				Painter_WriteString(image, row, i%2?150:2, i/2*18+30, BOT_LEFT, SMALL);
+				Painter_WriteString(image, ">", i%2?148:0, i/2*18+30, BOT_LEFT, SMALL);
 			}
 		}
 
@@ -126,23 +119,38 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 }
 
 void Menu_SendMessage(Menu_HandleTypeDef *hm, enum update_type update) {
+
+	// default values to avoid
+	// faulty command detection
+	hm->command.header = 0;
+	hm->command.subheader = 0;
+	hm->command.update = update;
+
+	// overriding important stuff
+
 	if (hm->selected_page == OVERVIEW) {
 		hm->command.header = 1;
-		Commander_Send(hm->hcommander, &(hm->command));
+
 	} else if (hm->selected_page == PLOT) {
 		hm->command.header = 2;
-		hm->command.update = update;
 		hm->command.payload.bytes[0] = hm->plot_xscale;
 		hm->command.payload.bytes[1] = hm->plot_yscale;
-		Commander_Send(hm->hcommander, &(hm->command));
+
 	} else if (hm->selected_page == EDIT) {
 		hm->command.header = 3;
-		hm->command.update = update;
-		Commander_Send(hm->hcommander, &(hm->command));
+
 	} else if (hm->selected_page == MODE) {
 		hm->command.header = 4;
-		hm->command.header = 1;
-		hm->command.update = update;
-		Commander_Send(hm->hcommander, &(hm->command));
+		hm->command.subheader = 1;
+		if (update == )
+
+	} else if (hm->selected_page == TUNER) {
+		hm->command.header = 5;
+
+	} else if (hm->selected_page == FILES) {
+		hm->command.header = 6;
 	}
+
+	// finally sending thank god
+	Commander_Send(hm->hcommander, &(hm->command));
 }

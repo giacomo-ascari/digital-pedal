@@ -237,15 +237,10 @@ int main(void)
 	EPD_Init(&hepd1);
 	EPD_Clear(&hepd1);
 	Painter_Clean(hepd1.image);
-	char row[24];
-	sprintf(row, "G33KY TOAD");
-	Painter_WriteString(hepd1.image, row, (296 - 10 * 12) / 2, 30, BOT_LEFT, LARGE);
-	sprintf(row, "@");
-	Painter_WriteString(hepd1.image, row, 50, (296 - 1 * 18) / 2, TOP_LEFT, LARGE);
-	sprintf(row, "BY GIACOMO ASCARI");
-	Painter_WriteString(hepd1.image, row, (296 - 17 * 8) / 2, 70, BOT_LEFT, SMALL);
-	sprintf(row, "AND EVGENY DEMENEV");
-	Painter_WriteString(hepd1.image, row, (296 - 18 * 8) / 2, 90, BOT_LEFT, SMALL);
+	Painter_WriteString(hepd1.image, "G33KY TOAD", (296 - 10 * 12) / 2, 30, BOT_LEFT, LARGE);
+	Painter_WriteString(hepd1.image, "@", 50, (296 - 1 * 18) / 2, TOP_LEFT, LARGE);
+	Painter_WriteString(hepd1.image, "BY GIACOMO ASCARI", (296 - 17 * 8) / 2, 70, BOT_LEFT, SMALL);
+	Painter_WriteString(hepd1.image, "AND EVGENY DEMENEV", (296 - 18 * 8) / 2, 90, BOT_LEFT, SMALL);
 	EPD_Display(&hepd1);
 	EPD_Sleep(&hepd1);
 
@@ -257,7 +252,7 @@ int main(void)
 	Menu_Init(&hmenu);
 	hmenu.hcommander = &hcommander;
 	uint8_t new_page;
-	Menu_SendMessage(&hmenu, VISIBLE);
+	Menu_SendMessage(&hmenu, FULL);
 
 	/* USER CODE END 2 */
 
@@ -281,7 +276,7 @@ int main(void)
 		if (new_page != hmenu.selected_page) {
 			// MENU PAGE BUTTON EVENT
 			hmenu.selected_page = new_page;
-			Menu_SendMessage(&hmenu, VISIBLE);
+			Menu_SendMessage(&hmenu, FULL);
 			hmenu.tick = HAL_GetTick();
 			enc1_old = RE_GetCount(&hre1);
 			enc2_old = RE_GetCount(&hre2);
@@ -317,7 +312,7 @@ int main(void)
 				if (btn_flags[7]) {
 					btn_flags[7] = 0;
 					hmenu.mode_active = hmenu.mode_selected % MODE_TYPES;
-					Menu_SendMessage(&hmenu, VISIBLE);
+					Menu_SendMessage(&hmenu, PARTIAL);
 				}
 				if (RE_Process(&hre2)) {
 					hmenu.mode_selected += RE_GetCount(&hre2) - enc2_old;

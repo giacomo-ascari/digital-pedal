@@ -26,8 +26,9 @@ enum page_types {
 };
 
 enum update_type {
-	VISIBLE = 0,
-	HIDDEN = 1
+	FULL = 0,
+	PARTIAL = 1,
+	HIDDEN = 2
 };
 
 typedef struct _Menu_HandleTypeDef {
