@@ -9,7 +9,7 @@
 #define COMMANDER_COMMANDER_H_
 
 #define COMMANDS_COUNT 10
-#define COMMAND_BYTESIZE 259
+#define COMMAND_BYTESIZE 258
 
 #ifdef F103
 #include "stm32f1xx_hal.h"
@@ -30,7 +30,6 @@ typedef union {
 typedef struct {
 	uint8_t header; // 1 Byte
 	uint8_t subheader; // 1 Byte
-	uint8_t update; // 1 Byte
 	Payload payload; // 256 Bytes
 } Command;
 
@@ -61,4 +60,4 @@ void Commander_Process(Commander_HandleTypeDef *hcommander);
 void Commander_Enqueue(Commander_HandleTypeDef *hcommander, Command *command);
 
 
-#endif /* COMMANDER_COMMANDER_H_ */
+#endif

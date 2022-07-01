@@ -148,50 +148,50 @@ void command_callback(Command command) {
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (command.header < 8 && command.subheader < 16 && command.update <= 1) {
+	if (command.header > 0 && command.header <= 6 && command.subheader > 0 && command.subheader <= 3) {
 
 		// ok-ish command
 		_command.header = command.header;
-		_command.update = command.update;
 
 		if (command.header == 1) {
-
-			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-				_command.subheader = i;
-				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-				Commander_Send(&hcommander, &_command);
+			if (command.subheader == 1) {
+				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+					_command.subheader = i;
+					memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+					Commander_Send(&hcommander, &_command);
+				}
 			}
 
 		} else if (command.header == 2) {
-
-			plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
-			plot_yscale = command.payload.bytes[1];
-			signal_index = 0;
-			while (signal_index < SIGNAL_SIZE);
-			memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
-			memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
-			Commander_Send(&hcommander, &_command);
+			if (command.subheader == 1 || command.subheader == 2) {
+				_command.subheader = command.subheader;
+				plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
+				plot_yscale = command.payload.bytes[1];
+				signal_index = 0;
+				while (signal_index < SIGNAL_SIZE);
+				memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
+				memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
+				Commander_Send(&hcommander, &_command);
+			}
 
 		} else if (command.header == 3) {
-
-			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-				_command.subheader = i;
-				memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-				Commander_Send(&hcommander, &_command);
+			if (command.subheader == 1) {
+				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+					_command.subheader = i;
+					memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+					Commander_Send(&hcommander, &_command);
+				}
 			}
 
 		} else if (command.header == 4) {
-
-			if (_command.subheader == 1) {
-				// update local mode
-				mode = command.payload.bytes[0];
-			} else {
-				// send local mode
-				_command.subheader = 2;
+			if (command.subheader == 1 || command.subheader == 3) {
+				_command.subheader = command.subheader;
+				if (command.subheader == 3) {
+					mode = command.payload.bytes[0];
+				}
 				_command.payload.bytes[0] = mode;
 				Commander_Send(&hcommander, &_command);
 			}
-
 		}
 
 	} else {
