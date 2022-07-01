@@ -9,8 +9,12 @@
 #include <string.h>
 #include <stdio.h>
 
-void Menu_Init(Menu_HandleTypeDef *hm) {
+void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_HandleTypeDef *hepd) {
 	hm->selected_page = OVERVIEW;
+
+	hm->hcommander = hcommander;
+	hm->hepd = hepd;
+
 	hm->plot_xscale = 1;
 	hm->plot_yscale = 1;
 	hm->edit_index1 = 0;
@@ -24,9 +28,10 @@ void Menu_Init(Menu_HandleTypeDef *hm) {
 	Pedal_Manifest_Init(hm->pedal_manifest);
 }
 
-void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
-	char row[16+1];
+void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 
+	char row[20];
+	uint8_t *image = hm->hepd->image;
 	Painter_Clean(image);
 
 	if (hm->selected_page == OVERVIEW) {
@@ -116,41 +121,63 @@ void Menu_Render(Menu_HandleTypeDef *hm, uint8_t *image) {
 		sprintf(row, "what the %d", hm->selected_page);
 		Painter_WriteString(image, row, 120, 60, BOT_LEFT, LARGE);
 	}
+
+	if (render == FULL) {
+		EPD_Init(hm->hepd);
+		EPD_Display(hm->hepd);
+		EPD_Sleep(hm->hepd);
+	} else if (render == PARTIAL) {
+		EPD_Init(hm->hepd);
+		Painter_ToggleCanvas(image);
+		EPD_Display_Partial(hm->hepd);
+		Painter_ToggleCanvas(image);
+		EPD_Display_Partial(hm->hepd);
+		EPD_Sleep(hm->hepd);
+	}
 }
 
-void Menu_SendMessage(Menu_HandleTypeDef *hm, enum update_type update) {
+void Menu_SendMessage(Menu_HandleTypeDef *hm, enum message_types type) {
 
-	// default values to avoid
-	// faulty command detection
 	hm->command.header = 0;
 	hm->command.subheader = 0;
-	hm->command.update = update;
 
 	// overriding important stuff
 
 	if (hm->selected_page == OVERVIEW) {
 		hm->command.header = 1;
+		if (type == FIRST) {
+			hm->command.subheader = 1;
+		}
 
 	} else if (hm->selected_page == PLOT) {
 		hm->command.header = 2;
-		hm->command.payload.bytes[0] = hm->plot_xscale;
-		hm->command.payload.bytes[1] = hm->plot_yscale;
+		if (type == FIRST || type == PERIODIC) {
+			hm->command.subheader = type == FIRST ? 1 : 2;
+			hm->command.payload.bytes[0] = hm->plot_xscale;
+			hm->command.payload.bytes[1] = hm->plot_yscale;
+		}
 
 	} else if (hm->selected_page == EDIT) {
 		hm->command.header = 3;
+		if (type == FIRST) {
+			hm->command.subheader = 1;
+		}
 
 	} else if (hm->selected_page == MODE) {
 		hm->command.header = 4;
-		hm->command.subheader = 1;
-		if (update == )
+		if (type == FIRST) {
+			hm->command.subheader = 1;
+		} else if (type == USER) {
+			hm->command.subheader = 3;
+			hm->command.payload.bytes[0] = hm->selected_page;
+		}
 
-	} else if (hm->selected_page == TUNER) {
-		hm->command.header = 5;
-
-	} else if (hm->selected_page == FILES) {
-		hm->command.header = 6;
 	}
 
 	// finally sending thank god
 	Commander_Send(hm->hcommander, &(hm->command));
+}
+
+void Menu_UpdatePage(Menu_HandleTypeDef *hm) {
+	Menu_Render(hm, PARTIAL);
 }
