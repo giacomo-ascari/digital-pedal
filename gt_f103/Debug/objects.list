@@ -1,6 +1,5 @@
 "./Core/Src/epddriver.o"
 "./Core/Src/main.o"
-"./Core/Src/menu.o"
 "./Core/Src/painter2.o"
 "./Core/Src/reconder.o"
 "./Core/Src/stm32f1xx_hal_msp.o"
@@ -25,5 +24,6 @@
 "./Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o"
 "./Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.o"
 "./gt_common/Src/commander.o"
+"./gt_common/Src/menu.o"
 "./gt_common/Src/mode.o"
 "./gt_common/Src/pedalboard.o"

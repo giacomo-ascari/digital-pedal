@@ -25,6 +25,7 @@ enum Origin {
 
 enum Font {
 	SMALL,
+	MEDIUM,
 	LARGE
 };
 

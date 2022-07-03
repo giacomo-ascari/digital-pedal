@@ -47,5 +47,6 @@
 "./USB_HOST/Target/usbh_conf.o"
 "./USB_HOST/Target/usbh_platform.o"
 "./gt_common/Src/commander.o"
+"./gt_common/Src/menu.o"
 "./gt_common/Src/mode.o"
 "./gt_common/Src/pedalboard.o"

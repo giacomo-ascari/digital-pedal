@@ -5,12 +5,15 @@
  *      Author: asky
  */
 
+#ifdef F103
+
 #include "menu.h"
 #include <string.h>
 #include <stdio.h>
 
 void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_HandleTypeDef *hepd) {
 	hm->selected_page = OVERVIEW;
+	hm->page_state = BUSY;
 
 	hm->hcommander = hcommander;
 	hm->hepd = hepd;
@@ -61,24 +64,26 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		Painter_WriteString(image, "plot", 20, 0, BOT_LEFT, LARGE);
 
 		// commands
-		Painter_WriteString(image, "^y", 0, 0, BOT_LEFT, SMALL);
-		Painter_WriteString(image, "<x", 0, 116, BOT_LEFT, SMALL);
+		sprintf(row, "y %d", hm->plot_yscale);
+		Painter_WriteString(image, row, 0, 36, BOT_LEFT, SMALL);
+		Painter_WriteString(image, ".", 8, 33, BOT_LEFT, SMALL);
+		sprintf(row, "x %d", hm->plot_xscale);
+		Painter_WriteString(image, row, 0, 86, BOT_LEFT, SMALL);
+		Painter_WriteString(image, ".", 8, 83, BOT_LEFT, SMALL);
 
 		// content
 		uint16_t x, y;
 		for (uint8_t i = 0; i < SIGNAL_SIZE; i++) {
 			// IN
-			x = (CANVAS_HEIGHT / 2 - SIGNAL_SIZE) / 2 + i;
+			x = (CANVAS_HEIGHT - 2 * SIGNAL_SIZE - 3) + i;
 			y = CANVAS_WIDTH / 2 + hm->signal_in[i] / 2;
 			Painter_TogglePixel(image, &x, &y, BOT_LEFT);
 			// OUT
-			x = CANVAS_HEIGHT / 2 + (CANVAS_HEIGHT / 2 - SIGNAL_SIZE) / 2 + i;
+			x = (CANVAS_HEIGHT - SIGNAL_SIZE) + i;
 			y = CANVAS_WIDTH / 2 + hm->signal_out[i] / 2;
 			Painter_TogglePixel(image, &x, &y, BOT_LEFT);
 		}
-		sprintf(row, "x*%d y*%d", hm->plot_xscale, hm->plot_yscale);
-		Painter_WriteString(image, row, 210, 0, BOT_LEFT, SMALL);
-		Painter_ToggleDottedRectangle(image, CANVAS_HEIGHT / 2 - 1, 0, CANVAS_HEIGHT / 2 + 1, CANVAS_WIDTH, BOT_LEFT);
+		Painter_ToggleDottedRectangle(image, CANVAS_HEIGHT - SIGNAL_SIZE - 2, 0, CANVAS_HEIGHT - SIGNAL_SIZE - 1, CANVAS_WIDTH, BOT_LEFT);
 
 	} else if (hm->selected_page == EDIT) {
 
@@ -92,8 +97,8 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 			uint16_t width = CANVAS_HEIGHT / MAX_PEDALS_COUNT;
 			if (t == BYPASS) Painter_ToggleDottedRectangle(image, width * i + 4, 20, width * (i+1) - 4, 30, BOT_LEFT);
 			else Painter_ToggleRectangle(image, width * i + 4, 20, width * (i+1) - 4, 30, BOT_LEFT);
-			if (i == hm->edit_index2 % MAX_PEDALS_COUNT) {
-				Painter_ToggleRectangle(image, width * i + 4, 31, width * (i+1) - 4, 35, BOT_LEFT);
+			if (i == hm->edit_index2) {
+				Painter_WriteString(image, "^", width * i + width / 2 - 4, 31, BOT_LEFT, SMALL);
 				Painter_WriteString(image, hm->pedal_manifest[t].long_name, 110, 2, BOT_LEFT, SMALL);
 				// param selection
 
@@ -138,38 +143,39 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 
 void Menu_SendMessage(Menu_HandleTypeDef *hm, enum message_types type) {
 
-	hm->command.header = 0;
-	hm->command.subheader = 0;
-
-	// overriding important stuff
+	hm->command.header = hm->selected_page;
+	hm->command.subheader = type;
 
 	if (hm->selected_page == OVERVIEW) {
-		hm->command.header = 1;
-		if (type == FIRST) {
-			hm->command.subheader = 1;
+		if (type != FIRST) {
+			return;
 		}
 
 	} else if (hm->selected_page == PLOT) {
-		hm->command.header = 2;
 		if (type == FIRST || type == PERIODIC) {
-			hm->command.subheader = type == FIRST ? 1 : 2;
 			hm->command.payload.bytes[0] = hm->plot_xscale;
 			hm->command.payload.bytes[1] = hm->plot_yscale;
+		} else {
+			return;
 		}
 
 	} else if (hm->selected_page == EDIT) {
-		hm->command.header = 3;
 		if (type == FIRST) {
-			hm->command.subheader = 1;
+			//nada
+		} else if (type == USER) {
+			hm->command.payload.bytes[RAW_PEDAL_SIZE] = hm->edit_index2;
+			memcpy(hm->command.payload.bytes, hm->pedals[hm->edit_index2].pedal_raw, RAW_PEDAL_SIZE);
+		} else {
+			return;
 		}
 
 	} else if (hm->selected_page == MODE) {
-		hm->command.header = 4;
 		if (type == FIRST) {
-			hm->command.subheader = 1;
+			//nada
 		} else if (type == USER) {
-			hm->command.subheader = 3;
-			hm->command.payload.bytes[0] = hm->selected_page;
+			hm->command.payload.bytes[0] = hm->mode_selected;
+		} else {
+			return;
 		}
 
 	}
@@ -181,3 +187,5 @@ void Menu_SendMessage(Menu_HandleTypeDef *hm, enum message_types type) {
 void Menu_UpdatePage(Menu_HandleTypeDef *hm) {
 	Menu_Render(hm, PARTIAL);
 }
+
+#endif

@@ -64,7 +64,6 @@ void Error_Handler(void);
 #define ENC2B_GPIO_Port GPIOA
 #define ENC2A_Pin GPIO_PIN_1
 #define ENC2A_GPIO_Port GPIOA
-#define ENC2A_EXTI_IRQn EXTI1_IRQn
 #define LD6_Pin GPIO_PIN_3
 #define LD6_GPIO_Port GPIOA
 #define BTN6_Pin GPIO_PIN_4
@@ -106,7 +105,6 @@ void Error_Handler(void);
 #define ENC1B_GPIO_Port GPIOB
 #define ENC1A_Pin GPIO_PIN_7
 #define ENC1A_GPIO_Port GPIOB
-#define ENC1A_EXTI_IRQn EXTI9_5_IRQn
 #define EPD_RST_Pin GPIO_PIN_8
 #define EPD_RST_GPIO_Port GPIOB
 #define EPD_DC_Pin GPIO_PIN_9

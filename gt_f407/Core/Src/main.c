@@ -27,6 +27,7 @@
 #include "AUDIO.h"
 #include "pedalboard.h"
 #include "mode.h"
+#include "menu.h"
 
 /* USER CODE END Includes */
 
@@ -74,7 +75,6 @@ Pedalboard_Handler hpedalboard;
 #define SAMPLES_QUANTITY 64 // two halves combined
 #define HALF_QUANTITY 32 // which 16 are left and 16 are right
 
-#define SIGNAL_SIZE 128
 volatile uint8_t plot_xscale = 1;
 volatile uint8_t plot_yscale = 1;
 volatile uint16_t signal_index = 0;
@@ -141,56 +141,74 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	Commander_Enqueue(&hcommander, &command);
 }
 
-Command _command;
-
 void command_callback(Command command) {
+
+	static Command out_command;
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (command.header > 0 && command.header <= 6 && command.subheader > 0 && command.subheader <= 3) {
+	if (command.header < PAGE_COUNT && command.subheader < MAX_PEDALS_COUNT) {
 
 		// ok-ish command
-		_command.header = command.header;
+		out_command.header = command.header;
 
-		if (command.header == 1) {
-			if (command.subheader == 1) {
+		// header
+		//	OVERVIEW = 0,
+		//	PLOT = 1,
+		//	EDIT = 2,
+		//	MODE = 3,
+		//	TUNER = 4,
+		//	FILES = 5
+		// subheader
+		//	FIRST = 0,
+		//	PERIODIC = 1,
+		//	USER = 2
+
+		if (command.header == OVERVIEW) {
+			if (command.subheader == FIRST) {
 				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-					_command.subheader = i;
-					memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-					Commander_Send(&hcommander, &_command);
+					out_command.subheader = i;
+					memcpy(out_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+					Commander_Send(&hcommander, &out_command);
 				}
 			}
 
-		} else if (command.header == 2) {
-			if (command.subheader == 1 || command.subheader == 2) {
-				_command.subheader = command.subheader;
+		} else if (command.header == PLOT) {
+			if (command.subheader == FIRST || command.subheader == PERIODIC) {
+				out_command.subheader = command.subheader;
 				plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
 				plot_yscale = command.payload.bytes[1];
 				signal_index = 0;
 				while (signal_index < SIGNAL_SIZE);
-				memcpy(_command.payload.bytes, signal_in, SIGNAL_SIZE);
-				memcpy(_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
-				Commander_Send(&hcommander, &_command);
+				memcpy(out_command.payload.bytes, signal_in, SIGNAL_SIZE);
+				memcpy(out_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
+				Commander_Send(&hcommander, &out_command);
 			}
 
-		} else if (command.header == 3) {
-			if (command.subheader == 1) {
+		} else if (command.header == EDIT) {
+			if (command.subheader == FIRST) {
 				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-					_command.subheader = i;
-					memcpy(_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-					Commander_Send(&hcommander, &_command);
+					out_command.subheader = i;
+					memcpy(out_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
+					Commander_Send(&hcommander, &out_command);
 				}
+			} else if (command.subheader == USER) {
+				uint8_t pedal_index;
+				out_command.subheader = USER;
+				pedal_index = command.payload.bytes[RAW_PEDAL_SIZE];
+				memcpy(hpedalboard.pedals[pedal_index].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
+				Commander_Send(&hcommander, &out_command);
 			}
 
-		} else if (command.header == 4) {
-			if (command.subheader == 1 || command.subheader == 3) {
-				_command.subheader = command.subheader;
-				if (command.subheader == 3) {
+		} else if (command.header == MODE) {
+			if (command.subheader == FIRST || command.subheader == USER) {
+				out_command.subheader = command.subheader;
+				if (command.subheader == 2) {
 					mode = command.payload.bytes[0];
 				}
-				_command.payload.bytes[0] = mode;
-				Commander_Send(&hcommander, &_command);
+				out_command.payload.bytes[0] = mode;
+				Commander_Send(&hcommander, &out_command);
 			}
 		}
 

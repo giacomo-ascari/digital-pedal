@@ -8,6 +8,8 @@
 #ifndef MENU_MENU_H_
 #define MENU_MENU_H_
 
+#ifdef F103
+
 #include "stm32f1xx_hal.h"
 #include "pedalboard.h"
 #include "commander.h"
@@ -15,7 +17,10 @@
 #include "painter2.h"
 #include "mode.h"
 
+#endif
+
 #define SIGNAL_SIZE 128
+#define PAGE_COUNT 6
 
 enum page_types {
 	OVERVIEW = 0,
@@ -24,6 +29,11 @@ enum page_types {
 	MODE = 3,
 	TUNER = 4,
 	FILES = 5
+};
+
+enum page_state_types {
+	READY = 0,
+	BUSY = 1,
 };
 
 enum message_types {
@@ -37,8 +47,11 @@ enum render_types {
 	PARTIAL = 1
 };
 
+#ifdef F103
+
 typedef struct _Menu_HandleTypeDef {
 	enum page_types selected_page;
+	enum page_state_types page_state;
 	pedal_union_t pedals[MAX_PEDALS_COUNT];
 	pedal_manifest_t pedal_manifest[PEDAL_TYPES];
 	mode_manifest_t mode_manifest[MODE_TYPES];
@@ -68,5 +81,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render);
 void Menu_SendMessage(Menu_HandleTypeDef *hm, enum message_types type);
 
 void Menu_UpdatePage(Menu_HandleTypeDef *hm);
+
+#endif
 
 #endif /* MENU_MENU_H_ */
