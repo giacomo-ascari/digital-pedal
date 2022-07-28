@@ -10,14 +10,13 @@
 #include "commander.h"
 #include <string.h>
 
-void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_uart_rx, void (*command_callback)(Command command)) {
+void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_uart_rx, void (*incoming_callback)(void)) {
 	hcommander->huart = huart;
 	hcommander->hdma_uart_rx = hdma_uart_rx;
-	hcommander->rear = -1;
-	hcommander->front = -1;
-	hcommander->commands_to_handle = 0;
-	hcommander->counter = 0;
-	hcommander->command_callback = command_callback;
+	hcommander->tick_send = 0;
+	hcommander->awaiting_response = 0;
+	hcommander->command_to_process = 0;
+	hcommander->incoming_callback = incoming_callback;
 }
 
 void Commander_Start(Commander_HandleTypeDef *hcommander) {
@@ -32,47 +31,51 @@ void Commander_Resume(Commander_HandleTypeDef *hcommander) {
 	HAL_UART_DMAResume(hcommander->huart);
 }
 
-void Commander_Send(Commander_HandleTypeDef *hcommander, Command *command) {
-	//HAL_StatusTypeDef status;
-	/*status = */HAL_UART_Transmit(hcommander->huart, (uint8_t *)command, COMMAND_BYTESIZE, 1000);
-}
+uint8_t Commander_SendAndWait(Commander_HandleTypeDef *hcommander) {
 
-void Commander_Process(Commander_HandleTypeDef *hcommander) {
+	HAL_StatusTypeDef status;
 
-	if(hcommander->front == -1) {
-		// underflow
-	} else {
+	hcommander->tick_send = HAL_GetTick();
+	hcommander->awaiting_response = 1;
 
-		//printf("Element deleted from queue is : %dn",cqueue_arr[front]);
-		hcommander->command_callback(hcommander->command_buffer[hcommander->front]);
-		hcommander->commands_to_handle--;
+	status = HAL_UART_Transmit(hcommander->huart, (uint8_t *)&(hcommander->out_command), COMMAND_BYTESIZE, 1000);
 
-		if(hcommander->front == hcommander->rear) {
-			hcommander->front = -1;
-			hcommander->rear = -1;
-		} else {
-			if(hcommander->front == COMMANDS_COUNT-1) hcommander->front = 0;
-			else hcommander->front++;
+	if (status == HAL_OK) {
+
+		// active wait
+		while (hcommander->awaiting_response /*&& HAL_GetTick() < hcommander->tick_send + TIMEOUT*/);
+
+		if (hcommander->awaiting_response == 0) {
+			return 1;
 		}
 	}
+
+	hcommander->awaiting_response = 0;
+	return 0; // transmission error
+
 }
 
-void Commander_Enqueue(Commander_HandleTypeDef *hcommander, Command *command) {
+uint8_t Commander_Send(Commander_HandleTypeDef *hcommander) {
+
+	HAL_StatusTypeDef status;
 
 
-	if((hcommander->front == 0 && hcommander->rear == COMMANDS_COUNT-1) || (hcommander->front == hcommander->rear+1)) {
-		// overflow
+	status = HAL_UART_Transmit(hcommander->huart, (uint8_t *)&(hcommander->out_command), COMMAND_BYTESIZE, 1000);
+
+	if (status == HAL_OK) {
+
+		return 1;
+
 	} else {
-		if(hcommander->front == -1) {
-			hcommander->front = 0;
-			hcommander->rear = 0;
-		} else {
-			if(hcommander->rear == COMMANDS_COUNT-1) hcommander->rear = 0;
-			else hcommander->rear++;
-		}
-		memcpy(hcommander->command_buffer + hcommander->rear, command, COMMAND_BYTESIZE);
-		hcommander->commands_to_handle++;
+
+		return 0; // transmission error
 	}
 
+}
 
+void Commander_ProcessIncoming(Commander_HandleTypeDef *hcommander) {
+	if (hcommander->command_to_process) {
+		hcommander->command_to_process = 0;
+		hcommander->incoming_callback();
+	}
 }

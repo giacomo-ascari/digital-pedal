@@ -1,0 +1,5 @@
+../Core/Src/AUDIO_LINK.c:87:13:I2Cx_Init	48	static
+../Core/Src/AUDIO_LINK.c:209:6:AUDIO_IO_Init	48	static
+../Core/Src/AUDIO_LINK.c:241:6:AUDIO_IO_DeInit	0	static
+../Core/Src/AUDIO_LINK.c:252:6:AUDIO_IO_Write	32	static
+../Core/Src/AUDIO_LINK.c:263:9:AUDIO_IO_Read	32	static

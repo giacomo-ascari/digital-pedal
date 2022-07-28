@@ -42,6 +42,7 @@
 "./Middlewares/Third_Party/FatFs/src/diskio.o"
 "./Middlewares/Third_Party/FatFs/src/ff.o"
 "./Middlewares/Third_Party/FatFs/src/ff_gen_drv.o"
+"./Middlewares/Third_Party/FatFs/src/option/ccsbcs.o"
 "./Middlewares/Third_Party/FatFs/src/option/syscall.o"
 "./USB_HOST/App/usb_host.o"
 "./USB_HOST/Target/usbh_conf.o"

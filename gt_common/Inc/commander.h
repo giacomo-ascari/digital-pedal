@@ -8,8 +8,9 @@
 #ifndef COMMANDER_COMMANDER_H_
 #define COMMANDER_COMMANDER_H_
 
-#define COMMANDS_COUNT 10
-#define COMMAND_BYTESIZE 258
+#define COMMAND_BYTESIZE 259
+
+#define TIMEOUT 1000
 
 #ifdef F103
 #include "stm32f1xx_hal.h"
@@ -30,6 +31,7 @@ typedef union {
 typedef struct {
 	uint8_t header; // 1 Byte
 	uint8_t subheader; // 1 Byte
+	uint8_t param; // 1 Byte
 	Payload payload; // 256 Bytes
 } Command;
 
@@ -37,15 +39,15 @@ typedef struct {
 	UART_HandleTypeDef *huart;
 	DMA_HandleTypeDef *hdma_uart_rx;
 	uint8_t uart_rx_buffer[COMMAND_BYTESIZE * 2];
-	Command command_buffer[COMMANDS_COUNT];
-	int8_t rear;
-	int8_t front;
-	uint8_t commands_to_handle;
-	uint32_t counter;
-	void (*command_callback)(Command command);
+	Command in_command;
+	Command out_command;
+	uint32_t tick_send;
+	uint8_t awaiting_response;
+	uint8_t command_to_process;
+	void (*incoming_callback)(void);
 } Commander_HandleTypeDef;
 
-void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_uart_rx, void (*command_callback)(Command command));
+void Commander_Init(Commander_HandleTypeDef *hcommander, UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_uart_rx, void (*incoming_callback)(void));
 
 void Commander_Start(Commander_HandleTypeDef *hcommander);
 
@@ -53,11 +55,11 @@ void Commander_Pause(Commander_HandleTypeDef *hcommander);
 
 void Commander_Resume(Commander_HandleTypeDef *hcommander);
 
-void Commander_Send(Commander_HandleTypeDef *hcommander, Command *command);
+uint8_t Commander_SendAndWait(Commander_HandleTypeDef *hcommander);
 
-void Commander_Process(Commander_HandleTypeDef *hcommander);
+uint8_t Commander_Send(Commander_HandleTypeDef *hcommander);
 
-void Commander_Enqueue(Commander_HandleTypeDef *hcommander, Command *command);
+void Commander_ProcessIncoming(Commander_HandleTypeDef *hcommander);
 
 
 #endif

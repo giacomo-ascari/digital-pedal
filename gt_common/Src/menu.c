@@ -13,8 +13,6 @@
 
 void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_HandleTypeDef *hepd) {
 	hm->selected_page = OVERVIEW;
-	hm->page_state = BUSY;
-
 	hm->hcommander = hcommander;
 	hm->hepd = hepd;
 
@@ -24,11 +22,101 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->edit_index2 = 0;
 	hm->edit_active = 0;
 	hm->usb_ready = 0;
+	hm->usb_selected = 0;
+	hm->tick = 0;
+
 	hm->debug = 0;
 	hm->mode_active = 0;
 	hm->mode_selected = 0;
 	Mode_Manifest_Init(hm->mode_manifest);
 	Pedal_Manifest_Init(hm->pedal_manifest);
+}
+
+uint8_t Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page) {
+	if (hm->selected_page != new_page) {
+		hm->selected_page = new_page;
+		hm->tick = HAL_GetTick();
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
+
+	Command *out_command = &(hm->hcommander->out_command);
+
+	out_command->header = hm->selected_page;
+	out_command->subheader = type;
+
+	if (hm->selected_page == OVERVIEW) {
+
+		if (type == FIRST) {
+			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+				out_command->param = i;
+				Commander_SendAndWait(hm->hcommander);
+				memcpy(hm->pedals[i].pedal_raw, hm->hcommander->in_command.payload.bytes, RAW_PEDAL_SIZE);
+			}
+		}
+
+	} else if (hm->selected_page == PLOT) {
+
+		if (type == FIRST || type == PERIODIC) {
+			out_command->payload.bytes[0] = hm->plot_xscale;
+			out_command->payload.bytes[1] = hm->plot_yscale;
+			Commander_SendAndWait(hm->hcommander);
+			memcpy(hm->signal_in, hm->hcommander->in_command.payload.bytes, SIGNAL_SIZE);
+			memcpy(hm->signal_out, hm->hcommander->in_command.payload.bytes + SIGNAL_SIZE, SIGNAL_SIZE);
+		}
+
+	} else if (hm->selected_page == EDIT) {
+
+		if (type == FIRST) {
+			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+				out_command->param = i;
+				Commander_SendAndWait(hm->hcommander);
+				memcpy(hm->pedals[i].pedal_raw, hm->hcommander->in_command.payload.bytes, RAW_PEDAL_SIZE);
+			}
+		} else if (type == USER) {
+			out_command->param = hm->edit_index2;
+			memcpy(out_command->payload.bytes, hm->pedals[hm->edit_index2].pedal_raw, RAW_PEDAL_SIZE);
+			Commander_SendAndWait(hm->hcommander);
+		}
+
+	} else if (hm->selected_page == MODE) {
+
+		if (type == FIRST) {
+			Commander_SendAndWait(hm->hcommander);
+		} else if (type == USER) {
+			out_command->param = hm->mode_selected;
+			Commander_SendAndWait(hm->hcommander);
+		}
+
+	} else if (hm->selected_page == TUNER) {
+
+		if (type == FIRST || type == PERIODIC) {
+			Commander_SendAndWait(hm->hcommander);
+		}
+
+	} else if (hm->selected_page == FILES) {
+
+		if (type == FIRST || type == PERIODIC) {
+			Commander_SendAndWait(hm->hcommander);
+			hm->usb_ready = hm->hcommander->in_command.param;
+		} else if (type == USER) {
+			out_command->param = hm->usb_selected % 2;
+			Commander_SendAndWait(hm->hcommander);
+			if (hm->usb_selected % 2 == 0) {
+				out_command->header = OVERVIEW;
+				out_command->subheader = FIRST;
+				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+					out_command->param = i;
+					Commander_SendAndWait(hm->hcommander);
+					memcpy(hm->pedals[i].pedal_raw, hm->hcommander->in_command.payload.bytes, RAW_PEDAL_SIZE);
+				}
+			}
+		}
+	}
 }
 
 void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
@@ -101,7 +189,6 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 				Painter_WriteString(image, "^", width * i + width / 2 - 4, 31, BOT_LEFT, SMALL);
 				Painter_WriteString(image, hm->pedal_manifest[t].long_name, 110, 2, BOT_LEFT, SMALL);
 				// param selection
-
 			}
 		}
 
@@ -121,10 +208,29 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 			}
 		}
 
-	} else {
+	} else if (hm->selected_page == TUNER) {
 
-		sprintf(row, "what the %d", hm->selected_page);
-		Painter_WriteString(image, row, 120, 60, BOT_LEFT, LARGE);
+		// title
+		Painter_WriteString(image, "tuner", 20, 0, BOT_LEFT, LARGE);
+
+
+	} else if (hm->selected_page == FILES) {
+
+		// title
+		Painter_WriteString(image, "usb", 20, 0, BOT_LEFT, LARGE);
+
+		// content
+		if (hm->usb_ready) {
+			if (hm->usb_selected % 2) {
+				Painter_WriteString(image, ">", 294/3*2 - 36, 55, BOT_LEFT, LARGE);
+			} else {
+				Painter_WriteString(image, ">", 294/3 - 36, 55, BOT_LEFT, LARGE);
+			}
+			Painter_WriteString(image, "load", 294/3 - 24, 55, BOT_LEFT, LARGE);
+			Painter_WriteString(image, "save", 294/3*2 - 24, 55, BOT_LEFT, LARGE);
+		} else {
+			Painter_WriteString(image, "disconnected", 50, 55, BOT_LEFT, LARGE);
+		}
 	}
 
 	if (render == FULL) {
@@ -139,53 +245,6 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		EPD_Display_Partial(hm->hepd);
 		EPD_Sleep(hm->hepd);
 	}
-}
-
-void Menu_SendMessage(Menu_HandleTypeDef *hm, enum message_types type) {
-
-	hm->command.header = hm->selected_page;
-	hm->command.subheader = type;
-
-	if (hm->selected_page == OVERVIEW) {
-		if (type != FIRST) {
-			return;
-		}
-
-	} else if (hm->selected_page == PLOT) {
-		if (type == FIRST || type == PERIODIC) {
-			hm->command.payload.bytes[0] = hm->plot_xscale;
-			hm->command.payload.bytes[1] = hm->plot_yscale;
-		} else {
-			return;
-		}
-
-	} else if (hm->selected_page == EDIT) {
-		if (type == FIRST) {
-			//nada
-		} else if (type == USER) {
-			hm->command.payload.bytes[RAW_PEDAL_SIZE] = hm->edit_index2;
-			memcpy(hm->command.payload.bytes, hm->pedals[hm->edit_index2].pedal_raw, RAW_PEDAL_SIZE);
-		} else {
-			return;
-		}
-
-	} else if (hm->selected_page == MODE) {
-		if (type == FIRST) {
-			//nada
-		} else if (type == USER) {
-			hm->command.payload.bytes[0] = hm->mode_selected;
-		} else {
-			return;
-		}
-
-	}
-
-	// finally sending thank god
-	Commander_Send(hm->hcommander, &(hm->command));
-}
-
-void Menu_UpdatePage(Menu_HandleTypeDef *hm) {
-	Menu_Render(hm, PARTIAL);
 }
 
 #endif

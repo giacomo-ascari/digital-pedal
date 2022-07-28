@@ -65,6 +65,12 @@ uint8_t mode = TS_TO_TS;
 FATFS usbFatFS;
 extern char USBHPath[4];
 extern ApplicationTypeDef Appli_state;
+uint8_t usb_ready = 0;
+uint8_t usb_mounted = 0;
+FIL pbFile;
+FRESULT res;
+UINT byteswritten, bytesread;
+char rwtext[100];  //Read/Write buf
 
 // COMMANDER
 Commander_HandleTypeDef hcommander;
@@ -127,96 +133,154 @@ void MX_USB_HOST_Process(void);
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
-	Command command;
-	memcpy(&command, hcommander.uart_rx_buffer, COMMAND_BYTESIZE);
-	Commander_Enqueue(&hcommander, &command);
+	memcpy(&(hcommander.in_command), hcommander.uart_rx_buffer, COMMAND_BYTESIZE);
+	hcommander.command_to_process = 1;
 }
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
-	Command command;
-	memcpy(&command, hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
-	Commander_Enqueue(&hcommander, &command);
+	memcpy(&(hcommander.in_command), hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
+	hcommander.command_to_process = 1;
 }
 
-void command_callback(Command command) {
 
-	static Command out_command;
+uint8_t usb_save() {
+
+	res = f_open(&pbFile, "A.PB", FA_WRITE | FA_CREATE_ALWAYS);
+	if (res != FR_OK) return 0;
+
+	for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+		res = f_write(&pbFile, (const void *)hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE, &byteswritten);
+		if((res != FR_OK) || (byteswritten == 0)) return 0;
+	}
+
+	res = f_close(&pbFile);
+	if (res != FR_OK) return 0;
+	return 1;
+}
+
+uint8_t usb_load() {
+
+	res = f_open(&pbFile, "A.PB", FA_READ);
+	if (res != FR_OK) return 0;
+
+	for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+		res = f_read(&pbFile, (uint8_t*)hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE, &bytesread);
+		Pedalboard_SetPedal(&hpedalboard, hpedalboard.pedals[i].pedal_formatted.type, i, UPDATE);
+		if((res != FR_OK) || (bytesread == 0)) return 0;
+	}
+
+	res = f_close(&pbFile);
+	if (res != FR_OK) return 0;
+	return 1;
+
+	/*
+//Open file for reading
+	if(f_open(&myFile, "TEST2.TXT", FA_READ) != FR_OK)
+	{
+		return 0;
+	}
+
+	//Read text from files until NULL
+	for(uint8_t i=0; i<100; i++)
+	{
+		res = f_read(&myFile, (uint8_t*)&rwtext[i], 1, &bytesread);
+		if(rwtext[i] == 0x00) // NULL string
+		{
+			bytesread = i;
+			break;
+		}
+	}
+	//Reading error handling
+	if(bytesread==0) return 0;
+
+	//Close file
+	f_close(&myFile);
+	return 1;  // success
+	 */
+}
+
+void command_callback() {
+
+	Command *in_command = &(hcommander.in_command);
+	Command *out_command = &(hcommander.out_command);
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (command.header < PAGE_COUNT && command.subheader < MAX_PEDALS_COUNT) {
+	if (in_command->header < PAGE_COUNT && in_command->subheader < MAX_PEDALS_COUNT) {
 
-		// ok-ish command
-		out_command.header = command.header;
+		out_command->header = in_command->header;
+		out_command->subheader = in_command->subheader;
+		out_command->param = in_command->param;
 
-		// header
-		//	OVERVIEW = 0,
-		//	PLOT = 1,
-		//	EDIT = 2,
-		//	MODE = 3,
-		//	TUNER = 4,
-		//	FILES = 5
-		// subheader
-		//	FIRST = 0,
-		//	PERIODIC = 1,
-		//	USER = 2
+		if (in_command->header == OVERVIEW) {
 
-		if (command.header == OVERVIEW) {
-			if (command.subheader == FIRST) {
-				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-					out_command.subheader = i;
-					memcpy(out_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-					Commander_Send(&hcommander, &out_command);
+			// in_command->subheader == FIRST
+			memcpy(out_command->payload.bytes, hpedalboard.pedals[in_command->param].pedal_raw, RAW_PEDAL_SIZE);
+			Commander_Send(&hcommander);
+
+		} else if (in_command->header == PLOT) {
+
+			// in_command->subheader == FIRST || in_command->subheader == PERIODIC
+			plot_xscale = in_command->payload.bytes[0] ? in_command->payload.bytes[0] : 1;
+			plot_yscale = in_command->payload.bytes[1];
+			signal_index = 0;
+			while (signal_index < SIGNAL_SIZE);
+			memcpy(out_command->payload.bytes, signal_in, SIGNAL_SIZE);
+			memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
+			Commander_Send(&hcommander);
+
+		} else if (in_command->header == EDIT) {
+
+			if (in_command->subheader == FIRST) {
+				memcpy(out_command->payload.bytes, hpedalboard.pedals[in_command->param].pedal_raw, RAW_PEDAL_SIZE);
+				Commander_Send(&hcommander);
+			} else {
+				memcpy(hpedalboard.pedals[in_command->param].pedal_raw + 1, in_command->payload.bytes + 1, RAW_PEDAL_SIZE - 1);
+				Pedalboard_SetPedal(&hpedalboard, in_command->payload.bytes[0], in_command->param, UPDATE);
+				Commander_Send(&hcommander);
+			}
+
+		} else if (in_command->header == MODE) {
+
+			// in_command->subheader == FIRST || in_command->subheader == USER
+			if (in_command->subheader == USER) {
+				mode = in_command->param;
+			}
+			out_command->param = mode;
+			Commander_Send(&hcommander);
+
+		}  else if (in_command->header == TUNER) {
+
+			// in_command->subheader == FIRST || in_command->subheader == PERIODIC
+			Commander_Send(&hcommander);
+
+		}  else if (in_command->header == FILES) {
+
+			// in_command->subheader == FIRST || in_command->subheader == PERIODIC
+			out_command->param = usb_ready;
+			if (in_command->subheader == USER) {
+				if (usb_ready) {
+					out_command->param = 0;
+					if (in_command->param == 1) {
+						out_command->param = usb_save();
+					} else {
+						out_command->param = usb_load();
+					}
 				}
 			}
+			Commander_Send(&hcommander);
 
-		} else if (command.header == PLOT) {
-			if (command.subheader == FIRST || command.subheader == PERIODIC) {
-				out_command.subheader = command.subheader;
-				plot_xscale = command.payload.bytes[0] ? command.payload.bytes[0] : 1;
-				plot_yscale = command.payload.bytes[1];
-				signal_index = 0;
-				while (signal_index < SIGNAL_SIZE);
-				memcpy(out_command.payload.bytes, signal_in, SIGNAL_SIZE);
-				memcpy(out_command.payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
-				Commander_Send(&hcommander, &out_command);
-			}
-
-		} else if (command.header == EDIT) {
-			if (command.subheader == FIRST) {
-				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-					out_command.subheader = i;
-					memcpy(out_command.payload.bytes, hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE);
-					Commander_Send(&hcommander, &out_command);
-				}
-			} else if (command.subheader == USER) {
-				uint8_t pedal_index;
-				out_command.subheader = USER;
-				pedal_index = command.payload.bytes[RAW_PEDAL_SIZE];
-				memcpy(hpedalboard.pedals[pedal_index].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
-				Commander_Send(&hcommander, &out_command);
-			}
-
-		} else if (command.header == MODE) {
-			if (command.subheader == FIRST || command.subheader == USER) {
-				out_command.subheader = command.subheader;
-				if (command.subheader == 2) {
-					mode = command.payload.bytes[0];
-				}
-				out_command.payload.bytes[0] = mode;
-				Commander_Send(&hcommander, &out_command);
-			}
 		}
 
 	} else {
 
 		// surely faulty command
 		Commander_Pause(&hcommander);
-		HAL_Delay(500);
+		HAL_Delay(5000);
 		Commander_Resume(&hcommander);
 	}
 
@@ -334,38 +398,10 @@ void AUDIO_OUT_HalfTransfer_CallBack() {
 
 void AUDIO_OUT_TransferComplete_CallBack() {
 	for (uint16_t i = 0; i < HALF_QUANTITY; i++) {
-			DAC_BUFF[HALF_QUANTITY + i] = DSP_BUFF[i];
+		DAC_BUFF[HALF_QUANTITY + i] = DSP_BUFF[i];
 	}
 	dsp_index = 0;
 }
-
-/*
-bool UsbTest_Read(void)
-{
-	//Open file for reading
-	if(f_open(&myFile, "TEST2.TXT", FA_READ) != FR_OK)
-	{
-		return 0;
-	}
-
-	//Read text from files until NULL
-	for(uint8_t i=0; i<100; i++)
-	{
-		res = f_read(&myFile, (uint8_t*)&rwtext[i], 1, &bytesread);
-		if(rwtext[i] == 0x00) // NULL string
-		{
-			bytesread = i;
-			break;
-		}
-	}
-	//Reading error handling
-	if(bytesread==0) return 0;
-
-	//Close file
-	f_close(&myFile);
-	return 1;  // success
-
-}*/
 
 /* USER CODE END 0 */
 
@@ -415,8 +451,7 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	Pedalboard_InsertPedal(&hpedalboard, AMPLIFIER, 0);
-	Pedalboard_InsertPedal(&hpedalboard, LPF, 2);
+	Pedalboard_SetPedal(&hpedalboard, AMPLIFIER, MAX_PEDALS_COUNT - 1, INSERT);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
@@ -440,21 +475,27 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
-		Commander_Process(&hcommander);
+		Commander_ProcessIncoming(&hcommander);
 
-		/*if (Appli_state == APPLICATION_START) {
-			if(f_mount(&usbFatFS, (TCHAR const*)USBHPath, 0) == FR_OK)
-			{
-				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		if (Appli_state == APPLICATION_START) {
+			res = f_mount(&usbFatFS, (TCHAR const*)USBHPath, 0);
+			if (res == FR_OK) {
+				usb_mounted = 1;
+			} else {
+				usb_mounted = 0;
 			}
-		} else if (Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE) {
-			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+			usb_ready = 0;
 		} else if (Appli_state == APPLICATION_READY) {
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+			if (usb_mounted) {
+				usb_ready = 1;
+			} else {
+				usb_ready = 0;
+			}
 		} else {
-			//aaa
-		}*/
+			// Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE
+			usb_mounted = 0;
+			usb_ready = 0;
+		}
 
 	}
   /* USER CODE END 3 */

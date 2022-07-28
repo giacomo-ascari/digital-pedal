@@ -1,7 +1,0 @@
-../Core/Src/main.c:113:6:Conv_ADC	0	static
-../Core/Src/main.c:118:6:HAL_I2S_RxHalfCpltCallback	16	static
-../Core/Src/main.c:135:6:HAL_I2S_RxCpltCallback	16	static
-../Core/Src/main.c:397:6:SystemClock_Config	88	static,ignoring_inline_asm
-../Core/Src/main.c:440:6:PeriphCommonClock_Config	24	static,ignoring_inline_asm
-../Core/Src/main.c:183:5:main	128	static,ignoring_inline_asm
-../Core/Src/main.c:699:6:Error_Handler	0	static,ignoring_inline_asm

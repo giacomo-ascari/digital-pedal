@@ -1,0 +1,4 @@
+C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/menu.c:14:6:Menu_Init	24	static
+C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/menu.c:35:9:Menu_GoTo	16	static
+C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/menu.c:45:6:Menu_RetrieveData	24	static
+C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/menu.c:122:6:Menu_Render	80	static

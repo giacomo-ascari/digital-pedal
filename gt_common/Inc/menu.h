@@ -31,11 +31,6 @@ enum page_types {
 	FILES = 5
 };
 
-enum page_state_types {
-	READY = 0,
-	BUSY = 1,
-};
-
 enum message_types {
 	FIRST = 0,
 	PERIODIC = 1,
@@ -51,13 +46,11 @@ enum render_types {
 
 typedef struct _Menu_HandleTypeDef {
 	enum page_types selected_page;
-	enum page_state_types page_state;
 	pedal_union_t pedals[MAX_PEDALS_COUNT];
 	pedal_manifest_t pedal_manifest[PEDAL_TYPES];
 	mode_manifest_t mode_manifest[MODE_TYPES];
 	int8_t signal_in[SIGNAL_SIZE];
 	int8_t signal_out[SIGNAL_SIZE];
-	Command command;
 	Commander_HandleTypeDef *hcommander;
 	EPD_HandleTypeDef *hepd;
 	// state related variables
@@ -69,18 +62,19 @@ typedef struct _Menu_HandleTypeDef {
 	uint8_t mode_active;
 	uint8_t mode_selected;
 	uint8_t usb_ready;
+	uint8_t usb_selected;
 	uint32_t tick;
 	// desperate debug
 	uint32_t debug;
 } Menu_HandleTypeDef;
 
+uint8_t Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page);
+
 void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_HandleTypeDef *hepd);
 
+void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type);
+
 void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render);
-
-void Menu_SendMessage(Menu_HandleTypeDef *hm, enum message_types type);
-
-void Menu_UpdatePage(Menu_HandleTypeDef *hm);
 
 #endif
 

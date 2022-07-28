@@ -6,6 +6,9 @@
  */
 
 #include "mode.h"
+
+#ifdef F103
+
 #include <string.h>
 
 void Mode_Manifest_Init(mode_manifest_t * manifest) {
@@ -18,3 +21,5 @@ void Mode_Manifest_Init(mode_manifest_t * manifest) {
 	strcpy(manifest[RS_TO_TRS_BALANCED].desc, "rs to trs bal.");
 	strcpy(manifest[RS_TO_TRS_UNBALANCED].desc, "rs to trs unbal.");
 }
+
+#endif

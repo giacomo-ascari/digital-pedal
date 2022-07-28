@@ -48,19 +48,31 @@ enum float_param_type {
     PAST,               // past
 };
 
+enum action_type {
+	INSERT,
+	UPDATE
+};
+
 // PARAMETERS structs
 
-#define PARAM_BYTE_SIZE 16
+#define PARAM_BYTE_SIZE 12
 
 typedef struct _int_parameter_t {
     int32_t value, min, max;
-    uint32_t visible;
 } int_parameter_t;
 
 typedef struct _float_parameter_t {
     float value, min, max;
-    uint32_t visible;
 } float_parameter_t;
+
+typedef struct _params_manifest_t {
+    uint8_t active_int_params[INT_PARAM_TYPES];
+    uint8_t active_float_params[FLOAT_PARAM_TYPES];
+    char int_name[INT_PARAM_TYPES][24];
+    char float_name[FLOAT_PARAM_TYPES][24];
+} params_manifest_t;
+
+void Params_Manifest_Init(params_manifest_t *params_manifest);
 
 // PEDALS structs
 
@@ -96,7 +108,7 @@ typedef struct _Pedalboard_Handler {
 } Pedalboard_Handler;
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb);
-void Pedalboard_InsertPedal(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i);
+void Pedalboard_SetPedal(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i, uint8_t action);
 void Pedalboard_DeletePedal(Pedalboard_Handler *p_pb, uint8_t i);
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
 

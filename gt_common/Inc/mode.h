@@ -22,10 +22,14 @@ enum mode_type {
 	RS_TO_TRS_UNBALANCED = 7,
 };
 
+#ifdef F103
+
 typedef struct _mode_manifest_t {
 	char desc[24];
 } mode_manifest_t;
 
 void Mode_Manifest_Init(mode_manifest_t * manifest);
+
+#endif
 
 #endif /* INC_MODE_H_ */

@@ -1,9 +1,0 @@
-../Core/Src/painter.c:18:9:read_font_pixel	0	static
-../Core/Src/painter.c:24:6:toggle_single_pixel	0	static
-../Core/Src/painter.c:29:6:draw_rectangle	24	static
-../Core/Src/painter.c:37:6:draw_char	48	static
-../Core/Src/painter.c:48:10:translate	0	static
-../Core/Src/painter.c:72:6:draw_text	32	static
-../Core/Src/painter.c:80:9:_pow	0	static
-../Core/Src/painter.c:88:6:draw_float_number	48	static
-../Core/Src/painter.c:105:6:draw_clean	0	static

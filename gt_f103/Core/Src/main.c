@@ -112,84 +112,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
-	Command command;
-	memcpy(&command, hcommander.uart_rx_buffer, COMMAND_BYTESIZE);
-	Commander_Enqueue(&hcommander, &command);
+	memcpy(&(hcommander.in_command), hcommander.uart_rx_buffer, COMMAND_BYTESIZE);
+	hcommander.awaiting_response = 0;
 }
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
-	Command command;
-	memcpy(&command, hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
-	Commander_Enqueue(&hcommander, &command);
+	memcpy(&(hcommander.in_command), hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
+	hcommander.awaiting_response = 0;
 }
 
-void command_callback(Command command) {
-
-	if (command.header < PAGE_COUNT && command.subheader < MAX_PEDALS_COUNT) {
-
-		// ok-ish command
-
-		// MENU RESPONSE EVENTS
-
-		if (command.header == OVERVIEW) {
-			memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
-			if (command.subheader == MAX_PEDALS_COUNT - 1) {
-				Menu_Render(&hmenu, FULL);
-				//hmenu.page_state = READY;
-			}
-
-		} else if (command.header == PLOT) {
-			memcpy(hmenu.signal_in, command.payload.bytes, SIGNAL_SIZE);
-			memcpy(hmenu.signal_out, command.payload.bytes + SIGNAL_SIZE, SIGNAL_SIZE);
-			if (command.subheader == FIRST) {
-				Menu_Render(&hmenu, FULL);
-				//hmenu.page_state = READY;
-			} else if (command.subheader == PERIODIC) {
-				Menu_Render(&hmenu, PARTIAL);
-				//hmenu.page_state = READY;
-			}
-
-		} else if (command.header == EDIT) {
-			if (command.subheader == FIRST) {
-				memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
-				if (command.subheader == MAX_PEDALS_COUNT - 1) {
-					Menu_Render(&hmenu, FULL);
-					//hmenu.page_state = READY;
-				}
-			} else if (command.subheader == USER) {
-				memcpy(hmenu.pedals[command.subheader].pedal_raw, command.payload.bytes, RAW_PEDAL_SIZE);
-				Menu_Render(&hmenu, PARTIAL);
-				//hmenu.page_state = READY;
-			}
-
-
-		} else if (command.header == MODE) {
-			hmenu.mode_active = command.payload.bytes[0];
-			if (command.subheader == FIRST) {
-				Menu_Render(&hmenu, FULL);
-				//hmenu.page_state = READY;
-			} else if (command.subheader == USER) {
-				Menu_Render(&hmenu, PARTIAL);
-				//hmenu.page_state = READY;
-			}
-
-		}
-
-	} else {
-
-		// angery
-		for (uint8_t i = 0; i < 6; i++)
-			HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_SET);
-		// surely faulty command
-		Commander_Pause(&hcommander);
-		HAL_Delay(500);
-		Commander_Resume(&hcommander);
-		//hmenu.page_state = READY;
-	}
-
+void command_callback() {
+	// do nothing, F103 is not supposed to answer
+	for (uint8_t i = 0; i < 6; i++)
+	HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_SET);
+	HAL_Delay(500);
 }
 
 /* USER CODE END 0 */
@@ -252,14 +191,15 @@ int main(void)
 	EPD_Display(&hepd1);
 	EPD_Sleep(&hepd1);
 
-	// Turning off
-	for (uint8_t i = 0; i < 6; i++)
-		HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_RESET);
-
 	// Menu
 	uint8_t new_page;
 	Menu_Init(&hmenu, &hcommander, &hepd1);
-	Menu_SendMessage(&hmenu, FIRST);
+	Menu_RetrieveData(&hmenu, FIRST);
+	Menu_Render(&hmenu, FULL);
+
+	// Turning off
+		for (uint8_t i = 0; i < 6; i++)
+			HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_RESET);
 
 	/* USER CODE END 2 */
 
@@ -270,71 +210,77 @@ int main(void)
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		Commander_Process(&hcommander);
 
-		//if (hmenu.page_state == READY) {
-			new_page = hmenu.selected_page;
-			for (uint8_t i = 0; i < 6; i++) {
-				if (btn_flags[i]) {
-					btn_flags[i] = 0;
-					new_page = i;
-				}
+		new_page = hmenu.selected_page;
+		for (uint8_t i = 0; i < 6; i++) {
+			if (btn_flags[i]) {
+				btn_flags[i] = 0;
+				new_page = i;
 			}
-
-			if (new_page != hmenu.selected_page) {
-				// MENU PAGE BUTTON EVENT
-				//hmenu.page_state = BUSY;
-				hmenu.selected_page = new_page;
-				hmenu.tick = HAL_GetTick();
-				Menu_SendMessage(&hmenu, FIRST);
-				RE_Reset(&hre1);
-				RE_Reset(&hre2);
-				btn_flags[6] = 0;
-				btn_flags[7] = 0;
-
-			} else {
-
-				// MENU PERIODIC AND USER EVENTS
-				if (hmenu.selected_page == PLOT) {
-					hmenu.plot_xscale = RE_GetCount(&hre1) + 1;
-					hmenu.plot_yscale = RE_GetCount(&hre2) + 1;
-					if (hmenu.tick + 3000 < HAL_GetTick()) {
-						hmenu.tick = HAL_GetTick();
-						//hmenu.page_state = BUSY;
-						Menu_SendMessage(&hmenu, PERIODIC);
-					}
-
-				} else if (hmenu.selected_page == EDIT) {
-					hmenu.edit_index1 = RE_GetCount(&hre1);
-					hmenu.edit_index2 = RE_GetCount(&hre2) % MAX_PEDALS_COUNT;
-					if (btn_flags[7]) {
-						btn_flags[7] = 0;
-						hmenu.pedals[hmenu.edit_index2].pedal_formatted.type += 1;
-						hmenu.pedals[hmenu.edit_index2].pedal_formatted.type %= PEDAL_TYPES;
-						//hmenu.page_state = BUSY;
-						Menu_SendMessage(&hmenu, USER);
-					} else {
-						Menu_UpdatePage(&hmenu);
-					}
-
-				} else if (hmenu.selected_page == MODE) {
-					hmenu.mode_selected = RE_GetCount(&hre2) % MODE_TYPES;
-					if (btn_flags[7]) {
-						btn_flags[7] = 0;
-						hmenu.mode_active = hmenu.mode_selected;
-						//hmenu.page_state = BUSY;
-						Menu_SendMessage(&hmenu, USER);
-					} else {
-						Menu_UpdatePage(&hmenu);
-					}
-				}
-
-			}
-		//}
+		}
 
 		for (uint8_t i = 0; i < 6; i++)  {
-			HAL_GPIO_WritePin(led_ports[i], led_pins[i], i == hmenu.selected_page ? GPIO_PIN_SET : GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(led_ports[i], led_pins[i], i == new_page ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		}
+
+		if (Menu_GoTo(&hmenu, new_page)) {
+			// MENU PAGE BUTTON
+			Menu_RetrieveData(&hmenu, FIRST);
+			RE_Reset(&hre1);
+			RE_Reset(&hre2);
+			btn_flags[6] = 0;
+			btn_flags[7] = 0;
+			Menu_Render(&hmenu, FULL);
+		}  else {
+
+			// MENU PERIODIC AND USER EVENTS
+			if (hmenu.selected_page == PLOT) {
+				hmenu.plot_xscale = RE_GetCount(&hre1) + 1;
+				hmenu.plot_yscale = RE_GetCount(&hre2) + 1;
+				if (hmenu.tick + 3000 < HAL_GetTick()) {
+					hmenu.tick = HAL_GetTick();
+					Menu_RetrieveData(&hmenu, PERIODIC);
+					Menu_Render(&hmenu, PARTIAL);
+				}
+
+			} else if (hmenu.selected_page == EDIT) {
+				hmenu.edit_index1 = RE_GetCount(&hre1);
+				hmenu.edit_index2 = RE_GetCount(&hre2) % MAX_PEDALS_COUNT;
+				if (btn_flags[7]) {
+					btn_flags[7] = 0;
+					hmenu.pedals[hmenu.edit_index2].pedal_formatted.type += 1;
+					hmenu.pedals[hmenu.edit_index2].pedal_formatted.type %= PEDAL_TYPES;
+					Menu_RetrieveData(&hmenu, USER);
+				} else {
+					Menu_Render(&hmenu, PARTIAL);
+				}
+
+			} else if (hmenu.selected_page == MODE) {
+				hmenu.mode_selected = RE_GetCount(&hre2) % MODE_TYPES;
+				if (btn_flags[7]) {
+					btn_flags[7] = 0;
+					hmenu.mode_active = hmenu.mode_selected;
+					Menu_RetrieveData(&hmenu, USER);
+				} else {
+					Menu_Render(&hmenu, PARTIAL);
+				}
+			} else if (hmenu.selected_page == TUNER) {
+				Menu_RetrieveData(&hmenu, PERIODIC);
+				Menu_Render(&hmenu, PARTIAL);
+			} else if (hmenu.selected_page == FILES) {
+				hmenu.usb_selected = RE_GetCount(&hre2) % 2;
+				if (btn_flags[7]) {
+					btn_flags[7] = 0;
+					if (hmenu.usb_ready) {
+						Menu_RetrieveData(&hmenu, USER);
+					}
+				} else {
+					Menu_RetrieveData(&hmenu, PERIODIC);
+				}
+				Menu_Render(&hmenu, PARTIAL);
+			}
+		}
+
 	}
 	/* USER CODE END 3 */
 }
