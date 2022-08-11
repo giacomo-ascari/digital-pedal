@@ -69,8 +69,7 @@ uint8_t usb_ready = 0;
 uint8_t usb_mounted = 0;
 FIL pbFile;
 FRESULT res;
-UINT byteswritten, bytesread;
-char rwtext[100];  //Read/Write buf
+unsigned int byteswritten, bytesread;
 
 // COMMANDER
 Commander_HandleTypeDef hcommander;
@@ -148,11 +147,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 uint8_t usb_save() {
 
-	res = f_open(&pbFile, "A.PB", FA_WRITE | FA_CREATE_ALWAYS);
+	res = f_open(&pbFile, "pb.pb", FA_WRITE | FA_CREATE_ALWAYS);
 	if (res != FR_OK) return 0;
 
-	for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-		res = f_write(&pbFile, (const void *)hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE, &byteswritten);
+	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
+		res = f_write(&pbFile, (const void *)hpedalboard.effects[i].effect_raw, RAW_EFFECT_SIZE, &byteswritten);
 		if((res != FR_OK) || (byteswritten == 0)) return 0;
 	}
 
@@ -163,13 +162,17 @@ uint8_t usb_save() {
 
 uint8_t usb_load() {
 
-	res = f_open(&pbFile, "A.PB", FA_READ);
+	res = f_open(&pbFile, "pb.pb", FA_READ);
 	if (res != FR_OK) return 0;
 
-	for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-		res = f_read(&pbFile, (uint8_t*)hpedalboard.pedals[i].pedal_raw, RAW_PEDAL_SIZE, &bytesread);
-		Pedalboard_SetPedal(&hpedalboard, hpedalboard.pedals[i].pedal_formatted.type, i, UPDATE);
+	uint8_t buff[RAW_EFFECT_SIZE];
+
+	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
+		res = f_read(&pbFile, buff, RAW_EFFECT_SIZE, &bytesread);
 		if((res != FR_OK) || (bytesread == 0)) return 0;
+		hpedalboard.effects[i].effect_formatted.type = BYPASS;
+		memcpy((uint8_t*)hpedalboard.effects[i].effect_raw + 1, buff + 1, RAW_EFFECT_SIZE - 1);
+		Pedalboard_SetEffect(&hpedalboard, buff[0], i);
 	}
 
 	res = f_close(&pbFile);
@@ -210,7 +213,7 @@ void command_callback() {
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (in_command->header < PAGE_COUNT && in_command->subheader < MAX_PEDALS_COUNT) {
+	if (in_command->header < PAGE_COUNT && in_command->subheader < MAX_EFFECTS_COUNT) {
 
 		out_command->header = in_command->header;
 		out_command->subheader = in_command->subheader;
@@ -219,7 +222,7 @@ void command_callback() {
 		if (in_command->header == OVERVIEW) {
 
 			// in_command->subheader == FIRST
-			memcpy(out_command->payload.bytes, hpedalboard.pedals[in_command->param].pedal_raw, RAW_PEDAL_SIZE);
+			memcpy(out_command->payload.bytes, hpedalboard.effects[in_command->param].effect_raw, RAW_EFFECT_SIZE);
 			Commander_Send(&hcommander);
 
 		} else if (in_command->header == PLOT) {
@@ -236,11 +239,12 @@ void command_callback() {
 		} else if (in_command->header == EDIT) {
 
 			if (in_command->subheader == FIRST) {
-				memcpy(out_command->payload.bytes, hpedalboard.pedals[in_command->param].pedal_raw, RAW_PEDAL_SIZE);
+				memcpy(out_command->payload.bytes, hpedalboard.effects[in_command->param].effect_raw, RAW_EFFECT_SIZE);
 				Commander_Send(&hcommander);
 			} else {
-				memcpy(hpedalboard.pedals[in_command->param].pedal_raw + 1, in_command->payload.bytes + 1, RAW_PEDAL_SIZE - 1);
-				Pedalboard_SetPedal(&hpedalboard, in_command->payload.bytes[0], in_command->param, UPDATE);
+				hpedalboard.effects[in_command->param].effect_formatted.type = BYPASS;
+				memcpy(hpedalboard.effects[in_command->param].effect_raw + 1, in_command->payload.bytes + 1, RAW_EFFECT_SIZE - 1);
+				Pedalboard_SetEffect(&hpedalboard, in_command->payload.bytes[0], in_command->param);
 				Commander_Send(&hcommander);
 			}
 
@@ -451,7 +455,7 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	Pedalboard_SetPedal(&hpedalboard, AMPLIFIER, MAX_PEDALS_COUNT - 1, INSERT);
+	Pedalboard_SetEffect(&hpedalboard, AMPLIFIER, MAX_EFFECTS_COUNT - 1);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);

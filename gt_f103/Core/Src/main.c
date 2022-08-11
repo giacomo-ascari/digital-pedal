@@ -230,7 +230,7 @@ int main(void)
 			RE_Reset(&hre2);
 			btn_flags[6] = 0;
 			btn_flags[7] = 0;
-			Menu_Render(&hmenu, FULL);
+			Menu_Render(&hmenu, PARTIAL);
 		}  else {
 
 			// MENU PERIODIC AND USER EVENTS
@@ -244,16 +244,47 @@ int main(void)
 				}
 
 			} else if (hmenu.selected_page == EDIT) {
-				hmenu.edit_index1 = RE_GetCount(&hre1);
-				hmenu.edit_index2 = RE_GetCount(&hre2) % MAX_PEDALS_COUNT;
+				if (btn_flags[6]) {
+					// if low btn pressed
+					btn_flags[6] = 0;
+					if (!hmenu.edit_active) {
+						// going to edit mode
+						hmenu.edit_active = 1;
+						hmenu.edit_cursor = 0;
+					} else {
+						// exiting edit mode
+						hmenu.edit_active = 0;
+					}
+					RE_Reset(&hre1);
+					Menu_RetrieveData(&hmenu, USER);
+				}
+				if (hmenu.edit_active) {
+					// if edit is active
+					if (RE_GetCount(&hre1) != 0) {
+						// if something happened
+						uint8_t type = hmenu.effects[hmenu.edit_index2].effect_formatted.type;
+						effect_config_t *conf = &(hmenu.effects[hmenu.edit_index2].effect_formatted.config);
+						if (hmenu.edit_index1 < INT_PARAMS_TYPES) {
+							//if (Effects_Manifest[type].params_manifest.int_params_manifest[])
+							//conf->int_params[hmenu.edit_index1] +=
+						} else if (hmenu.edit_index1 >= INT_PARAMS_TYPES && hmenu.edit_index1 < INT_PARAMS_TYPES + FLOAT_PARAMS_TYPES) {
+
+						}
+					}
+				} else {
+					hmenu.edit_index1 = RE_GetCount(&hre1);
+					if (RE_GetCount(&hre2) >= 0) hmenu.edit_index2 = RE_GetCount(&hre2) % MAX_EFFECTS_COUNT;
+					else hmenu.edit_index2 = MAX_EFFECTS_COUNT - (-RE_GetCount(&hre2) % MAX_EFFECTS_COUNT);
+				}
+
 				if (btn_flags[7]) {
 					btn_flags[7] = 0;
-					hmenu.pedals[hmenu.edit_index2].pedal_formatted.type += 1;
-					hmenu.pedals[hmenu.edit_index2].pedal_formatted.type %= PEDAL_TYPES;
+					hmenu.effects[hmenu.edit_index2].effect_formatted.type += 1;
+					hmenu.effects[hmenu.edit_index2].effect_formatted.type %= EFFECT_TYPES;
 					Menu_RetrieveData(&hmenu, USER);
-				} else {
-					Menu_Render(&hmenu, PARTIAL);
 				}
+
+				Menu_Render(&hmenu, PARTIAL);
 
 			} else if (hmenu.selected_page == MODE) {
 				hmenu.mode_selected = RE_GetCount(&hre2) % MODE_TYPES;

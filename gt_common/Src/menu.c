@@ -21,6 +21,7 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->edit_index1 = 0;
 	hm->edit_index2 = 0;
 	hm->edit_active = 0;
+	hm->edit_cursor = 0;
 	hm->usb_ready = 0;
 	hm->usb_selected = 0;
 	hm->tick = 0;
@@ -29,7 +30,6 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->mode_active = 0;
 	hm->mode_selected = 0;
 	Mode_Manifest_Init(hm->mode_manifest);
-	Pedal_Manifest_Init(hm->pedal_manifest);
 }
 
 uint8_t Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page) {
@@ -52,10 +52,10 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 	if (hm->selected_page == OVERVIEW) {
 
 		if (type == FIRST) {
-			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+			for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 				out_command->param = i;
 				Commander_SendAndWait(hm->hcommander);
-				memcpy(hm->pedals[i].pedal_raw, hm->hcommander->in_command.payload.bytes, RAW_PEDAL_SIZE);
+				memcpy(hm->effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
 			}
 		}
 
@@ -72,14 +72,14 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 	} else if (hm->selected_page == EDIT) {
 
 		if (type == FIRST) {
-			for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+			for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 				out_command->param = i;
 				Commander_SendAndWait(hm->hcommander);
-				memcpy(hm->pedals[i].pedal_raw, hm->hcommander->in_command.payload.bytes, RAW_PEDAL_SIZE);
+				memcpy(hm->effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
 			}
 		} else if (type == USER) {
 			out_command->param = hm->edit_index2;
-			memcpy(out_command->payload.bytes, hm->pedals[hm->edit_index2].pedal_raw, RAW_PEDAL_SIZE);
+			memcpy(out_command->payload.bytes, hm->effects[hm->edit_index2].effect_raw, RAW_EFFECT_SIZE);
 			Commander_SendAndWait(hm->hcommander);
 		}
 
@@ -109,10 +109,10 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 			if (hm->usb_selected % 2 == 0) {
 				out_command->header = OVERVIEW;
 				out_command->subheader = FIRST;
-				for (uint8_t i = 0; i < MAX_PEDALS_COUNT; i++) {
+				for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 					out_command->param = i;
 					Commander_SendAndWait(hm->hcommander);
-					memcpy(hm->pedals[i].pedal_raw, hm->hcommander->in_command.payload.bytes, RAW_PEDAL_SIZE);
+					memcpy(hm->effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
 				}
 			}
 		}
@@ -132,18 +132,18 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		uint8_t active_pedals = 0;
 
 		// content
-		for (uint16_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-			enum pedal_types t = hm->pedals[i].pedal_formatted.type;
-			uint16_t width = CANVAS_HEIGHT / MAX_PEDALS_COUNT;
+		for (uint16_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
+			uint8_t t = hm->effects[i].effect_formatted.type;
+			uint16_t width = CANVAS_HEIGHT / MAX_EFFECTS_COUNT;
 			if (t == BYPASS) {
 				Painter_ToggleDottedRectangle(image, width * i + 4, 35, width * (i+1) - 4, 100, BOT_LEFT);
 			} else {
 				active_pedals++;
 				Painter_ToggleRectangle(image, width * i + 4, 35, width * (i+1) - 4, 100, BOT_LEFT);
-				Painter_WriteString(image, hm->pedal_manifest[t].short_name, 35, width * i + width / 2 - 9, BOT_RIGHT, LARGE);
+				Painter_WriteString(image, Effects_Manifest[t].short_name, 35, width * i + width / 2 - 9, BOT_RIGHT, LARGE);
 			}
 		}
-		sprintf(row, "%d/%d", active_pedals, MAX_PEDALS_COUNT);
+		sprintf(row, "%d/%d", active_pedals, MAX_EFFECTS_COUNT);
 		Painter_WriteString(image, row, 260, 0, BOT_LEFT, SMALL);
 
 	} else if (hm->selected_page == PLOT) {
@@ -178,19 +178,64 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		// title
 		Painter_WriteString(image, "edit", 20, 0, BOT_LEFT, LARGE);
 
-		// content
-		for (uint16_t i = 0; i < MAX_PEDALS_COUNT; i++) {
-			// pedal selection
-			enum pedal_types t = hm->pedals[i].pedal_formatted.type;
-			uint16_t width = CANVAS_HEIGHT / MAX_PEDALS_COUNT;
-			if (t == BYPASS) Painter_ToggleDottedRectangle(image, width * i + 4, 20, width * (i+1) - 4, 30, BOT_LEFT);
-			else Painter_ToggleRectangle(image, width * i + 4, 20, width * (i+1) - 4, 30, BOT_LEFT);
-			if (i == hm->edit_index2) {
-				Painter_WriteString(image, "^", width * i + width / 2 - 4, 31, BOT_LEFT, SMALL);
-				Painter_WriteString(image, hm->pedal_manifest[t].long_name, 110, 2, BOT_LEFT, SMALL);
-				// param selection
+		// content - effects rectangles, and cursor 2
+		uint8_t type;
+		uint16_t upper = 20;
+		uint8_t selected = hm->edit_index2;
+		uint8_t height = (CANVAS_WIDTH - upper) / MAX_EFFECTS_COUNT;
+		uint16_t left = 80;
+		for (uint16_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
+			type = hm->effects[i].effect_formatted.type;
+			if (type == BYPASS) {
+				Painter_ToggleDottedRectangle(image, 2, upper + height * i + 2, 44, upper + height * (i+1) - 2, BOT_LEFT);
+			} else {
+				Painter_ToggleRectangle(image, 2, upper + height * i + 2, 44, upper + height * (i+1) - 2, BOT_LEFT);
 			}
 		}
+
+		type = hm->effects[selected].effect_formatted.type;
+		Painter_WriteString(image, "<", 44, upper + height * selected + height / 2 - 6, BOT_LEFT, SMALL);
+		Painter_WriteString(image, Effects_Manifest[type].long_name, 110, 2, BOT_LEFT, SMALL);
+		// param selection
+		uint8_t row_index = 0;
+
+		for (uint8_t j = 0; j < INT_PARAM_TYPES; j++) {
+			if (Effects_Manifest[type].params_manifest.int_params_manifest[j].active) {
+				int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[j]);
+				Painter_WriteString(image, manifest->name, left, upper + row_index * 14, BOT_LEFT, SMALL);
+				if (manifest->qual == PERCENTAGE) {
+					sprintf(row, "%l %%", hm->effects[selected].effect_formatted.config.int_params[j] * 100 / (manifest->max - manifest->min));
+				} else if (manifest->qual == VALUE) {
+					sprintf(row, "%l", hm->effects[selected].effect_formatted.config.int_params[j]);
+				} else if (manifest->qual == FREQUENCY) {
+					sprintf(row, "%l Hz", hm->effects[selected].effect_formatted.config.int_params[j]);
+				}
+				Painter_WriteString(image, row, left + 140, upper + row_index * 14, BOT_LEFT, SMALL);
+				row_index++;
+			}
+		}
+
+		for (uint8_t j = 0; j < FLOAT_PARAM_TYPES; j++) {
+			if (Effects_Manifest[type].params_manifest.float_params_manifest[j].active) {
+				float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[j]);
+				Painter_WriteString(image, manifest->name, left, upper + row_index * 14, BOT_LEFT, SMALL);
+				if (manifest->qual == PERCENTAGE) {
+					sprintf(row, "%.2f %%", hm->effects[selected].effect_formatted.config.float_params[j] * 100 / (manifest->max - manifest->min));
+				} else if (manifest->qual == VALUE) {
+					sprintf(row, "%.2f", hm->effects[selected].effect_formatted.config.float_params[j]);
+				} else if (manifest->qual == FREQUENCY) {
+					sprintf(row, "%.2f Hz", hm->effects[selected].effect_formatted.config.float_params[j]);
+				}
+				Painter_WriteString(image, row, left + 140, upper + row_index * 14, BOT_LEFT, SMALL);
+				row_index++;
+			}
+		}
+
+		if (type != BYPASS) {
+			Painter_WriteString(image, ">", left - 8, upper + (hm->edit_index1 % row_index) * 14, BOT_LEFT, SMALL);
+			if (hm->edit_active) Painter_ToggleRectangle(image, left, upper + (hm->edit_index1 % row_index) * 14 - 1, CANVAS_HEIGHT, upper + (hm->edit_index1 % row_index + 1) * 14 - 1, BOT_LEFT);
+		}
+
 
 	} else if (hm->selected_page == MODE) {
 
@@ -229,7 +274,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 			Painter_WriteString(image, "load", 294/3 - 24, 55, BOT_LEFT, LARGE);
 			Painter_WriteString(image, "save", 294/3*2 - 24, 55, BOT_LEFT, LARGE);
 		} else {
-			Painter_WriteString(image, "disconnected", 50, 55, BOT_LEFT, LARGE);
+			Painter_WriteString(image, "disconnected", 294/2 - 72, 55, BOT_LEFT, LARGE);
 		}
 	}
 

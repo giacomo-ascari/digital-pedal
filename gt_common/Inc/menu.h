@@ -46,8 +46,7 @@ enum render_types {
 
 typedef struct _Menu_HandleTypeDef {
 	enum page_types selected_page;
-	pedal_union_t pedals[MAX_PEDALS_COUNT];
-	pedal_manifest_t pedal_manifest[PEDAL_TYPES];
+	effect_union_t effects[MAX_EFFECTS_COUNT];
 	mode_manifest_t mode_manifest[MODE_TYPES];
 	int8_t signal_in[SIGNAL_SIZE];
 	int8_t signal_out[SIGNAL_SIZE];
@@ -59,6 +58,7 @@ typedef struct _Menu_HandleTypeDef {
 	uint8_t edit_index1;
 	uint8_t edit_index2;
 	uint8_t edit_active;
+	int16_t edit_cursor;
 	uint8_t mode_active;
 	uint8_t mode_selected;
 	uint8_t usb_ready;

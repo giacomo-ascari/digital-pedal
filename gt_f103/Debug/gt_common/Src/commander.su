@@ -1,7 +1,0 @@
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:13:6:Commander_Init	24	static
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:22:6:Commander_Start	16	static
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:26:6:Commander_Pause	16	static
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:30:6:Commander_Resume	16	static
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:34:9:Commander_SendAndWait	24	static
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:58:9:Commander_Send	24	static
-C:/Users/giaco/Desktop/digital-pedal/gt_common/Src/commander.c:76:6:Commander_ProcessIncoming	16	static

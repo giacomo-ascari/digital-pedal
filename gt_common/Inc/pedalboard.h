@@ -8,15 +8,16 @@
 #ifndef PEDALBOARD_PEDALBOARD_H_
 #define PEDALBOARD_PEDALBOARD_H_
 
-#define MAX_PEDALS_COUNT 6
+#define MAX_EFFECTS_COUNT 6
 
 // ENUMERATION
 
-#define PEDAL_TYPES 9
+#define EFFECT_TYPES 10
 
-enum pedal_types {
-    AMPLIFIER,      // AMP
-    BITCRUSHER_RS,  // BIT
+enum effect_type {
+    AMPLIFIER,  // AMP
+    BITCRUSHER_RS,  // BITRS
+	BITCRUSHER_RT,  // BITRT
     BYPASS,         //  -
     FUZZ,           // FZZ
     LPF,            // LPF
@@ -26,12 +27,11 @@ enum pedal_types {
     TREMOLO,        // TRM
 };
 
-#define INT_PARAM_TYPES 3
+#define INT_PARAM_TYPES 2
 
 enum int_param_type {
-    WIDTH,              // width
     COUNTER,            // multipurpose counter
-    REDUCT_INTENSITY,   // reduction intensity
+    REDUCTION,   		// reduction intensity
 };
 
 #define FLOAT_PARAM_TYPES 9
@@ -48,68 +48,77 @@ enum float_param_type {
     PAST,               // past
 };
 
-enum action_type {
-	INSERT,
-	UPDATE
-};
+#define TOTAL_PARAM_TYPES (INT_PARAM_TYPES + FLOAT_PARAM_TYPES)
 
 // PARAMETERS structs
 
-#define PARAM_BYTE_SIZE 12
+typedef struct _int_params_manifest_t {
+    uint8_t active;
+    char name[24];
+    int32_t def;
+    int32_t min;
+    int32_t max;
+    uint8_t qual;
+} int_params_manifest_t;
 
-typedef struct _int_parameter_t {
-    int32_t value, min, max;
-} int_parameter_t;
+typedef struct _float_params_manifest_t {
+    uint8_t active;
+    char name[24];
+    float def;
+    float min;
+    float max;
+    uint8_t qual;
+} float_params_manifest_t;
 
-typedef struct _float_parameter_t {
-    float value, min, max;
-} float_parameter_t;
+enum param_qualifier {
+	FREQUENCY,
+	PERCENTAGE,
+	VALUE
+};
 
 typedef struct _params_manifest_t {
-    uint8_t active_int_params[INT_PARAM_TYPES];
-    uint8_t active_float_params[FLOAT_PARAM_TYPES];
-    char int_name[INT_PARAM_TYPES][24];
-    char float_name[FLOAT_PARAM_TYPES][24];
+	int_params_manifest_t int_params_manifest[INT_PARAM_TYPES];
+	float_params_manifest_t float_params_manifest[FLOAT_PARAM_TYPES];
 } params_manifest_t;
 
-void Params_Manifest_Init(params_manifest_t *params_manifest);
+// EFFECT structs
 
-// PEDALS structs
+#define PARAM_BYTE_SIZE 4
+#define RAW_EFFECT_SIZE (1 + PARAM_BYTE_SIZE * (INT_PARAM_TYPES + FLOAT_PARAM_TYPES))
 
-#define RAW_PEDAL_SIZE (PARAM_BYTE_SIZE * (INT_PARAM_TYPES + FLOAT_PARAM_TYPES) + 1)
+typedef struct _effect_config_t {
+	int32_t int_params[INT_PARAM_TYPES];
+	float float_params[FLOAT_PARAM_TYPES];
+} effect_config_t;
 
-typedef struct _pedal_config_t {
-    int_parameter_t int_params[INT_PARAM_TYPES];
-    float_parameter_t float_params[FLOAT_PARAM_TYPES];
-} pedal_config_t;
-
-typedef struct _pedal_t {
+typedef struct _effect_t {
 	uint8_t type;
-    pedal_config_t config;
-    void (*pedal_process)(float *value, pedal_config_t *p_config);
-} pedal_t;
+	effect_config_t config;
+} effect_t;
 
-typedef union _pedal_union_t {
-	pedal_t pedal_formatted;
-	uint8_t pedal_raw[RAW_PEDAL_SIZE];
-} pedal_union_t;
+typedef union _effect_union_t {
+	effect_t effect_formatted;
+	uint8_t effect_raw[RAW_EFFECT_SIZE];
+} effect_union_t;
 
-typedef struct _pedal_manifest_t {
+typedef struct _effect_manifest_t {
     char short_name[8];
     char long_name[24];
-} pedal_manifest_t;
+    params_manifest_t params_manifest;
+    void (*effect_process)(float *value, effect_config_t *p_config);
+} effect_manifest_t;
 
-void Pedal_Manifest_Init(pedal_manifest_t *pedal_manifest);
+extern effect_manifest_t Effects_Manifest[EFFECT_TYPES];
 
 // PEDALBOARD
 
 typedef struct _Pedalboard_Handler {
-    pedal_union_t pedals[MAX_PEDALS_COUNT];
+    effect_union_t effects[MAX_EFFECTS_COUNT];
 } Pedalboard_Handler;
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb);
-void Pedalboard_SetPedal(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i, uint8_t action);
-void Pedalboard_DeletePedal(Pedalboard_Handler *p_pb, uint8_t i);
+void Pedalboard_SetEffect(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i);
+void Pedalboard_DeleteEffect(Pedalboard_Handler *p_pb, uint8_t i);
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
 
 #endif /* PEDALBOARD_PEDALBOARD_H_ */
