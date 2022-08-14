@@ -120,5 +120,8 @@ void Pedalboard_Init(Pedalboard_Handler *p_pb);
 void Pedalboard_SetEffect(Pedalboard_Handler *p_pb, uint8_t type, uint8_t i);
 void Pedalboard_DeleteEffect(Pedalboard_Handler *p_pb, uint8_t i);
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
+uint8_t Pedalboard_CountActiveParams(Pedalboard_Handler *p_pb, uint8_t i);
+uint8_t Pedalboard_CountActiveParamsByType(uint8_t type);
+void Pedalboard_GetActiveParamsByType(uint8_t active_index, uint8_t type, uint8_t *_int, uint8_t *i);
 
 #endif /* PEDALBOARD_PEDALBOARD_H_ */

@@ -21,7 +21,7 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->edit_index1 = 0;
 	hm->edit_index2 = 0;
 	hm->edit_active = 0;
-	hm->edit_cursor = 0;
+	hm->edit_oldvalue = 0;
 	hm->usb_ready = 0;
 	hm->usb_selected = 0;
 	hm->tick = 0;
@@ -248,7 +248,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 			if (i == hm->mode_active) {
 				Painter_ToggleRectangle(image, i%2?156:8, i/2*18+28, i%2?294:146, i/2*18+44, BOT_LEFT);
 			}
-			if (i == hm->mode_selected % MODE_TYPES) {
+			if (i == hm->mode_selected) {
 				Painter_WriteString(image, ">", i%2?148:0, i/2*18+30, BOT_LEFT, SMALL);
 			}
 		}
@@ -266,9 +266,9 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 
 		// content
 		if (hm->usb_ready) {
-			if (hm->usb_selected % 2) {
+			if (hm->usb_selected == 1) {
 				Painter_WriteString(image, ">", 294/3*2 - 36, 55, BOT_LEFT, LARGE);
-			} else {
+			} else if (hm->usb_selected == 0) {
 				Painter_WriteString(image, ">", 294/3 - 36, 55, BOT_LEFT, LARGE);
 			}
 			Painter_WriteString(image, "load", 294/3 - 24, 55, BOT_LEFT, LARGE);

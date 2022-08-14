@@ -153,6 +153,53 @@ void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value) {
     }
 }
 
+uint8_t Pedalboard_CountActiveParams(Pedalboard_Handler *p_pb, uint8_t i) {
+	uint8_t active_params = 0;
+	if (i < MAX_EFFECTS_COUNT) {
+		active_params = Pedalboard_CountActiveParamsByType(p_pb->effects[i].effect_formatted.type);
+	}
+	return active_params;
+}
+
+uint8_t Pedalboard_CountActiveParamsByType(uint8_t type) {
+	uint8_t active_params = 0;
+	for (uint8_t j = 0; j < INT_PARAM_TYPES; j++) {
+		if (Effects_Manifest[type].params_manifest.int_params_manifest[j].active) {
+			active_params++;
+		}
+	}
+	for (uint8_t j = 0; j < FLOAT_PARAM_TYPES; j++) {
+		if (Effects_Manifest[type].params_manifest.float_params_manifest[j].active) {
+			active_params++;
+		}
+	}
+	return active_params;
+}
+
+void Pedalboard_GetActiveParamsByType(uint8_t active_index, uint8_t type, uint8_t *_int, uint8_t *i) {
+	uint8_t active_params = 0;
+	for (uint8_t j = 0; j < INT_PARAM_TYPES; j++) {
+		if (Effects_Manifest[type].params_manifest.int_params_manifest[j].active) {
+			if (active_params == active_index) {
+				*_int = 1;
+				*i = j;
+				return;
+			}
+			active_params++;
+		}
+	}
+	for (uint8_t j = 0; j < FLOAT_PARAM_TYPES; j++) {
+		if (Effects_Manifest[type].params_manifest.float_params_manifest[j].active) {
+			if (active_params == active_index) {
+				*_int = 0;
+				*i = j;
+				return;
+			}
+			active_params++;
+		}
+	}
+}
+
 // OVERDRIVE
 
 void overdrive_process(float *value, effect_config_t *conf) {

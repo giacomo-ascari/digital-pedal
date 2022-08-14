@@ -58,7 +58,7 @@ typedef struct _Menu_HandleTypeDef {
 	uint8_t edit_index1;
 	uint8_t edit_index2;
 	uint8_t edit_active;
-	int16_t edit_cursor;
+	int16_t edit_oldvalue;
 	uint8_t mode_active;
 	uint8_t mode_selected;
 	uint8_t usb_ready;

@@ -235,8 +235,8 @@ int main(void)
 
 			// MENU PERIODIC AND USER EVENTS
 			if (hmenu.selected_page == PLOT) {
-				hmenu.plot_xscale = RE_GetCount(&hre1) + 1;
-				hmenu.plot_yscale = RE_GetCount(&hre2) + 1;
+				hmenu.plot_xscale = RE_GetCount(&hre1, 100) + 1;
+				hmenu.plot_yscale = RE_GetCount(&hre2, 100) + 1;
 				if (hmenu.tick + 3000 < HAL_GetTick()) {
 					hmenu.tick = HAL_GetTick();
 					Menu_RetrieveData(&hmenu, PERIODIC);
@@ -250,44 +250,50 @@ int main(void)
 					if (!hmenu.edit_active) {
 						// going to edit mode
 						hmenu.edit_active = 1;
-						hmenu.edit_cursor = 0;
+						hmenu.edit_oldvalue = hre1.counter;
 					} else {
 						// exiting edit mode
 						hmenu.edit_active = 0;
+						Menu_RetrieveData(&hmenu, USER);
 					}
-					RE_Reset(&hre1);
-					Menu_RetrieveData(&hmenu, USER);
 				}
 				if (hmenu.edit_active) {
 					// if edit is active
-					if (RE_GetCount(&hre1) != 0) {
-						// if something happened
-						uint8_t type = hmenu.effects[hmenu.edit_index2].effect_formatted.type;
-						effect_config_t *conf = &(hmenu.effects[hmenu.edit_index2].effect_formatted.config);
-						if (hmenu.edit_index1 < INT_PARAMS_TYPES) {
-							//if (Effects_Manifest[type].params_manifest.int_params_manifest[])
-							//conf->int_params[hmenu.edit_index1] +=
-						} else if (hmenu.edit_index1 >= INT_PARAMS_TYPES && hmenu.edit_index1 < INT_PARAMS_TYPES + FLOAT_PARAMS_TYPES) {
-
-						}
+					uint8_t type = hmenu.effects[hmenu.edit_index2].effect_formatted.type;
+					uint8_t index, _int;
+					Pedalboard_GetActiveParamsByType(hmenu.edit_index1, type, &_int, &index);
+					effect_config_t *conf = &(hmenu.effects[hmenu.edit_index2].effect_formatted.config);
+					if (_int) {
+						// integer parameter
+						int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[index]);
+						int32_t step = (manifest->max - manifest->min) / 20;
+						conf->int_params[index] += step * (hre1.counter - hmenu.edit_oldvalue);
+						if (conf->int_params[index] > manifest->max) conf->int_params[index] = manifest->max;
+						if (conf->int_params[index] < manifest->min) conf->int_params[index] = manifest->min;
+						hmenu.edit_oldvalue = hre1.counter;
+					} else {
+						// float parameter
+						float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[index]);
+						float step = (manifest->max - manifest->min) / 20;
+						conf->float_params[index] += step * (hre1.counter - hmenu.edit_oldvalue);
+						if (conf->float_params[index] > manifest->max) conf->float_params[index] = manifest->max;
+						if (conf->float_params[index] < manifest->min) conf->float_params[index] = manifest->min;
+						hmenu.edit_oldvalue = hre1.counter;
 					}
 				} else {
-					hmenu.edit_index1 = RE_GetCount(&hre1);
-					if (RE_GetCount(&hre2) >= 0) hmenu.edit_index2 = RE_GetCount(&hre2) % MAX_EFFECTS_COUNT;
-					else hmenu.edit_index2 = MAX_EFFECTS_COUNT - (-RE_GetCount(&hre2) % MAX_EFFECTS_COUNT);
+					hmenu.edit_index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(hmenu.effects[hmenu.edit_index2].effect_formatted.type));
+					hmenu.edit_index2 = RE_GetCount(&hre2, MAX_EFFECTS_COUNT);
+					if (btn_flags[7]) {
+						btn_flags[7] = 0;
+						hmenu.effects[hmenu.edit_index2].effect_formatted.type += 1;
+						hmenu.effects[hmenu.edit_index2].effect_formatted.type %= EFFECT_TYPES;
+						Menu_RetrieveData(&hmenu, USER);
+					}
 				}
-
-				if (btn_flags[7]) {
-					btn_flags[7] = 0;
-					hmenu.effects[hmenu.edit_index2].effect_formatted.type += 1;
-					hmenu.effects[hmenu.edit_index2].effect_formatted.type %= EFFECT_TYPES;
-					Menu_RetrieveData(&hmenu, USER);
-				}
-
 				Menu_Render(&hmenu, PARTIAL);
 
 			} else if (hmenu.selected_page == MODE) {
-				hmenu.mode_selected = RE_GetCount(&hre2) % MODE_TYPES;
+				hmenu.mode_selected = RE_GetCount(&hre2, MODE_TYPES);
 				if (btn_flags[7]) {
 					btn_flags[7] = 0;
 					hmenu.mode_active = hmenu.mode_selected;
@@ -299,7 +305,7 @@ int main(void)
 				Menu_RetrieveData(&hmenu, PERIODIC);
 				Menu_Render(&hmenu, PARTIAL);
 			} else if (hmenu.selected_page == FILES) {
-				hmenu.usb_selected = RE_GetCount(&hre2) % 2;
+				hmenu.usb_selected = RE_GetCount(&hre2, 2);
 				if (btn_flags[7]) {
 					btn_flags[7] = 0;
 					if (hmenu.usb_ready) {

@@ -58,6 +58,10 @@ void RE_Reset(RE_HandleTypeDef *hre) {
 	hre->counter = 0;
 }
 
-int16_t RE_GetCount(RE_HandleTypeDef *hre) {
-	return hre->counter;
+uint8_t RE_GetCount(RE_HandleTypeDef *hre, uint8_t max) {
+	if (hre->counter >= 0) {
+		return hre->counter % max;
+	} else {
+		return (max - (0 - hre->counter % max));
+	}
 }

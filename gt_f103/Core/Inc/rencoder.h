@@ -24,6 +24,6 @@ void RE_Process(RE_HandleTypeDef *hre);
 
 void RE_Reset(RE_HandleTypeDef *hre);
 
-int16_t RE_GetCount(RE_HandleTypeDef *hre);
+uint8_t RE_GetCount(RE_HandleTypeDef *hre, uint8_t max);
 
 #endif /* ROTARYENCODER_RENCODER_H_ */
