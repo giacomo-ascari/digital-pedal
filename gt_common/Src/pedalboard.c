@@ -109,6 +109,7 @@ effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 // PEDALBOARD
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb) {
+	p_pb->active = 1;
 	for (u_int8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 		p_pb->effects[i].effect_formatted.type = BYPASS;
 	}
@@ -143,13 +144,15 @@ void Pedalboard_DeleteEffect(Pedalboard_Handler *p_pb, uint8_t i) {
 
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value) {
     float pre;
-	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-		uint8_t type = p_pb->effects[i].effect_formatted.type;
-		if (type != BYPASS) {
-			pre = *value;
-			Effects_Manifest[type].effect_process(value, &(p_pb->effects[i].effect_formatted.config));
-			mix(&pre, value, value, &(p_pb->effects[i].effect_formatted.config));
-		}
+    if (p_pb->active) {
+    	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
+    		uint8_t type = p_pb->effects[i].effect_formatted.type;
+    		if (type != BYPASS) {
+    			pre = *value;
+    			Effects_Manifest[type].effect_process(value, &(p_pb->effects[i].effect_formatted.config));
+    			mix(&pre, value, value, &(p_pb->effects[i].effect_formatted.config));
+    		}
+        }
     }
 }
 

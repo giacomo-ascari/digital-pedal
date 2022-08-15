@@ -242,9 +242,9 @@ void command_callback() {
 				memcpy(out_command->payload.bytes, hpedalboard.effects[in_command->param].effect_raw, RAW_EFFECT_SIZE);
 				Commander_Send(&hcommander);
 			} else {
-				hpedalboard.effects[in_command->param].effect_formatted.type = BYPASS;
-				memcpy(hpedalboard.effects[in_command->param].effect_raw + 1, in_command->payload.bytes + 1, RAW_EFFECT_SIZE - 1);
-				Pedalboard_SetEffect(&hpedalboard, in_command->payload.bytes[0], in_command->param);
+				hpedalboard.active = 0;
+				memcpy(hpedalboard.effects[in_command->param].effect_raw, in_command->payload.bytes, RAW_EFFECT_SIZE);
+				hpedalboard.active = 1;
 				Commander_Send(&hcommander);
 			}
 
@@ -455,7 +455,7 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	Pedalboard_SetEffect(&hpedalboard, AMPLIFIER, MAX_EFFECTS_COUNT - 1);
+	//Pedalboard_SetEffect(&hpedalboard, AMPLIFIER, MAX_EFFECTS_COUNT - 1);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);

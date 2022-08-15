@@ -259,10 +259,10 @@ int main(void)
 				}
 				if (hmenu.edit_active) {
 					// if edit is active
-					uint8_t type = hmenu.effects[hmenu.edit_index2].effect_formatted.type;
+					uint8_t type = hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type;
 					uint8_t index, _int;
 					Pedalboard_GetActiveParamsByType(hmenu.edit_index1, type, &_int, &index);
-					effect_config_t *conf = &(hmenu.effects[hmenu.edit_index2].effect_formatted.config);
+					effect_config_t *conf = &(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.config);
 					if (_int) {
 						// integer parameter
 						int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[index]);
@@ -281,12 +281,14 @@ int main(void)
 						hmenu.edit_oldvalue = hre1.counter;
 					}
 				} else {
-					hmenu.edit_index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(hmenu.effects[hmenu.edit_index2].effect_formatted.type));
+					hmenu.edit_index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type));
 					hmenu.edit_index2 = RE_GetCount(&hre2, MAX_EFFECTS_COUNT);
 					if (btn_flags[7]) {
 						btn_flags[7] = 0;
-						hmenu.effects[hmenu.edit_index2].effect_formatted.type += 1;
-						hmenu.effects[hmenu.edit_index2].effect_formatted.type %= EFFECT_TYPES;
+						Pedalboard_SetEffect(
+								&(hmenu.pedalboard),
+								(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type + 1) % EFFECT_TYPES,
+								hmenu.edit_index2);
 						Menu_RetrieveData(&hmenu, USER);
 					}
 				}

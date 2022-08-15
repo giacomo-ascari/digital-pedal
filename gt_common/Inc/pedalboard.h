@@ -114,6 +114,7 @@ extern effect_manifest_t Effects_Manifest[EFFECT_TYPES];
 
 typedef struct _Pedalboard_Handler {
     effect_union_t effects[MAX_EFFECTS_COUNT];
+    uint8_t active;
 } Pedalboard_Handler;
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb);

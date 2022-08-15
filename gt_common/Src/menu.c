@@ -30,6 +30,7 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->mode_active = 0;
 	hm->mode_selected = 0;
 	Mode_Manifest_Init(hm->mode_manifest);
+	Pedalboard_Init(&(hm->pedalboard));
 }
 
 uint8_t Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page) {
@@ -55,7 +56,7 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 			for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 				out_command->param = i;
 				Commander_SendAndWait(hm->hcommander);
-				memcpy(hm->effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
+				memcpy(hm->pedalboard.effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
 			}
 		}
 
@@ -75,11 +76,11 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 			for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 				out_command->param = i;
 				Commander_SendAndWait(hm->hcommander);
-				memcpy(hm->effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
+				memcpy(hm->pedalboard.effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
 			}
 		} else if (type == USER) {
 			out_command->param = hm->edit_index2;
-			memcpy(out_command->payload.bytes, hm->effects[hm->edit_index2].effect_raw, RAW_EFFECT_SIZE);
+			memcpy(out_command->payload.bytes, hm->pedalboard.effects[hm->edit_index2].effect_raw, RAW_EFFECT_SIZE);
 			Commander_SendAndWait(hm->hcommander);
 		}
 
@@ -112,7 +113,7 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 				for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 					out_command->param = i;
 					Commander_SendAndWait(hm->hcommander);
-					memcpy(hm->effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
+					memcpy(hm->pedalboard.effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
 				}
 			}
 		}
@@ -133,7 +134,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 
 		// content
 		for (uint16_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-			uint8_t t = hm->effects[i].effect_formatted.type;
+			uint8_t t = hm->pedalboard.effects[i].effect_formatted.type;
 			uint16_t width = CANVAS_HEIGHT / MAX_EFFECTS_COUNT;
 			if (t == BYPASS) {
 				Painter_ToggleDottedRectangle(image, width * i + 4, 35, width * (i+1) - 4, 100, BOT_LEFT);
@@ -185,7 +186,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		uint8_t height = (CANVAS_WIDTH - upper) / MAX_EFFECTS_COUNT;
 		uint16_t left = 80;
 		for (uint16_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-			type = hm->effects[i].effect_formatted.type;
+			type = hm->pedalboard.effects[i].effect_formatted.type;
 			if (type == BYPASS) {
 				Painter_ToggleDottedRectangle(image, 2, upper + height * i + 2, 44, upper + height * (i+1) - 2, BOT_LEFT);
 			} else {
@@ -193,7 +194,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 			}
 		}
 
-		type = hm->effects[selected].effect_formatted.type;
+		type = hm->pedalboard.effects[selected].effect_formatted.type;
 		Painter_WriteString(image, "<", 44, upper + height * selected + height / 2 - 6, BOT_LEFT, SMALL);
 		Painter_WriteString(image, Effects_Manifest[type].long_name, 110, 2, BOT_LEFT, SMALL);
 		// param selection
@@ -204,11 +205,11 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 				int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[j]);
 				Painter_WriteString(image, manifest->name, left, upper + row_index * 14, BOT_LEFT, SMALL);
 				if (manifest->qual == PERCENTAGE) {
-					sprintf(row, "%l %%", hm->effects[selected].effect_formatted.config.int_params[j] * 100 / (manifest->max - manifest->min));
+					sprintf(row, "%l %%", hm->pedalboard.effects[selected].effect_formatted.config.int_params[j] * 100 / (manifest->max - manifest->min));
 				} else if (manifest->qual == VALUE) {
-					sprintf(row, "%l", hm->effects[selected].effect_formatted.config.int_params[j]);
+					sprintf(row, "%l", hm->pedalboard.effects[selected].effect_formatted.config.int_params[j]);
 				} else if (manifest->qual == FREQUENCY) {
-					sprintf(row, "%l Hz", hm->effects[selected].effect_formatted.config.int_params[j]);
+					sprintf(row, "%l Hz", hm->pedalboard.effects[selected].effect_formatted.config.int_params[j]);
 				}
 				Painter_WriteString(image, row, left + 140, upper + row_index * 14, BOT_LEFT, SMALL);
 				row_index++;
@@ -220,11 +221,11 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 				float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[j]);
 				Painter_WriteString(image, manifest->name, left, upper + row_index * 14, BOT_LEFT, SMALL);
 				if (manifest->qual == PERCENTAGE) {
-					sprintf(row, "%.2f %%", hm->effects[selected].effect_formatted.config.float_params[j] * 100 / (manifest->max - manifest->min));
+					sprintf(row, "%.2f %%", hm->pedalboard.effects[selected].effect_formatted.config.float_params[j] * 100 / (manifest->max - manifest->min));
 				} else if (manifest->qual == VALUE) {
-					sprintf(row, "%.2f", hm->effects[selected].effect_formatted.config.float_params[j]);
+					sprintf(row, "%.2f", hm->pedalboard.effects[selected].effect_formatted.config.float_params[j]);
 				} else if (manifest->qual == FREQUENCY) {
-					sprintf(row, "%.2f Hz", hm->effects[selected].effect_formatted.config.float_params[j]);
+					sprintf(row, "%.2f Hz", hm->pedalboard.effects[selected].effect_formatted.config.float_params[j]);
 				}
 				Painter_WriteString(image, row, left + 140, upper + row_index * 14, BOT_LEFT, SMALL);
 				row_index++;
