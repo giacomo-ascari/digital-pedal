@@ -250,10 +250,15 @@ int main(void)
 					if (!hmenu.edit_active) {
 						// going to edit mode
 						hmenu.edit_active = 1;
-						hmenu.edit_oldvalue = hre1.counter;
+						hmenu.edit_oldvalue1 = hre1.counter;
+						hmenu.edit_oldvalue2 = hre2.counter;
+						hmenu.edit_initialvalue1 = hre1.counter;
+						hmenu.edit_initialvalue2 = hre2.counter;
 					} else {
 						// exiting edit mode
 						hmenu.edit_active = 0;
+						hre1.counter = hmenu.edit_initialvalue1;
+						hre2.counter = hmenu.edit_initialvalue1;
 						Menu_RetrieveData(&hmenu, USER);
 					}
 				}
@@ -266,19 +271,25 @@ int main(void)
 					if (_int) {
 						// integer parameter
 						int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[index]);
-						int32_t step = (manifest->max - manifest->min) / 20;
-						conf->int_params[index] += step * (hre1.counter - hmenu.edit_oldvalue);
+						int32_t micro_step = (manifest->max - manifest->min) / 100;
+						int32_t macro_step = (manifest->max - manifest->min) / 10;
+						conf->int_params[index] += micro_step * (hre1.counter - hmenu.edit_oldvalue1);
+						conf->int_params[index] += macro_step * (hre2.counter - hmenu.edit_oldvalue2);
 						if (conf->int_params[index] > manifest->max) conf->int_params[index] = manifest->max;
 						if (conf->int_params[index] < manifest->min) conf->int_params[index] = manifest->min;
-						hmenu.edit_oldvalue = hre1.counter;
+						hmenu.edit_oldvalue1 = hre1.counter;
+						hmenu.edit_oldvalue2 = hre2.counter;
 					} else {
 						// float parameter
 						float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[index]);
-						float step = (manifest->max - manifest->min) / 20;
-						conf->float_params[index] += step * (hre1.counter - hmenu.edit_oldvalue);
+						float micro_step = (manifest->max - manifest->min) / 100;
+						float macro_step = (manifest->max - manifest->min) / 10;
+						conf->float_params[index] += micro_step * (hre1.counter - hmenu.edit_oldvalue1);
+						conf->float_params[index] += macro_step * (hre2.counter - hmenu.edit_oldvalue2);
 						if (conf->float_params[index] > manifest->max) conf->float_params[index] = manifest->max;
 						if (conf->float_params[index] < manifest->min) conf->float_params[index] = manifest->min;
-						hmenu.edit_oldvalue = hre1.counter;
+						hmenu.edit_oldvalue1 = hre1.counter;
+						hmenu.edit_oldvalue2 = hre2.counter;
 					}
 				} else {
 					hmenu.edit_index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type));

@@ -58,11 +58,15 @@ typedef struct _Menu_HandleTypeDef {
 	uint8_t edit_index1;
 	uint8_t edit_index2;
 	uint8_t edit_active;
-	int16_t edit_oldvalue;
+	int16_t edit_oldvalue1;
+	int16_t edit_oldvalue2;
+	int16_t edit_initialvalue1;
+	int16_t edit_initialvalue2;
 	uint8_t mode_active;
 	uint8_t mode_selected;
 	uint8_t usb_ready;
 	uint8_t usb_selected;
+	int8_t usb_result;
 	uint32_t tick;
 	// desperate debug
 	uint32_t debug;

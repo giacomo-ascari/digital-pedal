@@ -170,9 +170,9 @@ uint8_t usb_load() {
 	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 		res = f_read(&pbFile, buff, RAW_EFFECT_SIZE, &bytesread);
 		if((res != FR_OK) || (bytesread == 0)) return 0;
-		hpedalboard.effects[i].effect_formatted.type = BYPASS;
-		memcpy((uint8_t*)hpedalboard.effects[i].effect_raw + 1, buff + 1, RAW_EFFECT_SIZE - 1);
-		Pedalboard_SetEffect(&hpedalboard, buff[0], i);
+		hpedalboard.active = 0;
+		memcpy(hpedalboard.effects[i].effect_raw, buff, RAW_EFFECT_SIZE);
+		hpedalboard.active = 1;
 	}
 
 	res = f_close(&pbFile);

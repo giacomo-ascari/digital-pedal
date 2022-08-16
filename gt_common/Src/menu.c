@@ -21,9 +21,13 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->edit_index1 = 0;
 	hm->edit_index2 = 0;
 	hm->edit_active = 0;
-	hm->edit_oldvalue = 0;
+	hm->edit_oldvalue1 = 0;
+	hm->edit_oldvalue2 = 0;
+	hm->edit_initialvalue1 = 0;
+	hm->edit_initialvalue2 = 0;
 	hm->usb_ready = 0;
 	hm->usb_selected = 0;
+	hm->usb_result = -1;
 	hm->tick = 0;
 
 	hm->debug = 0;
@@ -107,6 +111,7 @@ void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
 		} else if (type == USER) {
 			out_command->param = hm->usb_selected % 2;
 			Commander_SendAndWait(hm->hcommander);
+			hm->usb_result = hm->hcommander->in_command.param;
 			if (hm->usb_selected % 2 == 0) {
 				out_command->header = OVERVIEW;
 				out_command->subheader = FIRST;
@@ -266,17 +271,27 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		Painter_WriteString(image, "usb", 20, 0, BOT_LEFT, LARGE);
 
 		// content
-		if (hm->usb_ready) {
-			if (hm->usb_selected == 1) {
-				Painter_WriteString(image, ">", 294/3*2 - 36, 55, BOT_LEFT, LARGE);
-			} else if (hm->usb_selected == 0) {
-				Painter_WriteString(image, ">", 294/3 - 36, 55, BOT_LEFT, LARGE);
+		if (hm->usb_result == -1) {
+			if (hm->usb_ready) {
+				if (hm->usb_selected == 1) {
+					Painter_WriteString(image, ">", 294/3*2 - 36, 55, BOT_LEFT, LARGE);
+				} else if (hm->usb_selected == 0) {
+					Painter_WriteString(image, ">", 294/3 - 36, 55, BOT_LEFT, LARGE);
+				}
+				Painter_WriteString(image, "load", 294/3 - 24, 55, BOT_LEFT, LARGE);
+				Painter_WriteString(image, "save", 294/3*2 - 24, 55, BOT_LEFT, LARGE);
+			} else {
+				Painter_WriteString(image, "disconnected", 294/2 - 72, 55, BOT_LEFT, LARGE);
 			}
-			Painter_WriteString(image, "load", 294/3 - 24, 55, BOT_LEFT, LARGE);
-			Painter_WriteString(image, "save", 294/3*2 - 24, 55, BOT_LEFT, LARGE);
 		} else {
-			Painter_WriteString(image, "disconnected", 294/2 - 72, 55, BOT_LEFT, LARGE);
+			if (hm->usb_result == 1) {
+				Painter_WriteString(image, "ok", 294/2 - 12, 55, BOT_LEFT, LARGE);
+			} else {
+				Painter_WriteString(image, "error", 294/2 - 30, 55, BOT_LEFT, LARGE);
+			}
+			hm->usb_result = -1;
 		}
+
 	}
 
 	if (render == FULL) {
