@@ -26,7 +26,6 @@
 #include "commander.h"
 #include "AUDIO.h"
 #include "pedalboard.h"
-#include "mode.h"
 #include "menu.h"
 
 /* USER CODE END Includes */
@@ -57,9 +56,6 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
-
-// MODE
-uint8_t mode = TS_TO_TS;
 
 // USB
 FATFS usbFatFS;
@@ -334,37 +330,35 @@ void DSP(uint8_t * buf, int16_t * out) {
 
 void Mode_N_DSP(uint8_t * buf_tip, uint8_t * buf_ring, int16_t * out_tip, int16_t * out_ring) {
 
-	if (mode == TS_TO_TS) {
-		DSP(buf_tip, out_tip);
+	static uint8_t * buf_generic;
+	static int16_t * out_generic;
+
+	if (hpedalboard.input_mode == TS) {
+		buf_generic = buf_tip;
+	} else if (hpedalboard.input_mode == RS) {
+		buf_generic = buf_ring;
+	} else if (hpedalboard.input_mode == TRS_B) {
+		// lmao this is unsuppirted
+		buf_generic = buf_tip;
+	} else if (hpedalboard.input_mode == TRS_UB) {
+		// lmao this is unsuppirted
+		buf_generic = buf_tip;
+	}
+
+	DSP(buf_generic, out_generic);
+
+	if (hpedalboard.output_mode == TS) {
+		*out_tip = *out_generic;
 		*out_ring = 0;
-
-	} else if (mode == TS_TO_RS) {
-		DSP(buf_tip, out_ring);
+	} else if (hpedalboard.output_mode == RS) {
 		*out_tip = 0;
-
-	} else if (mode == RS_TO_TS) {
-		DSP(buf_ring, out_tip);
-		*out_ring = 0;
-
-	} else if (mode == RS_TO_RS) {
-		DSP(buf_ring, out_ring);
-		*out_tip = 0;
-
-	} else if (mode == TS_TO_TRS_BALANCED) {
-		DSP(buf_tip, out_tip);
-		*out_ring = - *out_tip;
-
-	} else if (mode == TS_TO_TRS_UNBALANCED) {
-		DSP(buf_tip, out_tip);
-		*out_ring = *out_tip;
-
-	} else if (mode == RS_TO_TRS_BALANCED) {
-		DSP(buf_ring, out_tip);
-		*out_ring = *out_tip;
-
-	} else if (mode == RS_TO_TRS_UNBALANCED) {
-		DSP(buf_ring, out_tip);
-		*out_ring = *out_tip;
+		*out_ring = *out_generic;
+	} else if (hpedalboard.output_mode == TRS_B) {
+		*out_tip = *out_generic;
+		*out_ring = - *out_generic;
+	} else if (hpedalboard.output_mode == TRS_UB) {
+		*out_tip = *out_generic;
+		*out_ring = *out_generic;
 	}
 }
 

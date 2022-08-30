@@ -158,12 +158,12 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		Painter_WriteString(image, "plot", 20, 0, BOT_LEFT, LARGE);
 
 		// commands
-		sprintf(row, "y %d", hm->plot_yscale);
+		sprintf(row, "y< %d", hm->plot_yscale);
 		Painter_WriteString(image, row, 0, 36, BOT_LEFT, SMALL);
-		Painter_WriteString(image, ".", 8, 33, BOT_LEFT, SMALL);
-		sprintf(row, "x %d", hm->plot_xscale);
+		Painter_WriteString(image, ".", 18, 33, BOT_LEFT, SMALL);
+		sprintf(row, ">x %d", hm->plot_xscale);
 		Painter_WriteString(image, row, 0, 86, BOT_LEFT, SMALL);
-		Painter_WriteString(image, ".", 8, 83, BOT_LEFT, SMALL);
+		Painter_WriteString(image, ".", 18, 83, BOT_LEFT, SMALL);
 
 		// content
 		uint16_t x, y;
@@ -200,7 +200,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		}
 
 		type = hm->pedalboard.effects[selected].effect_formatted.type;
-		Painter_WriteString(image, "<", 44, upper + height * selected + height / 2 - 6, BOT_LEFT, SMALL);
+		if (!hm->edit_active) Painter_WriteString(image, "<", 44, upper + height * selected + height / 2 - 6, BOT_LEFT, SMALL);
 		Painter_WriteString(image, Effects_Manifest[type].long_name, 110, 2, BOT_LEFT, SMALL);
 		// param selection
 		uint8_t row_index = 0;
@@ -238,7 +238,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		}
 
 		if (type != BYPASS) {
-			Painter_WriteString(image, ">", left - 8, upper + (hm->edit_index1 % row_index) * 14, BOT_LEFT, SMALL);
+			if (!hm->edit_active) Painter_WriteString(image, ">", left - 8, upper + (hm->edit_index1 % row_index) * 14, BOT_LEFT, SMALL);
 			if (hm->edit_active) Painter_ToggleRectangle(image, left, upper + (hm->edit_index1 % row_index) * 14 - 1, CANVAS_HEIGHT, upper + (hm->edit_index1 % row_index + 1) * 14 - 1, BOT_LEFT);
 		}
 
@@ -252,7 +252,7 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		for (uint16_t i = 0; i < MODE_TYPES; i++) {
 			Painter_WriteString(image, hm->mode_manifest[i].desc, i%2?158:10, i/2*18+30, BOT_LEFT, SMALL);
 			if (i == hm->mode_active) {
-				Painter_ToggleRectangle(image, i%2?156:8, i/2*18+28, i%2?294:146, i/2*18+44, BOT_LEFT);
+				Painter_ToggleRectangle(image, i%2?157:9, i/2*18+28, i%2?294:146, i/2*18+44, BOT_LEFT);
 			}
 			if (i == hm->mode_selected) {
 				Painter_WriteString(image, ">", i%2?148:0, i/2*18+30, BOT_LEFT, SMALL);

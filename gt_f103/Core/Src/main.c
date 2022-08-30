@@ -29,7 +29,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "mode.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -224,24 +223,29 @@ int main(void)
 		}
 
 		if (Menu_GoTo(&hmenu, new_page)) {
-			// MENU PAGE BUTTON
+
 			Menu_RetrieveData(&hmenu, FIRST);
 			RE_Reset(&hre1);
 			RE_Reset(&hre2);
 			btn_flags[6] = 0;
 			btn_flags[7] = 0;
-			Menu_Render(&hmenu, PARTIAL);
+
+			// MENU PAGE BUTTON
+			if (hmenu.selected_page == OVERVIEW) {
+				Menu_Render(&hmenu, PARTIAL);
+			}
+
 		}  else {
 
 			// MENU PERIODIC AND USER EVENTS
 			if (hmenu.selected_page == PLOT) {
 				hmenu.plot_xscale = RE_GetCount(&hre1, 100) + 1;
 				hmenu.plot_yscale = RE_GetCount(&hre2, 100) + 1;
-				if (hmenu.tick + 3000 < HAL_GetTick()) {
-					hmenu.tick = HAL_GetTick();
+				//if (hmenu.tick + 3000 < HAL_GetTick()) {
+				//	hmenu.tick = HAL_GetTick();
 					Menu_RetrieveData(&hmenu, PERIODIC);
 					Menu_Render(&hmenu, PARTIAL);
-				}
+				//}
 
 			} else if (hmenu.selected_page == EDIT) {
 				if (btn_flags[6]) {
@@ -258,7 +262,7 @@ int main(void)
 						// exiting edit mode
 						hmenu.edit_active = 0;
 						hre1.counter = hmenu.edit_initialvalue1;
-						hre2.counter = hmenu.edit_initialvalue1;
+						hre2.counter = hmenu.edit_initialvalue2;
 						Menu_RetrieveData(&hmenu, USER);
 					}
 				}
@@ -306,9 +310,9 @@ int main(void)
 				Menu_Render(&hmenu, PARTIAL);
 
 			} else if (hmenu.selected_page == MODE) {
-				hmenu.mode_selected = RE_GetCount(&hre2, MODE_TYPES);
-				if (btn_flags[7]) {
-					btn_flags[7] = 0;
+				hmenu.mode_selected = RE_GetCount(&hre1, MODE_TYPES);
+				if (btn_flags[6]) {
+					btn_flags[6] = 0;
 					hmenu.mode_active = hmenu.mode_selected;
 					Menu_RetrieveData(&hmenu, USER);
 				} else {
@@ -318,9 +322,9 @@ int main(void)
 				Menu_RetrieveData(&hmenu, PERIODIC);
 				Menu_Render(&hmenu, PARTIAL);
 			} else if (hmenu.selected_page == FILES) {
-				hmenu.usb_selected = RE_GetCount(&hre2, 2);
-				if (btn_flags[7]) {
-					btn_flags[7] = 0;
+				hmenu.usb_selected = RE_GetCount(&hre1, 2);
+				if (btn_flags[6]) {
+					btn_flags[6] = 0;
 					if (hmenu.usb_ready) {
 						Menu_RetrieveData(&hmenu, USER);
 					}

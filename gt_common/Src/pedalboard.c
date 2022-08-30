@@ -106,10 +106,19 @@ effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[TREMOLO].effect_process = tremolo_process
 };
 
+extern char mode_manifest[MODE_TYPES][10] = {
+		[TS] = {"ts"},
+		[RS] = {"rs"},
+		[TRS_B] = {"trs bal."},
+		[TRS_UB] = {"trs unb."}
+};
+
 // PEDALBOARD
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb) {
 	p_pb->active = 1;
+	p_pb->input_mode = TS;
+	p_pb->output_mode = TRS_B;
 	for (u_int8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 		p_pb->effects[i].effect_formatted.type = BYPASS;
 	}

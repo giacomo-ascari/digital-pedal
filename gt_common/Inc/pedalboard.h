@@ -12,6 +12,17 @@
 
 // ENUMERATION
 
+#define MODE_TYPES 4
+
+enum mode_type {
+	TS = 0, // right
+	RS = 1, // left
+	TRS_B = 2,
+	TRS_UB = 3
+};
+
+extern char mode_manifest[MODE_TYPES][16];
+
 #define EFFECT_TYPES 10
 
 enum effect_type {
@@ -83,8 +94,7 @@ typedef struct _params_manifest_t {
 
 // EFFECT structs
 
-#define PARAM_BYTE_SIZE 4
-#define RAW_EFFECT_SIZE (1 + PARAM_BYTE_SIZE * (INT_PARAM_TYPES + FLOAT_PARAM_TYPES))
+#define RAW_EFFECT_SIZE (1 + 4 * (TOTAL_PARAM_TYPES))
 
 typedef struct _effect_config_t {
 	int32_t int_params[INT_PARAM_TYPES];
@@ -112,8 +122,12 @@ extern effect_manifest_t Effects_Manifest[EFFECT_TYPES];
 
 // PEDALBOARD
 
+#define PEDALBOARD_HANDLER_SIZE (RAW_EFFECT_SIZE * MAX_EFFECTS_COUNT + 1 + 1 + 1)
+
 typedef struct _Pedalboard_Handler {
     effect_union_t effects[MAX_EFFECTS_COUNT];
+    uint8_t input_mode;
+    uint8_t output_mode;
     uint8_t active;
 } Pedalboard_Handler;
 
