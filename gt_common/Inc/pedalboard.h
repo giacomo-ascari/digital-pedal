@@ -21,7 +21,7 @@ enum mode_type {
 	TRS_UB = 3
 };
 
-extern char mode_manifest[MODE_TYPES][16];
+extern const char mode_manifest[MODE_TYPES][10];
 
 #define EFFECT_TYPES 10
 
@@ -118,17 +118,17 @@ typedef struct _effect_manifest_t {
     void (*effect_process)(float *value, effect_config_t *p_config);
 } effect_manifest_t;
 
-extern effect_manifest_t Effects_Manifest[EFFECT_TYPES];
+extern const effect_manifest_t Effects_Manifest[EFFECT_TYPES];
 
 // PEDALBOARD
 
 #define PEDALBOARD_HANDLER_SIZE (RAW_EFFECT_SIZE * MAX_EFFECTS_COUNT + 1 + 1 + 1)
 
 typedef struct _Pedalboard_Handler {
+	uint8_t input_mode;
+	uint8_t output_mode;
+	uint8_t active;
     effect_union_t effects[MAX_EFFECTS_COUNT];
-    uint8_t input_mode;
-    uint8_t output_mode;
-    uint8_t active;
 } Pedalboard_Handler;
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb);
@@ -138,5 +138,7 @@ void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value);
 uint8_t Pedalboard_CountActiveParams(Pedalboard_Handler *p_pb, uint8_t i);
 uint8_t Pedalboard_CountActiveParamsByType(uint8_t type);
 void Pedalboard_GetActiveParamsByType(uint8_t active_index, uint8_t type, uint8_t *_int, uint8_t *i);
+
+void wave_gen(float *out, char t, uint32_t i, float tone);
 
 #endif /* PEDALBOARD_PEDALBOARD_H_ */

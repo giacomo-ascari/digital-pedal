@@ -40,7 +40,7 @@ void wave_gen(float *out, char t, uint32_t i, float tone);
 // MANIFESTs
 // ----------------------------------------------------------------------------------------------------- active, name, def, min, max, qual
 
-effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
+const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[AMPLIFIER] = (effect_manifest_t){"amp","amplifier"},
 		[AMPLIFIER].params_manifest.float_params_manifest[INTENSITY] = (float_params_manifest_t)		{ 1, "Intensity", 1.0, 0.0, 10.0, VALUE },
 		[AMPLIFIER].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Max threshold", 32767, 0, 32767, PERCENTAGE },
@@ -49,9 +49,9 @@ effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[AMPLIFIER].effect_process = amplifier_process,
 
 		[BITCRUSHER_RS] = (effect_manifest_t){"brs","bitcrusher rs"},
-		[BITCRUSHER_RS].params_manifest.int_params_manifest[REDUCTION] = (int_params_manifest_t)		{ 1, "Reduction intens.", 12, 1, 16, VALUE },
-		[BITCRUSHER_RS].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)	{ 1, "Balance IN", 0.5, 0, 1.F, PERCENTAGE },
-		[BITCRUSHER_RS].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)	{ 1, "Balance OUT", 0.5, 0, 1.F, PERCENTAGE },
+		[BITCRUSHER_RS].params_manifest.int_params_manifest[REDUCTION] = (int_params_manifest_t)		{ 1, "Reduction intens.", 4, 1, 16, VALUE },
+		[BITCRUSHER_RS].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)	{ 1, "Balance IN", 0.9, 0, 1.F, PERCENTAGE },
+		[BITCRUSHER_RS].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)	{ 1, "Balance OUT", 0.1, 0, 1.F, PERCENTAGE },
 		[BITCRUSHER_RS].effect_process = bitcrusher_rs_process,
 
 		[BITCRUSHER_RT] = (effect_manifest_t){"brt","bitcrusher rt"},
@@ -78,7 +78,7 @@ effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[LPF].effect_process = low_pass_filter_process,
 
 		[NOISE_GATE] = (effect_manifest_t){"ngt","noise gate"},
-		[NOISE_GATE].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Min threshold", 0, 0, 32767, PERCENTAGE },
+		[NOISE_GATE].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Min threshold", 0, 0, 1024, PERCENTAGE },
 		[NOISE_GATE].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)		{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
 		[NOISE_GATE].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
 		[NOISE_GATE].effect_process = noise_gate_process,
@@ -106,7 +106,7 @@ effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[TREMOLO].effect_process = tremolo_process
 };
 
-extern char mode_manifest[MODE_TYPES][10] = {
+const char mode_manifest[MODE_TYPES][10] = {
 		[TS] = {"ts"},
 		[RS] = {"rs"},
 		[TRS_B] = {"trs bal."},
@@ -281,7 +281,7 @@ void fuzz_process(float *value, effect_config_t *conf) {
 // NOISE GATE
 
 void noise_gate_process(float *value, effect_config_t *conf) {
-    if (*value < conf->float_params[THRESHOLD_HIGH]) {
+    if (*value < conf->float_params[THRESHOLD_HIGH] && *value >= -conf->float_params[THRESHOLD_HIGH]) {
     	*value = 0;
     }
 }
@@ -328,7 +328,7 @@ void square_root(float *value) {
     *value *= multiplier;
 }
 
-float sin_table[128] = { 0.000000F, 0.024541F, 0.049068F, 0.073565F, 0.098017F, 0.122411F, 0.146730F, 0.170962F, 0.195090F, 0.219101F, 0.242980F, 0.266713F, 0.290284F, 0.313681F, 0.336890F, 0.359895F, 0.382683F, 0.405241F, 0.427555F, 0.449611F, 0.471396F, 0.492898F, 0.514102F, 0.534997F, 0.555570F, 0.575808F, 0.595699F, 0.615231F, 0.634393F, 0.653172F, 0.671559F, 0.689540F, 0.707106F, 0.724247F, 0.740951F, 0.757208F, 0.773010F, 0.788346F, 0.803207F, 0.817584F, 0.831469F, 0.844853F, 0.857728F, 0.870087F, 0.881921F, 0.893224F, 0.903989F, 0.914209F, 0.923879F, 0.932992F, 0.941544F, 0.949528F, 0.956940F, 0.963776F, 0.970031F, 0.975702F, 0.980785F, 0.985277F, 0.989176F, 0.992479F, 0.995185F, 0.997290F, 0.998795F, 0.999699F, 1.000000F, 0.999699F, 0.998796F, 0.997291F, 0.995185F, 0.992480F, 0.989177F, 0.985278F, 0.980786F, 0.975702F, 0.970032F, 0.963776F, 0.956941F, 0.949529F, 0.941545F, 0.932993F, 0.923880F, 0.914210F, 0.903990F, 0.893225F, 0.881922F, 0.870088F, 0.857729F, 0.844855F, 0.831471F, 0.817586F, 0.803209F, 0.788348F, 0.773012F, 0.757210F, 0.740952F, 0.724248F, 0.707108F, 0.689542F, 0.671560F, 0.653174F, 0.634395F, 0.615233F, 0.595701F, 0.575810F, 0.555572F, 0.534999F, 0.514105F, 0.492900F, 0.471399F, 0.449613F, 0.427557F, 0.405243F, 0.382685F, 0.359897F, 0.336892F, 0.313684F, 0.290287F, 0.266715F, 0.242982F, 0.219104F, 0.195093F, 0.170964F, 0.146733F, 0.122413F, 0.098019F, 0.073567F, 0.049070F, 0.024544F };
+const float sin_table[128] = { 0.000000F, 0.024541F, 0.049068F, 0.073565F, 0.098017F, 0.122411F, 0.146730F, 0.170962F, 0.195090F, 0.219101F, 0.242980F, 0.266713F, 0.290284F, 0.313681F, 0.336890F, 0.359895F, 0.382683F, 0.405241F, 0.427555F, 0.449611F, 0.471396F, 0.492898F, 0.514102F, 0.534997F, 0.555570F, 0.575808F, 0.595699F, 0.615231F, 0.634393F, 0.653172F, 0.671559F, 0.689540F, 0.707106F, 0.724247F, 0.740951F, 0.757208F, 0.773010F, 0.788346F, 0.803207F, 0.817584F, 0.831469F, 0.844853F, 0.857728F, 0.870087F, 0.881921F, 0.893224F, 0.903989F, 0.914209F, 0.923879F, 0.932992F, 0.941544F, 0.949528F, 0.956940F, 0.963776F, 0.970031F, 0.975702F, 0.980785F, 0.985277F, 0.989176F, 0.992479F, 0.995185F, 0.997290F, 0.998795F, 0.999699F, 1.000000F, 0.999699F, 0.998796F, 0.997291F, 0.995185F, 0.992480F, 0.989177F, 0.985278F, 0.980786F, 0.975702F, 0.970032F, 0.963776F, 0.956941F, 0.949529F, 0.941545F, 0.932993F, 0.923880F, 0.914210F, 0.903990F, 0.893225F, 0.881922F, 0.870088F, 0.857729F, 0.844855F, 0.831471F, 0.817586F, 0.803209F, 0.788348F, 0.773012F, 0.757210F, 0.740952F, 0.724248F, 0.707108F, 0.689542F, 0.671560F, 0.653174F, 0.634395F, 0.615233F, 0.595701F, 0.575810F, 0.555572F, 0.534999F, 0.514105F, 0.492900F, 0.471399F, 0.449613F, 0.427557F, 0.405243F, 0.382685F, 0.359897F, 0.336892F, 0.313684F, 0.290287F, 0.266715F, 0.242982F, 0.219104F, 0.195093F, 0.170964F, 0.146733F, 0.122413F, 0.098019F, 0.073567F, 0.049070F, 0.024544F };
 
 void wave_gen(float *out, char t, uint32_t i, float tone) {
     float period_f = 48000.F / tone;

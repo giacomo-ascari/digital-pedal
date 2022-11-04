@@ -15,7 +15,6 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->selected_page = OVERVIEW;
 	hm->hcommander = hcommander;
 	hm->hepd = hepd;
-
 	hm->plot_xscale = 1;
 	hm->plot_yscale = 1;
 	hm->edit_index1 = 0;
@@ -25,15 +24,15 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->edit_oldvalue2 = 0;
 	hm->edit_initialvalue1 = 0;
 	hm->edit_initialvalue2 = 0;
+	hm->mode_input_active = 0;
+	hm->mode_input_selected = 0;
+	hm->mode_output_active = 0;
+	hm->mode_output_selected = 0;
 	hm->usb_ready = 0;
 	hm->usb_selected = 0;
 	hm->usb_result = -1;
 	hm->tick = 0;
-
 	hm->debug = 0;
-	hm->mode_active = 0;
-	hm->mode_selected = 0;
-	Mode_Manifest_Init(hm->mode_manifest);
 	Pedalboard_Init(&(hm->pedalboard));
 }
 
@@ -47,81 +46,84 @@ uint8_t Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page) {
 	}
 }
 
-void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type) {
+void Menu_Sync(Menu_HandleTypeDef *hm, enum command_header_types type) {
 
 	Command *out_command = &(hm->hcommander->out_command);
+	out_command->header = type;
 
-	out_command->header = hm->selected_page;
-	out_command->subheader = type;
+	if (type == GET_PB) {
 
-	if (hm->selected_page == OVERVIEW) {
-
-		if (type == FIRST) {
-			for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-				out_command->param = i;
-				Commander_SendAndWait(hm->hcommander);
-				memcpy(hm->pedalboard.effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
+		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
+		for (uint8_t i = 0; i <= segments; i++) {
+			out_command->param = i;
+			Commander_SendAndWait(hm->hcommander);
+			if (i == segments) {
+				//partial copy
+				memcpy(
+					(uint8_t *)&hm->pedalboard + PAYLOAD_BYTESIZE * i,
+					hm->hcommander->in_command.payload.bytes,
+					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
+			} else {
+				// full copy
+				memcpy(
+					(uint8_t *)&hm->pedalboard + PAYLOAD_BYTESIZE * i,
+					hm->hcommander->in_command.payload.bytes,
+					PAYLOAD_BYTESIZE);
 			}
 		}
 
-	} else if (hm->selected_page == PLOT) {
+		hm->mode_input_active = hm->pedalboard.input_mode;
+		hm->mode_output_active = hm->pedalboard.output_mode;
 
-		if (type == FIRST || type == PERIODIC) {
-			out_command->payload.bytes[0] = hm->plot_xscale;
-			out_command->payload.bytes[1] = hm->plot_yscale;
-			Commander_SendAndWait(hm->hcommander);
-			memcpy(hm->signal_in, hm->hcommander->in_command.payload.bytes, SIGNAL_SIZE);
-			memcpy(hm->signal_out, hm->hcommander->in_command.payload.bytes + SIGNAL_SIZE, SIGNAL_SIZE);
-		}
+	} else if (type == SET_PB) {
 
-	} else if (hm->selected_page == EDIT) {
+		hm->pedalboard.input_mode = hm->mode_input_active;
+		hm->pedalboard.output_mode = hm->mode_output_active;
 
-		if (type == FIRST) {
-			for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-				out_command->param = i;
-				Commander_SendAndWait(hm->hcommander);
-				memcpy(hm->pedalboard.effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
+		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
+		for (uint8_t i = 0; i <= segments; i++) {
+			out_command->param = i;
+			if (i == segments) {
+				//partial copy
+				memcpy(
+					out_command->payload.bytes,
+					(uint8_t *)&hm->pedalboard + PAYLOAD_BYTESIZE * i,
+					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
+			} else {
+				// full copy
+				memcpy(
+					out_command->payload.bytes,
+					(uint8_t *)&hm->pedalboard + PAYLOAD_BYTESIZE * i,
+					PAYLOAD_BYTESIZE);
 			}
-		} else if (type == USER) {
-			out_command->param = hm->edit_index2;
-			memcpy(out_command->payload.bytes, hm->pedalboard.effects[hm->edit_index2].effect_raw, RAW_EFFECT_SIZE);
 			Commander_SendAndWait(hm->hcommander);
 		}
 
-	} else if (hm->selected_page == MODE) {
 
-		if (type == FIRST) {
-			Commander_SendAndWait(hm->hcommander);
-		} else if (type == USER) {
-			out_command->param = hm->mode_selected;
-			Commander_SendAndWait(hm->hcommander);
-		}
+	} else if (type == GET_SIGNALS) {
 
-	} else if (hm->selected_page == TUNER) {
+		out_command->payload.bytes[0] = hm->plot_xscale;
+		out_command->payload.bytes[1] = hm->plot_yscale;
+		Commander_SendAndWait(hm->hcommander);
+		memcpy(hm->signal_in, hm->hcommander->in_command.payload.bytes, SIGNAL_SIZE);
+		memcpy(hm->signal_out, hm->hcommander->in_command.payload.bytes + SIGNAL_SIZE, SIGNAL_SIZE);
 
-		if (type == FIRST || type == PERIODIC) {
-			Commander_SendAndWait(hm->hcommander);
-		}
+	} else if (type == GET_USB) {
 
-	} else if (hm->selected_page == FILES) {
+		Commander_SendAndWait(hm->hcommander);
+		hm->usb_ready = hm->hcommander->in_command.param;
 
-		if (type == FIRST || type == PERIODIC) {
-			Commander_SendAndWait(hm->hcommander);
-			hm->usb_ready = hm->hcommander->in_command.param;
-		} else if (type == USER) {
-			out_command->param = hm->usb_selected % 2;
-			Commander_SendAndWait(hm->hcommander);
-			hm->usb_result = hm->hcommander->in_command.param;
-			if (hm->usb_selected % 2 == 0) {
-				out_command->header = OVERVIEW;
-				out_command->subheader = FIRST;
-				for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-					out_command->param = i;
-					Commander_SendAndWait(hm->hcommander);
-					memcpy(hm->pedalboard.effects[i].effect_raw, hm->hcommander->in_command.payload.bytes, RAW_EFFECT_SIZE);
-				}
-			}
-		}
+	} else if (type == SET_USB) {
+
+		out_command->param = hm->usb_selected % 2;
+		Commander_SendAndWait(hm->hcommander);
+		hm->usb_result = hm->hcommander->in_command.param;
+
+	} else if (type == GET_SPECTRUM) {
+
+		Commander_SendAndWait(hm->hcommander);
+		memcpy(hm->spectrum, hm->hcommander->in_command.payload.bytes, PAYLOAD_BYTESIZE);
+
 	}
 }
 
@@ -249,20 +251,57 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		Painter_WriteString(image, "mode", 20, 0, BOT_LEFT, LARGE);
 
 		// content
+		Painter_WriteString(image, "input", 30, 30, BOT_LEFT, SMALL);
+		Painter_WriteString(image, "output", 296 - 6*8 - 30, 30, BOT_LEFT, SMALL);
 		for (uint16_t i = 0; i < MODE_TYPES; i++) {
-			Painter_WriteString(image, hm->mode_manifest[i].desc, i%2?158:10, i/2*18+30, BOT_LEFT, SMALL);
-			if (i == hm->mode_active) {
-				Painter_ToggleRectangle(image, i%2?157:9, i/2*18+28, i%2?294:146, i/2*18+44, BOT_LEFT);
+			Painter_WriteString(image, mode_manifest[i], 296/2 - 72 - 10, i*18+44, BOT_LEFT, SMALL);
+			Painter_WriteString(image, mode_manifest[i], 296/2 + 10, i*18+44, BOT_LEFT, SMALL);
+			if (i == hm->mode_input_active) {
+				Painter_ToggleRectangleRelative(image, 296/2 - 72 - 10 - 2, i*18+42, 76, 16, BOT_LEFT);
 			}
-			if (i == hm->mode_selected) {
-				Painter_WriteString(image, ">", i%2?148:0, i/2*18+30, BOT_LEFT, SMALL);
+			if (i == hm->mode_input_selected) {
+				Painter_WriteString(image, ">", 50, i*18+44, BOT_LEFT, SMALL);
+			}
+			if (i == hm->mode_output_active) {
+				Painter_ToggleRectangleRelative(image, 296/2 + 8, i*18+42, 76, 16, BOT_LEFT);
+			}
+			if (i == hm->mode_output_selected) {
+				Painter_WriteString(image, "<", 296 - 8 - 50, i*18+44, BOT_LEFT, SMALL);
 			}
 		}
 
-	} else if (hm->selected_page == TUNER) {
+	} else if (hm->selected_page == SPECTRUM) {
 
 		// title
-		Painter_WriteString(image, "tuner", 20, 0, BOT_LEFT, LARGE);
+		Painter_WriteString(image, "spectrum", 20, 0, BOT_LEFT, LARGE);
+
+		// content
+		uint16_t x, y;
+		for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
+			x = PAYLOAD_BYTESIZE - i + (CANVAS_HEIGHT - PAYLOAD_BYTESIZE) / 2;
+			for (uint16_t j = 0; j < hm->spectrum[i] / 2; j++) {
+				y = j;
+				Painter_TogglePixel(image, &x, &y, TOP_RIGHT);
+			}
+		}
+
+		/*
+		 *
+		 *
+		 * // content
+		uint16_t x, y;
+		for (uint8_t i = 0; i < SIGNAL_SIZE; i++) {
+			// IN
+			x = (CANVAS_HEIGHT - 2 * SIGNAL_SIZE - 3) + i;
+			y = CANVAS_WIDTH / 2 + hm->signal_in[i] / 2;
+			Painter_TogglePixel(image, &x, &y, BOT_LEFT);
+			// OUT
+			x = (CANVAS_HEIGHT - SIGNAL_SIZE) + i;
+			y = CANVAS_WIDTH / 2 + hm->signal_out[i] / 2;
+			Painter_TogglePixel(image, &x, &y, BOT_LEFT);
+		}
+		Painter_ToggleDottedRectangle(image, CANVAS_HEIGHT - SIGNAL_SIZE - 2, 0, CANVAS_HEIGHT - SIGNAL_SIZE - 1, CANVAS_WIDTH, BOT_LEFT);
+		 */
 
 
 	} else if (hm->selected_page == FILES) {
@@ -274,20 +313,20 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		if (hm->usb_result == -1) {
 			if (hm->usb_ready) {
 				if (hm->usb_selected == 1) {
-					Painter_WriteString(image, ">", 294/3*2 - 36, 55, BOT_LEFT, LARGE);
+					Painter_WriteString(image, ">", 296/3*2 - 5*8 -2, 55, BOT_LEFT, SMALL);
 				} else if (hm->usb_selected == 0) {
-					Painter_WriteString(image, ">", 294/3 - 36, 55, BOT_LEFT, LARGE);
+					Painter_WriteString(image, ">", 296/3 - 5*8 -2, 55, BOT_LEFT, SMALL);
 				}
-				Painter_WriteString(image, "load", 294/3 - 24, 55, BOT_LEFT, LARGE);
-				Painter_WriteString(image, "save", 294/3*2 - 24, 55, BOT_LEFT, LARGE);
+				Painter_WriteString(image, "load", 296/3 - 4*8, 55, BOT_LEFT, SMALL);
+				Painter_WriteString(image, "save", 296/3*2 - 4*8, 55, BOT_LEFT, SMALL);
 			} else {
-				Painter_WriteString(image, "disconnected", 294/2 - 72, 55, BOT_LEFT, LARGE);
+				Painter_WriteString(image, "disconnected", 294/2 - 6*8, 55, BOT_LEFT, SMALL);
 			}
 		} else {
 			if (hm->usb_result == 1) {
-				Painter_WriteString(image, "ok", 294/2 - 12, 55, BOT_LEFT, LARGE);
+				Painter_WriteString(image, "ok", 296/2 - 8, 55, BOT_LEFT, SMALL);
 			} else {
-				Painter_WriteString(image, "error", 294/2 - 30, 55, BOT_LEFT, LARGE);
+				Painter_WriteString(image, "error", 296/2 - 20, 55, BOT_LEFT, SMALL);
 			}
 			hm->usb_result = -1;
 		}

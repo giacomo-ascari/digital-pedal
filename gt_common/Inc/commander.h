@@ -8,8 +8,6 @@
 #ifndef COMMANDER_COMMANDER_H_
 #define COMMANDER_COMMANDER_H_
 
-#define COMMAND_BYTESIZE 259
-
 #define TIMEOUT 1000
 
 #ifdef F103
@@ -20,20 +18,24 @@
 #include "stm32f4xx_hal.h"
 #endif
 
+#define PAYLOAD_BYTESIZE 256
+
 typedef union {
-	uint8_t bytes[256];
-	int16_t shorts[128];
-	int32_t ints[64];
-	float floats[64];
-	char chars[256];
+	uint8_t bytes[PAYLOAD_BYTESIZE];
+	int16_t shorts[PAYLOAD_BYTESIZE / 2];
+	int32_t ints[PAYLOAD_BYTESIZE / 4];
+	float floats[PAYLOAD_BYTESIZE / 4];
+	char chars[PAYLOAD_BYTESIZE];
 } Payload;
 
 typedef struct {
-	uint8_t header; // 1 Byte
-	uint8_t subheader; // 1 Byte
-	uint8_t param; // 1 Byte
-	Payload payload; // 256 Bytes
+	uint8_t header;
+	uint8_t subheader;
+	uint8_t param;
+	Payload payload;
 } Command;
+
+#define COMMAND_BYTESIZE (PAYLOAD_BYTESIZE + 3)
 
 typedef struct {
 	UART_HandleTypeDef *huart;

@@ -60,7 +60,7 @@ uint8_t Commander_Send(Commander_HandleTypeDef *hcommander) {
 	HAL_StatusTypeDef status;
 
 
-	status = HAL_UART_Transmit(hcommander->huart, (uint8_t *)&(hcommander->out_command), COMMAND_BYTESIZE, 1000);
+	status = HAL_UART_Transmit(hcommander->huart, (uint8_t *)&(hcommander->out_command), COMMAND_BYTESIZE, TIMEOUT);
 
 	if (status == HAL_OK) {
 

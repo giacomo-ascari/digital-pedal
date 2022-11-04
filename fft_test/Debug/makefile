@@ -61,7 +61,7 @@ main-build: fft_test.elf secondary-outputs
 
 # Tool invocations
 fft_test.elf fft_test.map: $(OBJS) $(USER_OBJS) C:\Users\giaco\Desktop\digital-pedal\fft_test\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "fft_test.elf" @"objects.list" $(USER_OBJS) -Wl,--start-group $(LIBS) -Wl,--end-group -mcpu=cortex-m4 -T"C:\Users\giaco\Desktop\digital-pedal\fft_test\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="fft_test.map" -Wl,--gc-sections -static -L..Drivers/CMSIS/Lib/GCC --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "fft_test.elf" @"objects.list" $(USER_OBJS) -Wl,--start-group $(LIBS) -Wl,--end-group -mcpu=cortex-m4 -T"C:\Users\giaco\Desktop\digital-pedal\fft_test\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="fft_test.map" -Wl,--gc-sections -static -L"C:\Users\giaco\Desktop\digital-pedal\fft_test\Drivers\CMSIS\Lib\GCC" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

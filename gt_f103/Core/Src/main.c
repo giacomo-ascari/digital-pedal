@@ -28,7 +28,7 @@
 #include "menu.h"
 #include <string.h>
 #include <stdio.h>
-#include "mode.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -193,7 +193,7 @@ int main(void)
 	// Menu
 	uint8_t new_page;
 	Menu_Init(&hmenu, &hcommander, &hepd1);
-	Menu_RetrieveData(&hmenu, FIRST);
+	Menu_Sync(&hmenu, GET_PB);
 	Menu_Render(&hmenu, FULL);
 
 	// Turning off
@@ -224,7 +224,6 @@ int main(void)
 
 		if (Menu_GoTo(&hmenu, new_page)) {
 
-			Menu_RetrieveData(&hmenu, FIRST);
 			RE_Reset(&hre1);
 			RE_Reset(&hre2);
 			btn_flags[6] = 0;
@@ -232,6 +231,7 @@ int main(void)
 
 			// MENU PAGE BUTTON
 			if (hmenu.selected_page == OVERVIEW) {
+				Menu_Sync(&hmenu, GET_PB);
 				Menu_Render(&hmenu, PARTIAL);
 			}
 
@@ -241,11 +241,8 @@ int main(void)
 			if (hmenu.selected_page == PLOT) {
 				hmenu.plot_xscale = RE_GetCount(&hre1, 100) + 1;
 				hmenu.plot_yscale = RE_GetCount(&hre2, 100) + 1;
-				//if (hmenu.tick + 3000 < HAL_GetTick()) {
-				//	hmenu.tick = HAL_GetTick();
-					Menu_RetrieveData(&hmenu, PERIODIC);
-					Menu_Render(&hmenu, PARTIAL);
-				//}
+				Menu_Sync(&hmenu, GET_SIGNALS);
+				Menu_Render(&hmenu, PARTIAL);
 
 			} else if (hmenu.selected_page == EDIT) {
 				if (btn_flags[6]) {
@@ -263,7 +260,7 @@ int main(void)
 						hmenu.edit_active = 0;
 						hre1.counter = hmenu.edit_initialvalue1;
 						hre2.counter = hmenu.edit_initialvalue2;
-						Menu_RetrieveData(&hmenu, USER);
+						Menu_Sync(&hmenu, SET_PB);
 					}
 				}
 				if (hmenu.edit_active) {
@@ -304,32 +301,41 @@ int main(void)
 								&(hmenu.pedalboard),
 								(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type + 1) % EFFECT_TYPES,
 								hmenu.edit_index2);
-						Menu_RetrieveData(&hmenu, USER);
+						Menu_Sync(&hmenu, SET_PB);
 					}
 				}
 				Menu_Render(&hmenu, PARTIAL);
 
 			} else if (hmenu.selected_page == MODE) {
-				hmenu.mode_selected = RE_GetCount(&hre1, MODE_TYPES);
+				hmenu.mode_input_selected = RE_GetCount(&hre1, MODE_TYPES);
+				hmenu.mode_output_selected = RE_GetCount(&hre2, MODE_TYPES);
 				if (btn_flags[6]) {
 					btn_flags[6] = 0;
-					hmenu.mode_active = hmenu.mode_selected;
-					Menu_RetrieveData(&hmenu, USER);
-				} else {
-					Menu_Render(&hmenu, PARTIAL);
+					hmenu.mode_input_active = hmenu.mode_input_selected;
+					Menu_Sync(&hmenu, SET_PB);
 				}
-			} else if (hmenu.selected_page == TUNER) {
-				Menu_RetrieveData(&hmenu, PERIODIC);
+				if (btn_flags[7]) {
+					btn_flags[7] = 0;
+					hmenu.mode_output_active = hmenu.mode_output_selected;
+					Menu_Sync(&hmenu, SET_PB);
+				}
 				Menu_Render(&hmenu, PARTIAL);
+
+			} else if (hmenu.selected_page == SPECTRUM) {
+
+				Menu_Sync(&hmenu, GET_SPECTRUM);
+				Menu_Render(&hmenu, PARTIAL);
+
 			} else if (hmenu.selected_page == FILES) {
 				hmenu.usb_selected = RE_GetCount(&hre1, 2);
 				if (btn_flags[6]) {
 					btn_flags[6] = 0;
 					if (hmenu.usb_ready) {
-						Menu_RetrieveData(&hmenu, USER);
+						Menu_Sync(&hmenu, SET_USB);
+						Menu_Sync(&hmenu, GET_PB);
 					}
 				} else {
-					Menu_RetrieveData(&hmenu, PERIODIC);
+					Menu_Sync(&hmenu, GET_USB);
 				}
 				Menu_Render(&hmenu, PARTIAL);
 			}

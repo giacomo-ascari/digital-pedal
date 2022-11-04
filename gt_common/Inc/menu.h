@@ -15,26 +15,31 @@
 #include "commander.h"
 #include "epddriver.h"
 #include "painter2.h"
-#include "mode.h"
 
 #endif
 
 #define SIGNAL_SIZE 128
 #define PAGE_COUNT 6
 
+// Commands are from F103 (ui) perspective
+// since it's the one that initiates comunication
+enum command_header_types {
+	OTHER = 0,
+	GET_PB = 1,
+	SET_PB = 2,
+	GET_SIGNALS = 3,
+	GET_USB = 4,
+	SET_USB = 5,
+	GET_SPECTRUM = 6
+};
+
 enum page_types {
 	OVERVIEW = 0,
 	PLOT = 1,
 	EDIT = 2,
 	MODE = 3,
-	TUNER = 4,
+	SPECTRUM = 4,
 	FILES = 5
-};
-
-enum message_types {
-	FIRST = 0,
-	PERIODIC = 1,
-	USER = 2
 };
 
 enum render_types {
@@ -47,9 +52,9 @@ enum render_types {
 typedef struct _Menu_HandleTypeDef {
 	enum page_types selected_page;
 	Pedalboard_Handler pedalboard;
-	mode_manifest_t mode_manifest[MODE_TYPES];
 	int8_t signal_in[SIGNAL_SIZE];
 	int8_t signal_out[SIGNAL_SIZE];
+	uint8_t spectrum[PAYLOAD_BYTESIZE];
 	Commander_HandleTypeDef *hcommander;
 	EPD_HandleTypeDef *hepd;
 	// state related variables
@@ -62,8 +67,10 @@ typedef struct _Menu_HandleTypeDef {
 	int16_t edit_oldvalue2;
 	int16_t edit_initialvalue1;
 	int16_t edit_initialvalue2;
-	uint8_t mode_active;
-	uint8_t mode_selected;
+	uint8_t mode_input_active;
+	uint8_t mode_input_selected;
+	uint8_t mode_output_active;
+	uint8_t mode_output_selected;
 	uint8_t usb_ready;
 	uint8_t usb_selected;
 	int8_t usb_result;
@@ -76,7 +83,7 @@ uint8_t Menu_GoTo(Menu_HandleTypeDef *hm, enum page_types new_page);
 
 void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_HandleTypeDef *hepd);
 
-void Menu_RetrieveData(Menu_HandleTypeDef *hm, enum message_types type);
+void Menu_Sync(Menu_HandleTypeDef *hm, enum command_header_types type);
 
 void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render);
 

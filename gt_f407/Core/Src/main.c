@@ -28,6 +28,14 @@
 #include "pedalboard.h"
 #include "menu.h"
 
+#define ARM_MATH_CM4
+#include "arm_math.h"
+#include "arm_const_structs.h"
+
+//tutorial for CMSIS DSP
+//https://stm32f4-discovery.net/2014/10/stm32f4-fft-example/
+//https://community.st.com/s/article/configuring-dsp-libraries-on-stm32cubeide
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -76,12 +84,23 @@ Pedalboard_Handler hpedalboard;
 #define SAMPLES_QUANTITY 64 // two halves combined
 #define HALF_QUANTITY 32 // which 16 are left and 16 are right
 
+// PLOT
 volatile uint8_t plot_xscale = 1;
 volatile uint8_t plot_yscale = 1;
 volatile uint16_t signal_index = 0;
 volatile uint32_t signal_samples = 0;
 int8_t signal_in[SIGNAL_SIZE];
 int8_t signal_out[SIGNAL_SIZE];
+
+// SPECTRUM
+#define FFT_SAMPLES_COUNT 4096
+#define FFT_SIZE (FFT_SAMPLES_COUNT / 2)
+volatile uint32_t spectrum_index = FFT_SAMPLES_COUNT;
+static float32_t spectrum_output[FFT_SIZE];
+static float32_t spectrum_input[FFT_SAMPLES_COUNT];
+uint32_t spectrum_reduced[PAYLOAD_BYTESIZE];
+float32_t frequency;
+arm_cfft_radix4_instance_f32 S;
 
 // DAC
 extern AUDIO_DrvTypeDef cs43l22_drv;
@@ -146,10 +165,8 @@ uint8_t usb_save() {
 	res = f_open(&pbFile, "pb.pb", FA_WRITE | FA_CREATE_ALWAYS);
 	if (res != FR_OK) return 0;
 
-	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-		res = f_write(&pbFile, (const void *)hpedalboard.effects[i].effect_raw, RAW_EFFECT_SIZE, &byteswritten);
-		if((res != FR_OK) || (byteswritten == 0)) return 0;
-	}
+	res = f_write(&pbFile, (const void *)&hpedalboard, PEDALBOARD_HANDLER_SIZE, &byteswritten);
+	if((res != FR_OK) || (byteswritten == 0)) return 0;
 
 	res = f_close(&pbFile);
 	if (res != FR_OK) return 0;
@@ -161,44 +178,17 @@ uint8_t usb_load() {
 	res = f_open(&pbFile, "pb.pb", FA_READ);
 	if (res != FR_OK) return 0;
 
-	uint8_t buff[RAW_EFFECT_SIZE];
+	uint8_t buff[PEDALBOARD_HANDLER_SIZE];
 
-	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-		res = f_read(&pbFile, buff, RAW_EFFECT_SIZE, &bytesread);
-		if((res != FR_OK) || (bytesread == 0)) return 0;
-		hpedalboard.active = 0;
-		memcpy(hpedalboard.effects[i].effect_raw, buff, RAW_EFFECT_SIZE);
-		hpedalboard.active = 1;
-	}
+	res = f_read(&pbFile, buff, PEDALBOARD_HANDLER_SIZE, &bytesread);
+	if((res != FR_OK) || (bytesread == 0)) return 0;
+	hpedalboard.active = 0;
+	memcpy(&hpedalboard, buff, PEDALBOARD_HANDLER_SIZE);
+	hpedalboard.active = 1;
 
 	res = f_close(&pbFile);
 	if (res != FR_OK) return 0;
 	return 1;
-
-	/*
-//Open file for reading
-	if(f_open(&myFile, "TEST2.TXT", FA_READ) != FR_OK)
-	{
-		return 0;
-	}
-
-	//Read text from files until NULL
-	for(uint8_t i=0; i<100; i++)
-	{
-		res = f_read(&myFile, (uint8_t*)&rwtext[i], 1, &bytesread);
-		if(rwtext[i] == 0x00) // NULL string
-		{
-			bytesread = i;
-			break;
-		}
-	}
-	//Reading error handling
-	if(bytesread==0) return 0;
-
-	//Close file
-	f_close(&myFile);
-	return 1;  // success
-	 */
 }
 
 void command_callback() {
@@ -209,21 +199,49 @@ void command_callback() {
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (in_command->header < PAGE_COUNT && in_command->subheader < MAX_EFFECTS_COUNT) {
+	if (1) {
 
 		out_command->header = in_command->header;
-		out_command->subheader = in_command->subheader;
 		out_command->param = in_command->param;
 
-		if (in_command->header == OVERVIEW) {
+		if (in_command->header == GET_PB) {
 
-			// in_command->subheader == FIRST
-			memcpy(out_command->payload.bytes, hpedalboard.effects[in_command->param].effect_raw, RAW_EFFECT_SIZE);
+			uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
+			if (in_command->param == segments) {
+				//partial copy
+				memcpy(
+					out_command->payload.bytes,
+					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
+			} else {
+				// full copy
+				memcpy(
+					out_command->payload.bytes,
+					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+					PAYLOAD_BYTESIZE);
+			}
 			Commander_Send(&hcommander);
 
-		} else if (in_command->header == PLOT) {
+		} else if (in_command->header == SET_PB) {
 
-			// in_command->subheader == FIRST || in_command->subheader == PERIODIC
+			uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
+			if (in_command->param == segments) {
+				//partial copy
+				memcpy(
+					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+					in_command->payload.bytes,
+					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
+			} else {
+				// full copy
+				memcpy(
+					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+					in_command->payload.bytes,
+					PAYLOAD_BYTESIZE);
+			}
+			Commander_Send(&hcommander);
+
+		} else if (in_command->header == GET_SIGNALS) {
+
 			plot_xscale = in_command->payload.bytes[0] ? in_command->payload.bytes[0] : 1;
 			plot_yscale = in_command->payload.bytes[1];
 			signal_index = 0;
@@ -232,48 +250,59 @@ void command_callback() {
 			memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
 			Commander_Send(&hcommander);
 
-		} else if (in_command->header == EDIT) {
+		} else if (in_command->header == GET_USB) {
 
-			if (in_command->subheader == FIRST) {
-				memcpy(out_command->payload.bytes, hpedalboard.effects[in_command->param].effect_raw, RAW_EFFECT_SIZE);
-				Commander_Send(&hcommander);
-			} else {
-				hpedalboard.active = 0;
-				memcpy(hpedalboard.effects[in_command->param].effect_raw, in_command->payload.bytes, RAW_EFFECT_SIZE);
-				hpedalboard.active = 1;
-				Commander_Send(&hcommander);
-			}
-
-		} else if (in_command->header == MODE) {
-
-			// in_command->subheader == FIRST || in_command->subheader == USER
-			if (in_command->subheader == USER) {
-				mode = in_command->param;
-			}
-			out_command->param = mode;
-			Commander_Send(&hcommander);
-
-		}  else if (in_command->header == TUNER) {
-
-			// in_command->subheader == FIRST || in_command->subheader == PERIODIC
-			Commander_Send(&hcommander);
-
-		}  else if (in_command->header == FILES) {
-
-			// in_command->subheader == FIRST || in_command->subheader == PERIODIC
 			out_command->param = usb_ready;
-			if (in_command->subheader == USER) {
-				if (usb_ready) {
-					out_command->param = 0;
-					if (in_command->param == 1) {
-						out_command->param = usb_save();
-					} else {
-						out_command->param = usb_load();
-					}
+			Commander_Send(&hcommander);
+
+		} else if (in_command->header == SET_USB) {
+
+			if (usb_ready) {
+				out_command->param = 0;
+				if (in_command->param == 1) {
+					out_command->param = usb_save();
+				} else {
+					out_command->param = usb_load();
 				}
 			}
 			Commander_Send(&hcommander);
 
+		} else if (in_command->header == GET_SPECTRUM) {
+
+			//signal_index = 0;
+			//while (signal_index < SIGNAL_SIZE);
+			//memcpy(out_command->payload.bytes, signal_in, SIGNAL_SIZE);
+			//memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
+			//Commander_Send(&hcommander);
+
+			spectrum_index = 0;
+			while (spectrum_index < FFT_SAMPLES_COUNT);
+			float32_t maxValue;
+			uint32_t maxIndex;
+			arm_cfft_radix4_init_f32(&S, FFT_SIZE, 0, 1); //ifftFlag, doBitReverse
+			arm_cfft_radix4_f32(&S, spectrum_input);
+			arm_cmplx_mag_f32(spectrum_input, spectrum_output, FFT_SIZE);
+			arm_max_f32(spectrum_output, FFT_SIZE, &maxValue, &maxIndex);
+			//frequency = ((48000/FFT_SIZE) * (maxIndex));
+
+			uint32_t max_value = 0;
+			uint16_t window_size = FFT_SIZE / PAYLOAD_BYTESIZE;
+			for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
+				uint32_t value = 0;
+				for (uint16_t j = 0; j < window_size; j++) value += spectrum_output[i * window_size + j];
+				value /= window_size;
+				if (value > max_value) max_value = value;
+				spectrum_reduced[i] = value;
+			}
+
+			uint32_t scale = (uint32_t)max_value / 256;
+			for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
+				uint32_t value = spectrum_reduced[i];
+				value /= scale;
+				out_command->payload.bytes[i] = value;
+			}
+
+			Commander_Send(&hcommander);
 		}
 
 	} else {
@@ -321,6 +350,15 @@ void DSP(uint8_t * buf, int16_t * out) {
 		signal_index++;
 	}
 	signal_samples++;
+
+	if (spectrum_index < FFT_SAMPLES_COUNT) {
+		//float val = 0;
+		//wave_gen(&val, 's', spectrum_index / 2, 440.0);
+		spectrum_input[spectrum_index] = (float)raw;
+		//spectrum_input[spectrum_index] = val;
+		spectrum_input[spectrum_index+1] = 0;
+		spectrum_index += 2;
+	}
 }
 
 // TS: Tip Sleeve
@@ -330,35 +368,37 @@ void DSP(uint8_t * buf, int16_t * out) {
 
 void Mode_N_DSP(uint8_t * buf_tip, uint8_t * buf_ring, int16_t * out_tip, int16_t * out_ring) {
 
-	static uint8_t * buf_generic;
-	static int16_t * out_generic;
-
-	if (hpedalboard.input_mode == TS) {
-		buf_generic = buf_tip;
-	} else if (hpedalboard.input_mode == RS) {
-		buf_generic = buf_ring;
-	} else if (hpedalboard.input_mode == TRS_B) {
-		// lmao this is unsuppirted
-		buf_generic = buf_tip;
-	} else if (hpedalboard.input_mode == TRS_UB) {
-		// lmao this is unsuppirted
-		buf_generic = buf_tip;
-	}
-
-	DSP(buf_generic, out_generic);
-
-	if (hpedalboard.output_mode == TS) {
-		*out_tip = *out_generic;
+	if (hpedalboard.input_mode == TS && hpedalboard.output_mode == TS) {
+		DSP(buf_tip, out_tip);
 		*out_ring = 0;
-	} else if (hpedalboard.output_mode == RS) {
+
+	} else if (hpedalboard.input_mode == TS && hpedalboard.output_mode == RS) {
+		DSP(buf_tip, out_ring);
 		*out_tip = 0;
-		*out_ring = *out_generic;
-	} else if (hpedalboard.output_mode == TRS_B) {
-		*out_tip = *out_generic;
-		*out_ring = - *out_generic;
-	} else if (hpedalboard.output_mode == TRS_UB) {
-		*out_tip = *out_generic;
-		*out_ring = *out_generic;
+
+	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == TS) {
+		DSP(buf_ring, out_tip);
+		*out_ring = 0;
+
+	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == RS) {
+		DSP(buf_ring, out_ring);
+		*out_tip = 0;
+
+	} else if (hpedalboard.input_mode == TS && hpedalboard.output_mode == TRS_B) {
+		DSP(buf_tip, out_tip);
+		*out_ring = - *out_tip;
+
+	} else if (hpedalboard.input_mode == TS && hpedalboard.output_mode == TRS_UB) {
+		DSP(buf_tip, out_tip);
+		*out_ring = *out_tip;
+
+	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == TRS_B) {
+		DSP(buf_ring, out_tip);
+		*out_ring = *out_tip;
+
+	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == TRS_UB) {
+		DSP(buf_ring, out_tip);
+		*out_ring = *out_tip;
 	}
 }
 
@@ -449,7 +489,6 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	//Pedalboard_SetEffect(&hpedalboard, AMPLIFIER, MAX_EFFECTS_COUNT - 1);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
@@ -494,6 +533,29 @@ int main(void)
 			usb_mounted = 0;
 			usb_ready = 0;
 		}
+
+		/* USER CODE END WHILE */
+
+		/*if (samplesCount == FFT_SAMPLES_COUNT) {
+
+			uint32_t ifftFlag = 0; //forward, backward
+			uint32_t doBitReverse = 1;
+			arm_cfft_radix4_instance_f32 S;
+			float32_t maxValue;
+			uint32_t maxIndex;
+
+			arm_cfft_radix4_init_f32(&S, FFT_SIZE, ifftFlag, doBitReverse);
+
+			arm_cfft_radix4_f32(&S, Input);
+
+			arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
+
+			arm_max_f32(Output, FFT_SIZE, &maxValue, &maxIndex);
+
+			frequency = ((48000/FFT_SIZE) * (maxIndex));;
+
+			samplesCount = 0;
+		}*/
 
 	}
   /* USER CODE END 3 */

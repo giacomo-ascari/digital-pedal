@@ -315,10 +315,12 @@
 
 #define __CMSIS_GENERIC         /* disable NVIC and Systick functions */
 
-
-  #include "core_cm4.h"
-  #define ARM_MATH_DSP
-
+// this block has been changed by giacomo
+// because the defined(SYMBOL) function didn't seem
+// to recognize the ARM_MATH_CM4, specified in
+// the build->preprocessor and even in main.c
+#include "core_cm4.h"
+#define ARM_MATH_DSP
 
 #undef  __CMSIS_GENERIC         /* enable NVIC and Systick functions */
 #include "string.h"

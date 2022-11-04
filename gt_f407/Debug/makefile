@@ -73,7 +73,7 @@ main-build: gt_f407.elf secondary-outputs
 
 # Tool invocations
 gt_f407.elf gt_f407.map: $(OBJS) $(USER_OBJS) C:\Users\giaco\Desktop\digital-pedal\gt_f407\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "gt_f407.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\giaco\Desktop\digital-pedal\gt_f407\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="gt_f407.map" -Wl,--gc-sections -static -L../Drivers/ARMDSP/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "gt_f407.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\giaco\Desktop\digital-pedal\gt_f407\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="gt_f407.map" -Wl,--gc-sections -static -L"C:\Users\giaco\Desktop\digital-pedal\gt_f407\Drivers\CMSIS\Lib\GCC" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
