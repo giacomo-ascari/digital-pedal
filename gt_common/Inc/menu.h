@@ -71,6 +71,8 @@ typedef struct _Menu_HandleTypeDef {
 	uint8_t mode_input_selected;
 	uint8_t mode_output_active;
 	uint8_t mode_output_selected;
+	uint8_t spectrum_yscale;
+	uint8_t spectrum_xshift;
 	uint8_t usb_ready;
 	uint8_t usb_selected;
 	int8_t usb_result;

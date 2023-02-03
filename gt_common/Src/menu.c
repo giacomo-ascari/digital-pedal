@@ -28,6 +28,8 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->mode_input_selected = 0;
 	hm->mode_output_active = 0;
 	hm->mode_output_selected = 0;
+	hm->spectrum_xshift = 0;
+	hm->spectrum_yscale = 1;
 	hm->usb_ready = 0;
 	hm->usb_selected = 0;
 	hm->usb_result = -1;

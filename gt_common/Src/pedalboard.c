@@ -21,6 +21,8 @@ void bitcrusher_rs_process(float *value, effect_config_t *conf);
 
 void fuzz_process(float *value, effect_config_t *conf);
 
+void high_pass_filter_process(float *value, effect_config_t *conf);
+
 void low_pass_filter_process(float *value, effect_config_t *conf);
 
 void noise_gate_process(float *value, effect_config_t *conf);
@@ -70,6 +72,12 @@ const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[FUZZ].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)			{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
 		[FUZZ].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)			{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
 		[FUZZ].effect_process = fuzz_process,
+
+		[HPF] = (effect_manifest_t){"hpf","high pass filter"},
+		[HPF].params_manifest.float_params_manifest[SOFTENER] = (float_params_manifest_t)				{ 1, "Softener", 0.1, 0, 1, VALUE },
+		[HPF].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)				{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
+		[HPF].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)			{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[HPF].effect_process = high_pass_filter_process,
 
 		[LPF] = (effect_manifest_t){"lpf","low pass filter"},
 		[LPF].params_manifest.float_params_manifest[SOFTENER] = (float_params_manifest_t)				{ 1, "Softener", 0.1, 0, 1, VALUE },
@@ -212,11 +220,10 @@ void Pedalboard_GetActiveParamsByType(uint8_t active_index, uint8_t type, uint8_
 	}
 }
 
-// OVERDRIVE
+// AMPLIFIER
 
-void overdrive_process(float *value, effect_config_t *conf) {
-    *value *=  conf->float_params[INTENSITY];
-    soft_clip(value, conf);
+void amplifier_process(float *value, effect_config_t *conf) {
+    *value *= conf->float_params[INTENSITY];
     hard_clip(value, conf);
 }
 
@@ -231,36 +238,11 @@ void bitcrusher_rs_process(float *value, effect_config_t *conf) {
     *value = _out;
 }
 
-// TREMOLO
-
-void tremolo_process(float *value, effect_config_t *conf) {
-    float tone = 440.0F;
-    wave_gen(value, 's', conf->int_params[COUNTER], tone * conf->float_params[SPEED]);
-    conf->int_params[COUNTER]++;
-}
-
-// OVERDRIVE_SQRT
-
-void overdrive_sqrt_process(float *value, effect_config_t *conf) {
-    square_root(value);
-    *value *= conf->float_params[INTENSITY];
-    hard_clip(value, conf);
-}
-
-// AMPLIFIER
-
-void amplifier_process(float *value, effect_config_t *conf) {
-    *value *= conf->float_params[INTENSITY];
-    hard_clip(value, conf);
-}
-
-// LPF
-
-void low_pass_filter_process(float *value, effect_config_t *conf) {
-    float alpha = conf->float_params[SOFTENER];
-    *value = conf->float_params[PAST] * alpha + (1.F - alpha) * *value;
-    conf->float_params[PAST] = *value;
-}
+// BYPASS
+/*
+void bypass_process(float *value, effect_config_t *conf) {
+    return;
+}*/
 
 // FUZZ
 
@@ -278,6 +260,24 @@ void fuzz_process(float *value, effect_config_t *conf) {
 	}
 }
 
+// HPF
+
+void high_pass_filter_process(float *value, effect_config_t *conf) {
+	//new_hpf = (prev_hpf + new_sample - prev_sample) / (1 + time_constant/sample_period)
+
+    float alpha = conf->float_params[SOFTENER];
+    *value = conf->float_params[PAST] * alpha + (1.F - alpha) * *value;
+    conf->float_params[PAST] = *value;
+}
+
+// LPF
+
+void low_pass_filter_process(float *value, effect_config_t *conf) {
+    float alpha = conf->float_params[SOFTENER];
+    *value = conf->float_params[PAST] * alpha + (1.F - alpha) * *value;
+    conf->float_params[PAST] = *value;
+}
+
 // NOISE GATE
 
 void noise_gate_process(float *value, effect_config_t *conf) {
@@ -286,11 +286,30 @@ void noise_gate_process(float *value, effect_config_t *conf) {
     }
 }
 
-// BYPASS
-/*
-void bypass_process(float *value, effect_config_t *conf) {
-    return;
-}*/
+// OVERDRIVE
+
+void overdrive_process(float *value, effect_config_t *conf) {
+    *value *=  conf->float_params[INTENSITY];
+    soft_clip(value, conf);
+    hard_clip(value, conf);
+}
+
+// OVERDRIVE_SQRT
+
+void overdrive_sqrt_process(float *value, effect_config_t *conf) {
+    square_root(value);
+    *value *= conf->float_params[INTENSITY];
+    hard_clip(value, conf);
+}
+
+// TREMOLO
+
+void tremolo_process(float *value, effect_config_t *conf) {
+    float tone = 440.0F;
+    wave_gen(value, 's', conf->int_params[COUNTER], tone * conf->float_params[SPEED]);
+    conf->int_params[COUNTER]++;
+}
+
 
 // DSP
 
