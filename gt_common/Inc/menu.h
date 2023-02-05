@@ -30,7 +30,8 @@ enum command_header_types {
 	GET_SIGNALS = 3,
 	GET_USB = 4,
 	SET_USB = 5,
-	GET_SPECTRUM = 6
+	GET_SPECTRUM = 6,
+	GET_LOAD = 7
 };
 
 enum page_types {
@@ -58,6 +59,7 @@ typedef struct _Menu_HandleTypeDef {
 	Commander_HandleTypeDef *hcommander;
 	EPD_HandleTypeDef *hepd;
 	// state related variables
+	uint16_t overview_elapsedus;
 	uint8_t plot_xscale;
 	uint8_t plot_yscale;
 	uint8_t edit_index1;

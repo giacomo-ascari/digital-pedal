@@ -15,6 +15,7 @@ void Menu_Init(Menu_HandleTypeDef *hm, Commander_HandleTypeDef *hcommander, EPD_
 	hm->selected_page = OVERVIEW;
 	hm->hcommander = hcommander;
 	hm->hepd = hepd;
+	hm->overview_elapsedus = 0;
 	hm->plot_xscale = 1;
 	hm->plot_yscale = 1;
 	hm->edit_index1 = 0;
@@ -126,6 +127,11 @@ void Menu_Sync(Menu_HandleTypeDef *hm, enum command_header_types type) {
 		Commander_SendAndWait(hm->hcommander);
 		memcpy(hm->spectrum, hm->hcommander->in_command.payload.bytes, PAYLOAD_BYTESIZE);
 
+	} else if (type == GET_LOAD) {
+
+		Commander_SendAndWait(hm->hcommander);
+		memcpy((uint8_t *)&(hm->overview_elapsedus), hm->hcommander->in_command.payload.bytes, 2);
+
 	}
 }
 
@@ -155,6 +161,13 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 		}
 		sprintf(row, "%d/%d", active_pedals, MAX_EFFECTS_COUNT);
 		Painter_WriteString(image, row, 260, 0, BOT_LEFT, SMALL);
+
+		float us_per_dsptick = 1000000.F / 48000;
+		float us_elapsed = (float)hm->overview_elapsedus;
+		float load = 100 * us_elapsed / us_per_dsptick;
+
+		sprintf(row, "%.0f%%", load);
+		Painter_WriteString(image, row, 200, 0, BOT_LEFT, SMALL);
 
 	} else if (hm->selected_page == PLOT) {
 

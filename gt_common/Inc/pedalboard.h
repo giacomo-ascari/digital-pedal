@@ -23,7 +23,7 @@ enum mode_type {
 
 extern const char mode_manifest[MODE_TYPES][10];
 
-#define EFFECT_TYPES 11
+#define EFFECT_TYPES 12
 
 enum effect_type {
     AMPLIFIER,  // AMP
@@ -37,6 +37,7 @@ enum effect_type {
     OVERDRIVE,      // OVR
     OVERDRIVE_SQRT, // OVRS
     TREMOLO,        // TRM
+	WAVE_GEN,		// WAV
 };
 
 //|	NAME			| name	| custom	| util		| custom	| custom		| custom	| custom	| custom	| custom	| util		| util		|
@@ -52,7 +53,7 @@ enum effect_type {
 //| OVERDRIVE		| OVR	|			| counter	| gain		| high thr. 	| low thr.	| softener  | bal. in	| bal. out	| past in	| past out  |
 //| OVERDRIVE_SQRT	| OVRS	|			| counter	| gain		| high thr. 	|			| softener  | bal. in	| bal. out	| past in	| past out  |
 //| TREMOLO			| TRM	|			| counter	|			|				| height	| speed		| bal. in	| bal. out	| past in	| past out  |
-
+//| WAGE GE			| WAV	|			| counter	|			|				| height	| speed		| bal. in	| bal. out	| past in	| past out  |
 
 #define INT_PARAM_TYPES 2
 
