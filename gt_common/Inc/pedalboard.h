@@ -23,7 +23,7 @@ enum mode_type {
 
 extern const char mode_manifest[MODE_TYPES][10];
 
-#define EFFECT_TYPES 10
+#define EFFECT_TYPES 12
 
 enum effect_type {
     AMPLIFIER,  // AMP
@@ -31,12 +31,29 @@ enum effect_type {
 	BITCRUSHER_RT,  // BITRT
     BYPASS,         //  -
     FUZZ,           // FZZ
+	HPF,			// HPF
     LPF,            // LPF
 	NOISE_GATE,		// NGT
     OVERDRIVE,      // OVR
     OVERDRIVE_SQRT, // OVRS
     TREMOLO,        // TRM
+	WAVE_GEN,		// WAV
 };
+
+//|	NAME			| name	| custom	| util		| custom	| custom		| custom	| custom	| custom	| custom	| util		| util		|
+//|-----------------|-------| INT-0 	| INT-1 	| FLT-0 	| FLT-1 		| FLT-2 	| FLT-3 	| FLT-4 	| FLT-5 	| FLT-6 	| FLT-7		|
+//| AMPLIFIER		| AMP	|			| counter	| gain		| high thr. 	|			|			| bal. in	| bal. out	| past in	| past out  |
+//| BITCRUSHER_RS	| BITRS	| reduction	| counter	|			|				|			|			| bal. in	| bal. out	| past in	| past out  |
+//| BITCRUSHER_RT	| BITRT	| reduction	| counter	|			|				|			|			| bal. in	| bal. out	| past in	| past out  |
+//| BYPASS			|		|			| counter	|			|				|			|			|			|			| past in	| past out  |
+//| FUZZ			| FZZ	|			| counter	| gain		| high thr.		| height	| speed		| bal. in	| bal. out	| past in	| past out  |
+//| HPF				| HPF	|			| counter	|			|				|			| softener	| bal. in	| bal. out	| past in	| past out  |
+//| LPF				| LPF	|			| counter	|			|				|			| softener	| bal. in	| bal. out	| past in	| past out  |
+//| NOISE_GATE		| NGT	|			| counter	|			|				| threshold	| release	| bal. in	| bal. out	| past in	| past out  |
+//| OVERDRIVE		| OVR	|			| counter	| gain		| high thr. 	| low thr.	| softener  | bal. in	| bal. out	| past in	| past out  |
+//| OVERDRIVE_SQRT	| OVRS	|			| counter	| gain		| high thr. 	|			| softener  | bal. in	| bal. out	| past in	| past out  |
+//| TREMOLO			| TRM	|			| counter	|			|				| height	| speed		| bal. in	| bal. out	| past in	| past out  |
+//| WAGE GE			| WAV	|			| counter	|			|				| height	| speed		| bal. in	| bal. out	| past in	| past out  |
 
 #define INT_PARAM_TYPES 2
 

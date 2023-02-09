@@ -53,17 +53,24 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c1;
 
 I2S_HandleTypeDef hi2s2;
 I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_spi2_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
+TIM_HandleTypeDef htim6;
+
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
+
+// TIMER MICROSECOND COUNTER
+uint16_t timer_start;
+uint16_t timer_stop;
+uint16_t timer_elapsed;
 
 // USB
 FATFS usbFatFS;
@@ -81,8 +88,8 @@ Commander_HandleTypeDef hcommander;
 // PEDALBOARD
 Pedalboard_Handler hpedalboard;
 
-#define SAMPLES_QUANTITY 64 // two halves combined
-#define HALF_QUANTITY 32 // which 16 are left and 16 are right
+#define SAMPLES_QUANTITY 128 // two halves combined
+#define HALF_QUANTITY 64 // which 32 are left and 32 are right
 
 // PLOT
 volatile uint8_t plot_xscale = 1;
@@ -135,6 +142,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
+static void MX_TIM6_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -303,6 +311,12 @@ void command_callback() {
 			}
 
 			Commander_Send(&hcommander);
+
+		} else if (in_command->header == GET_LOAD) {
+
+			memcpy(out_command->payload.bytes, (uint8_t *)&timer_elapsed, 2);
+			Commander_Send(&hcommander);
+
 		}
 
 	} else {
@@ -405,7 +419,10 @@ void Mode_N_DSP(uint8_t * buf_tip, uint8_t * buf_ring, int16_t * out_tip, int16_
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
 		if (dsp_index < HALF_QUANTITY) {
+			timer_start = __HAL_TIM_GET_COUNTER(&htim6);
 			Mode_N_DSP(&ADC_BUFF.ADC8[4], &ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index + 1], &DSP_BUFF[dsp_index]);
+			timer_stop = __HAL_TIM_GET_COUNTER(&htim6);
+			timer_elapsed = timer_stop - timer_start;
 			//DSP(&ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index]); // ring (left)
 			//DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[dsp_index + 1]); // tip (right)
 			//DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
@@ -481,6 +498,7 @@ int main(void)
   MX_I2S3_Init();
   MX_I2C1_Init();
   MX_I2S2_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
 	// COMMANDER
@@ -489,6 +507,7 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
+	Pedalboard_SetEffect(&hpedalboard, WAVE_GEN, 0);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
@@ -499,6 +518,9 @@ int main(void)
 
 	// ADC
 	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
+
+	// TIMER
+	HAL_TIM_Base_Start(&htim6);
 
   /* USER CODE END 2 */
 
@@ -724,6 +746,44 @@ static void MX_I2S3_Init(void)
   /* USER CODE BEGIN I2S3_Init 2 */
 
   /* USER CODE END I2S3_Init 2 */
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 168-1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 65536-1;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
 
 }
 
