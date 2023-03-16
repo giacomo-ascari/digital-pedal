@@ -46,7 +46,8 @@ y1 = np.floor(A*np.sin(x1 * W + P)*B)/B
 fig, ax = plt.subplots()
 ax.set(xlabel='x', ylabel='f(x)', title='Sample quantization + Time discretization')
 ax.plot(x0, y0, label="Original signal", color='#bbbbbb')
-ax.step(x1, y1, label='Converted signal', where='post', color="#00bb00")
+ax.stem(x1, y1, label="Converted signal", linefmt='g', markerfmt='g.', basefmt='--g')
+#ax.step(x1, y1, label='Converted signal', where='post', color="#00bb00")
 ax.legend()
 plt.show()
 
