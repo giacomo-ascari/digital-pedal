@@ -8,6 +8,10 @@
 #ifndef PEDALBOARD_PEDALBOARD_H_
 #define PEDALBOARD_PEDALBOARD_H_
 
+// max and min for 24 bit samples
+#define MAX_VAL 8388608.0
+#define MIN_VAL -8388607.0
+
 #define MAX_EFFECTS_COUNT 6
 
 // ENUMERATION
@@ -23,13 +27,15 @@ enum mode_type {
 
 extern const char mode_manifest[MODE_TYPES][10];
 
-#define EFFECT_TYPES 12
+#define EFFECT_TYPES 13
 
 enum effect_type {
-    AMPLIFIER,  // AMP
+    AMPLIFIER,		// AMP
     BITCRUSHER_RS,  // BITRS
 	BITCRUSHER_RT,  // BITRT
     BYPASS,         //  -
+	COMPRESSOR,		// CMP
+	DYN_COMPRESSOR,	// DCMP
     FUZZ,           // FZZ
 	HPF,			// HPF
     LPF,            // LPF
@@ -40,40 +46,32 @@ enum effect_type {
 	WAVE_GEN,		// WAV
 };
 
-//|	NAME			| name	| custom	| util		| custom	| custom		| custom	| custom	| custom	| custom	| util		| util		|
-//|-----------------|-------| INT-0 	| INT-1 	| FLT-0 	| FLT-1 		| FLT-2 	| FLT-3 	| FLT-4 	| FLT-5 	| FLT-6 	| FLT-7		|
-//| AMPLIFIER		| AMP	|			| counter	| gain		| high thr. 	|			|			| bal. in	| bal. out	| past in	| past out  |
-//| BITCRUSHER_RS	| BITRS	| reduction	| counter	|			|				|			|			| bal. in	| bal. out	| past in	| past out  |
-//| BITCRUSHER_RT	| BITRT	| reduction	| counter	|			|				|			|			| bal. in	| bal. out	| past in	| past out  |
-//| BYPASS			|		|			| counter	|			|				|			|			|			|			| past in	| past out  |
-//| FUZZ			| FZZ	|			| counter	| gain		| high thr.		| height	| speed		| bal. in	| bal. out	| past in	| past out  |
-//| HPF				| HPF	|			| counter	|			|				|			| softener	| bal. in	| bal. out	| past in	| past out  |
-//| LPF				| LPF	|			| counter	|			|				|			| softener	| bal. in	| bal. out	| past in	| past out  |
-//| NOISE_GATE		| NGT	|			| counter	|			|				| threshold	| release	| bal. in	| bal. out	| past in	| past out  |
-//| OVERDRIVE		| OVR	|			| counter	| gain		| high thr. 	| low thr.	| softener  | bal. in	| bal. out	| past in	| past out  |
-//| OVERDRIVE_SQRT	| OVRS	|			| counter	| gain		| high thr. 	|			| softener  | bal. in	| bal. out	| past in	| past out  |
-//| TREMOLO			| TRM	|			| counter	|			|				| height	| speed		| bal. in	| bal. out	| past in	| past out  |
-//| WAGE GE			| WAV	|			| counter	|			|				| height	| speed		| bal. in	| bal. out	| past in	| past out  |
-
-#define INT_PARAM_TYPES 2
+#define INT_PARAM_TYPES 4
 
 enum int_param_type {
-    COUNTER,            // multipurpose counter
-    REDUCTION,   		// reduction intensity
+    REDUCTION,   		// reduction
+	DIVIDER,			// divider
+	HOLD,				// hold
+	// utils
+	COUNTER,            // counter
 };
 
-#define FLOAT_PARAM_TYPES 9
+#define FLOAT_PARAM_TYPES 11
 
 enum float_param_type {
-    INTENSITY,          // gain intensity
-    THRESHOLD_HIGH,     // high (e.g. clip) threshold
-    THRESHOLD_LOW,      // low (e.g. soft) threshold
-    SOFTENER,           // softener
-    BALANCE_IN,         // gain on input channel
-    BALANCE_OUT,        // gain on output channel
-    HEIGHT,             // height
-    SPEED,              // speed
-    PAST,               // past
+	GAIN,				// gain, pre-gain, drive
+	SPEED,			    // speed
+    ATTACK,             // attack
+	THRESHOLD,          // threshold
+	INTENSITY,			// intensity
+	RELEASE,            // release
+	LEVEL,				// level, volume
+	// mixing
+    LEVEL_DRY,          // / mixing input (dry) and... output (wet) channel
+	LEVEL_WET,          // \ ...output (wet) channel
+    // utils
+    PAST_DRY,               // past dry
+	PAST_WET,               // past wet
 };
 
 #define TOTAL_PARAM_TYPES (INT_PARAM_TYPES + FLOAT_PARAM_TYPES)
@@ -99,9 +97,10 @@ typedef struct _float_params_manifest_t {
 } float_params_manifest_t;
 
 enum param_qualifier {
-	FREQUENCY,
-	PERCENTAGE,
-	VALUE
+	FREQUENCY,		// always in Hz
+	PERCENTAGE,		//
+	VALUE,			//
+	TIME			// always in ms
 };
 
 typedef struct _params_manifest_t {

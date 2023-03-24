@@ -232,6 +232,8 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 					sprintf(row, "%l", hm->pedalboard.effects[selected].effect_formatted.config.int_params[j]);
 				} else if (manifest->qual == FREQUENCY) {
 					sprintf(row, "%l Hz", hm->pedalboard.effects[selected].effect_formatted.config.int_params[j]);
+				} else if (manifest->qual == TIME) {
+					sprintf(row, "%l ms", hm->pedalboard.effects[selected].effect_formatted.config.int_params[j]);
 				}
 				Painter_WriteString(image, row, left + 140, upper + row_index * 14, BOT_LEFT, SMALL);
 				row_index++;
@@ -248,6 +250,8 @@ void Menu_Render(Menu_HandleTypeDef *hm, enum render_types render) {
 					sprintf(row, "%.2f", hm->pedalboard.effects[selected].effect_formatted.config.float_params[j]);
 				} else if (manifest->qual == FREQUENCY) {
 					sprintf(row, "%.2f Hz", hm->pedalboard.effects[selected].effect_formatted.config.float_params[j]);
+				} else if (manifest->qual == TIME) {
+					sprintf(row, "%.2f ms", hm->pedalboard.effects[selected].effect_formatted.config.float_params[j]);
 				}
 				Painter_WriteString(image, row, left + 140, upper + row_index * 14, BOT_LEFT, SMALL);
 				row_index++;

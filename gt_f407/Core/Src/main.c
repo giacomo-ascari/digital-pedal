@@ -115,8 +115,8 @@ int16_t DAC_BUFF[SAMPLES_QUANTITY + SAMPLES_QUANTITY];
 // second SAMPLES_QUANTITY is just padding because DMA stuff
 
 // INTERMEDIATE
-uint16_t dsp_index = 0;
-int16_t DSP_BUFF[HALF_QUANTITY];
+uint16_t inter_dac_index = 0;
+int16_t INTER_DAC_BUFF[HALF_QUANTITY];
 // 0: 1st right
 // 1: 1st left
 // 2: 2nd right
@@ -159,14 +159,12 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 	hcommander.command_to_process = 1;
 }
 
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	UNUSED(huart);
 	memcpy(&(hcommander.in_command), hcommander.uart_rx_buffer + COMMAND_BYTESIZE, COMMAND_BYTESIZE);
 	hcommander.command_to_process = 1;
 }
-
 
 uint8_t usb_save() {
 
@@ -341,25 +339,23 @@ void DSP(uint8_t * buf, int16_t * out) {
 	// RAW (int16) and OUT (int16*) are input and output
 
 	// conversion of terrible adc i2s frame
-	uint32_t adc = 0x00000000 + (buf[1]<<24) + (buf[0]<<16) + (buf[3]<<8);
+	uint32_t _rearranged = 0x00000000 + (buf[1]<<24) + (buf[0]<<16) + (buf[3]<<8);
 
-	// cutting 24bits on 32bits frame to 16bits
-	int16_t raw = (adc >> 16);
+	int32_t rearranged = _rearranged;
 
-	// casting 16bits to 32bits float
-	// this leaves room for dsp operations
-	// that requires additional precision
+	int32_t raw = rearranged >> 8;
+
 	float mid = (float)raw;
 
 	// processing intermediate value
 	Pedalboard_Process(&hpedalboard, &mid);
 
 	// casting float to 16bits
-	*out = (int16_t)mid;
+	*out = (int16_t)(mid / 256);
 
 	// saving for debugging thingies
 	if (signal_index < SIGNAL_SIZE && signal_samples % plot_xscale == 0) {
-		signal_in[signal_index] = (raw * plot_yscale) >> 8;
+		signal_in[signal_index] = (raw * plot_yscale) >> 16;
 		signal_out[signal_index] = (*out * plot_yscale) >> 8;
 		signal_index++;
 	}
@@ -368,7 +364,7 @@ void DSP(uint8_t * buf, int16_t * out) {
 	if (spectrum_index < FFT_SAMPLES_COUNT) {
 		//float val = 0;
 		//wave_gen(&val, 's', spectrum_index / 2, 440.0);
-		spectrum_input[spectrum_index] = (float)raw;
+		spectrum_input[spectrum_index] = (float)raw / 256;
 		//spectrum_input[spectrum_index] = val;
 		spectrum_input[spectrum_index+1] = 0;
 		spectrum_index += 2;
@@ -418,27 +414,27 @@ void Mode_N_DSP(uint8_t * buf_tip, uint8_t * buf_ring, int16_t * out_tip, int16_
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		if (dsp_index < HALF_QUANTITY) {
+		if (inter_dac_index < HALF_QUANTITY) {
 			timer_start = __HAL_TIM_GET_COUNTER(&htim6);
-			Mode_N_DSP(&ADC_BUFF.ADC8[4], &ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index + 1], &DSP_BUFF[dsp_index]);
+			Mode_N_DSP(&ADC_BUFF.ADC8[4], &ADC_BUFF.ADC8[0], &INTER_DAC_BUFF[inter_dac_index + 1], &INTER_DAC_BUFF[inter_dac_index]);
 			timer_stop = __HAL_TIM_GET_COUNTER(&htim6);
 			timer_elapsed = timer_stop - timer_start;
-			//DSP(&ADC_BUFF.ADC8[0], &DSP_BUFF[dsp_index]); // ring (left)
-			//DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[dsp_index + 1]); // tip (right)
-			//DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
-			dsp_index += 2;
+			//DSP(&ADC_BUFF.ADC8[0], &DSP_BUFF[inter_dac_index]); // ring (left)
+			//DSP(&ADC_BUFF.ADC8[4], &DSP_BUFF[inter_dac_index + 1]); // tip (right)
+			//INTER_DAC_BUFF[inter_dac_index] = -DSP_BUFF[inter_dac_index + 1];
+			inter_dac_index += 2;
 		}
 	}
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 	if (hi2s->Instance == SPI2) {
-		if (dsp_index < HALF_QUANTITY) {
-			Mode_N_DSP(&ADC_BUFF.ADC8[12], &ADC_BUFF.ADC8[8], &DSP_BUFF[dsp_index + 1], &DSP_BUFF[dsp_index]);
-			//DSP(&ADC_BUFF.ADC8[8], &DSP_BUFF[dsp_index]); // ring (left)
-			//DSP(&ADC_BUFF.ADC8[12], &DSP_BUFF[dsp_index + 1]); // tip (right)
-			//DSP_BUFF[dsp_index] = -DSP_BUFF[dsp_index + 1];
-			dsp_index += 2;
+		if (inter_dac_index < HALF_QUANTITY) {
+			Mode_N_DSP(&ADC_BUFF.ADC8[12], &ADC_BUFF.ADC8[8], &INTER_DAC_BUFF[inter_dac_index + 1], &INTER_DAC_BUFF[inter_dac_index]);
+			//DSP(&ADC_BUFF.ADC8[8], &DSP_BUFF[inter_dac_index]); // ring (left)
+			//DSP(&ADC_BUFF.ADC8[12], &DSP_BUFF[inter_dac_index + 1]); // tip (right)
+			//DSP_BUFF[inter_dac_index] = -DSP_BUFF[inter_dac_index + 1];
+			inter_dac_index += 2;
 		}
 
 	}
@@ -446,16 +442,16 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
 
 void AUDIO_OUT_HalfTransfer_CallBack() {
 	for (uint16_t i = 0; i < HALF_QUANTITY; i++) {
-		DAC_BUFF[i] = DSP_BUFF[i];
+		DAC_BUFF[i] = INTER_DAC_BUFF[i];
 	}
-	dsp_index = 0;
+	inter_dac_index = 0;
 }
 
 void AUDIO_OUT_TransferComplete_CallBack() {
 	for (uint16_t i = 0; i < HALF_QUANTITY; i++) {
-		DAC_BUFF[HALF_QUANTITY + i] = DSP_BUFF[i];
+		DAC_BUFF[HALF_QUANTITY + i] = INTER_DAC_BUFF[i];
 	}
-	dsp_index = 0;
+	inter_dac_index = 0;
 }
 
 /* USER CODE END 0 */
@@ -507,7 +503,7 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	Pedalboard_SetEffect(&hpedalboard, WAVE_GEN, 0);
+	//Pedalboard_SetEffect(&hpedalboard, WAVE_GEN, 0);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);

@@ -1,0 +1,1 @@
+https://community.st.com/s/article/configuring-dsp-libraries-on-stm32cubeide

@@ -248,6 +248,7 @@ int main(void)
 			if (btn_flags[6]) {
 				// if low btn pressed
 				btn_flags[6] = 0;
+				btn_flags[7] = 0;
 				if (!hmenu.edit_active) {
 					// going to edit mode
 					hmenu.edit_active = 1;

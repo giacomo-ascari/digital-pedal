@@ -17,7 +17,13 @@ void amplifier_process(float *value, effect_config_t *conf);
 
 void bitcrusher_rs_process(float *value, effect_config_t *conf);
 
-//void bypass_process(float *value, effect_config_t *conf);
+void bitcrusher_rt_process(float *value, effect_config_t *conf);
+
+void bypass_process(float *value, effect_config_t *conf);
+
+void compressor_process(float *value, effect_config_t *conf);
+
+void dyn_compressor_process(float *value, effect_config_t *conf);
 
 void fuzz_process(float *value, effect_config_t *conf);
 
@@ -36,8 +42,6 @@ void tremolo_process(float *value, effect_config_t *conf);
 void wave_gen_process(float *value, effect_config_t *conf);
 
 void mix(float *raw_in, float *raw_out, float *proc_out, effect_config_t *conf);
-void hard_clip(float *value, effect_config_t *conf);
-void soft_clip(float *value, effect_config_t *conf);
 void square_root(float *value);
 void wave_gen(float *out, char t, uint32_t i, float tone);
 
@@ -46,80 +50,82 @@ void wave_gen(float *out, char t, uint32_t i, float tone);
 
 const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[AMPLIFIER] = (effect_manifest_t){"amp","amplifier"},
-		[AMPLIFIER].params_manifest.float_params_manifest[INTENSITY] = (float_params_manifest_t)		{ 1, "Intensity", 1.0, 0.0, 10.0, VALUE },
-		[AMPLIFIER].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Max threshold", 32767, 0, 32767, PERCENTAGE },
-		[AMPLIFIER].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)		{ 1, "Balance IN", 0, 0, 1.0, PERCENTAGE },
-		[AMPLIFIER].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1, 0, 1.0, PERCENTAGE },
+		[AMPLIFIER].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)		{ 1, "Gain", 1.0, 0.0, 5.0, VALUE },
 		[AMPLIFIER].effect_process = amplifier_process,
 
 		[BITCRUSHER_RS] = (effect_manifest_t){"brs","bitcrusher rs"},
-		[BITCRUSHER_RS].params_manifest.int_params_manifest[REDUCTION] = (int_params_manifest_t)		{ 1, "Reduction intens.", 4, 1, 16, VALUE },
-		[BITCRUSHER_RS].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)	{ 1, "Balance IN", 0.9, 0, 1.F, PERCENTAGE },
-		[BITCRUSHER_RS].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)	{ 1, "Balance OUT", 0.1, 0, 1.F, PERCENTAGE },
+		[BITCRUSHER_RS].params_manifest.int_params_manifest[REDUCTION] = (int_params_manifest_t)		{ 1, "Bit reduction", 4, 1, 16, VALUE },
+		[BITCRUSHER_RS].params_manifest.float_params_manifest[LEVEL_DRY] = (float_params_manifest_t)	{ 1, "Level dry", 0.5, 0.0, 1.0, PERCENTAGE },
+		[BITCRUSHER_RS].params_manifest.float_params_manifest[LEVEL_WET] = (float_params_manifest_t)	{ 1, "Level wet", 0.5, 0.0, 1.0, PERCENTAGE },
 		[BITCRUSHER_RS].effect_process = bitcrusher_rs_process,
 
 		[BITCRUSHER_RT] = (effect_manifest_t){"brt","bitcrusher rt"},
-		[BITCRUSHER_RT].params_manifest.int_params_manifest[REDUCTION] = (int_params_manifest_t)		{ 1, "Reduction intens.", 12, 1, 16, VALUE },
-		[BITCRUSHER_RT].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)	{ 1, "Balance IN", 0.5, 0, 1.F, PERCENTAGE },
-		[BITCRUSHER_RT].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)	{ 1, "Balance OUT", 0.5, 0, 1.F, PERCENTAGE },
-		[BITCRUSHER_RT].effect_process = bitcrusher_rs_process,
+		[BITCRUSHER_RT].params_manifest.int_params_manifest[DIVIDER] = (int_params_manifest_t)			{ 1, "Rate divider", 4, 1, 16, VALUE },
+		[BITCRUSHER_RT].params_manifest.float_params_manifest[LEVEL_DRY] = (float_params_manifest_t)	{ 1, "Level dry", 0.5, 0.0, 1.0, PERCENTAGE },
+		[BITCRUSHER_RT].params_manifest.float_params_manifest[LEVEL_WET] = (float_params_manifest_t)	{ 1, "Level wet", 0.5, 0.0, 1.0, PERCENTAGE },
+		[BITCRUSHER_RT].effect_process = bitcrusher_rt_process,
 
 		[BYPASS] = (effect_manifest_t){"","bypass"},
+		[BYPASS].effect_process = bypass_process,
+
+		[COMPRESSOR] = (effect_manifest_t){"cmp","compressor"},
+		[COMPRESSOR].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)		{ 1, "Gain", 1.0, 0.0, 5.0, VALUE },
+		[COMPRESSOR].effect_process = compressor_process,
+
+		[DYN_COMPRESSOR] = (effect_manifest_t){"dcmp","dynamic compressor"},
+		[DYN_COMPRESSOR].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)		{ 1, "Gain", 1.0, 0.0, 5.0, VALUE },
+		[DYN_COMPRESSOR].effect_process = dyn_compressor_process,
 
 		[FUZZ] = (effect_manifest_t){"fzz","fuzz"},
-		[FUZZ].params_manifest.float_params_manifest[INTENSITY] = (float_params_manifest_t)				{ 1, "Intensity", 4, 0, 10, VALUE },
-		[FUZZ].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)		{ 1, "Max threshold", 32767, 0, 32767, PERCENTAGE },
-		[FUZZ].params_manifest.float_params_manifest[HEIGHT] = (float_params_manifest_t)				{ 1, "Height", 2048, 0, 32767, PERCENTAGE },
-		[FUZZ].params_manifest.float_params_manifest[SPEED] = (float_params_manifest_t)					{ 1, "Speed", 1, 0, 10, VALUE },
-		[FUZZ].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)			{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[FUZZ].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)			{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[FUZZ].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)				{ 1, "Gain", 4.0, 1.0, 10.0, VALUE },
+		[FUZZ].params_manifest.float_params_manifest[LEVEL] = (float_params_manifest_t)				{ 1, "Level", 0.3, 0.0, 1.0, PERCENTAGE },
+		[FUZZ].params_manifest.float_params_manifest[LEVEL_DRY] = (float_params_manifest_t)			{ 1, "Level dry", 0.F, 0.F, 1.F, PERCENTAGE },
+		[FUZZ].params_manifest.float_params_manifest[LEVEL_WET] = (float_params_manifest_t)			{ 1, "Level wet", 1.F, 0.F, 1.F, PERCENTAGE },
 		[FUZZ].effect_process = fuzz_process,
 
 		[HPF] = (effect_manifest_t){"hpf","high pass filter"},
-		[HPF].params_manifest.float_params_manifest[SOFTENER] = (float_params_manifest_t)				{ 1, "Softener", 0.1, 0, 1, VALUE },
-		[HPF].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)				{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[HPF].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)			{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[HPF].params_manifest.float_params_manifest[ATTACK] = (float_params_manifest_t)			{ 1, "Attack", 0.1, 0.0, 1.0, VALUE },
+		[HPF].params_manifest.float_params_manifest[PAST_DRY] = (float_params_manifest_t)		{ 0, "", 0, 0, 0, VALUE },
+		[HPF].params_manifest.float_params_manifest[PAST_WET] = (float_params_manifest_t)		{ 0, "", 0, 0, 0, VALUE },
 		[HPF].effect_process = high_pass_filter_process,
 
 		[LPF] = (effect_manifest_t){"lpf","low pass filter"},
-		[LPF].params_manifest.float_params_manifest[SOFTENER] = (float_params_manifest_t)				{ 1, "Softener", 0.1, 0, 1, VALUE },
-		[LPF].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)				{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[LPF].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)			{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[LPF].params_manifest.float_params_manifest[ATTACK] = (float_params_manifest_t)			{ 1, "Attack", 0.1, 0.0, 1.0, VALUE },
+		[LPF].params_manifest.float_params_manifest[PAST_DRY] = (float_params_manifest_t)		{ 0, "", 0.0, 0.0, 0.0, VALUE },
+		[LPF].params_manifest.float_params_manifest[PAST_WET] = (float_params_manifest_t)		{ 0, "", 0.0, 0.0, 0.0, VALUE },
 		[LPF].effect_process = low_pass_filter_process,
 
 		[NOISE_GATE] = (effect_manifest_t){"ngt","noise gate"},
-		[NOISE_GATE].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Min threshold", 0, 0, 1024, PERCENTAGE },
-		[NOISE_GATE].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)		{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[NOISE_GATE].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[NOISE_GATE].params_manifest.float_params_manifest[THRESHOLD] = (float_params_manifest_t)		{ 1, "Threshold", 0.1, 0.0, 1.0, PERCENTAGE },
+		[NOISE_GATE].params_manifest.float_params_manifest[INTENSITY] = (float_params_manifest_t)		{ 1, "Intensity", 0.5, 0.0, 1.0, PERCENTAGE },
+		[NOISE_GATE].params_manifest.float_params_manifest[HOLD] = (float_params_manifest_t)			{ 1, "Hold", 500.0, 0.0, 1000.0, TIME },
+		[NOISE_GATE].params_manifest.int_params_manifest[COUNTER] = (int_params_manifest_t) 			{ 0, "", 0, 0, 0, VALUE},
 		[NOISE_GATE].effect_process = noise_gate_process,
 
 		[OVERDRIVE] = (effect_manifest_t){"ovr","overdrive"},
-		[OVERDRIVE].params_manifest.float_params_manifest[INTENSITY] = (float_params_manifest_t)		{ 1, "Intensity", 10, 0, 100, VALUE },
-		[OVERDRIVE].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Max threshold", 32767.F, 0.F, 32767.F, PERCENTAGE },
-		[OVERDRIVE].params_manifest.float_params_manifest[THRESHOLD_LOW] = (float_params_manifest_t)	{ 1, "Level threshold", 28000.F, 0, 32767.F, PERCENTAGE },
-		[OVERDRIVE].params_manifest.float_params_manifest[SOFTENER] = (float_params_manifest_t)			{ 1, "Softener", 1, 0, 10, VALUE },
-		[OVERDRIVE].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)		{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[OVERDRIVE].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[OVERDRIVE].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)				{ 1, "Gain", 4.0, 1.0, 10.0, VALUE },
+		[OVERDRIVE].params_manifest.float_params_manifest[LEVEL] = (float_params_manifest_t)			{ 1, "Level", 0.3, 0.0, 1.0, PERCENTAGE },
+		[OVERDRIVE].params_manifest.float_params_manifest[LEVEL_DRY] = (float_params_manifest_t)		{ 1, "Level dry", 0.F, 0.F, 1.F, PERCENTAGE },
+		[OVERDRIVE].params_manifest.float_params_manifest[LEVEL_WET] = (float_params_manifest_t)		{ 1, "Level wet", 1.F, 0.F, 1.F, PERCENTAGE },
 		[OVERDRIVE].effect_process = overdrive_process,
 
-		[OVERDRIVE_SQRT] = (effect_manifest_t){"ovrs","overdrive s"},
-		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[INTENSITY] = (float_params_manifest_t)		{ 1, "Intensity", 100, 0, 1000, VALUE },
-		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[THRESHOLD_HIGH] = (float_params_manifest_t)	{ 1, "Max threshold", 32767.F, 0.F, 32767.F, PERCENTAGE },
-		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)		{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[OVERDRIVE_SQRT] = (effect_manifest_t){"ovrs","overdrive sqrt"},
+		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)			{ 1, "Gain", 4.0, 1.0, 10.0, VALUE },
+		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[LEVEL] = (float_params_manifest_t)			{ 1, "Level", 0.3, 0.0, 1.0, PERCENTAGE },
+		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[LEVEL_DRY] = (float_params_manifest_t)		{ 1, "Level dry", 0.0, 0.0, 1.0, PERCENTAGE },
+		[OVERDRIVE_SQRT].params_manifest.float_params_manifest[LEVEL_WET] = (float_params_manifest_t)		{ 1, "Level wet", 1.0, 0.0, 1.0, PERCENTAGE },
 		[OVERDRIVE_SQRT].effect_process = overdrive_sqrt_process,
 
 		[TREMOLO] = (effect_manifest_t){"trm","tremolo"},
-		[TREMOLO].params_manifest.float_params_manifest[SPEED] = (float_params_manifest_t)				{ 1, "Speed", 2, 0, 10, VALUE },
-		[TREMOLO].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)			{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[TREMOLO].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[TREMOLO].params_manifest.float_params_manifest[SPEED] = (float_params_manifest_t)				{ 1, "Speed", 1, 0, 12, VALUE },
 		[TREMOLO].effect_process = tremolo_process,
 
 		[WAVE_GEN] = (effect_manifest_t){"wav","wave gen."},
-		[WAVE_GEN].params_manifest.float_params_manifest[HEIGHT] = (float_params_manifest_t)			{ 1, "Height", 2048, 0, 32767, PERCENTAGE },
+		[WAVE_GEN].params_manifest.float_params_manifest[LEVEL] = (float_params_manifest_t)				{ 1, "Amplitude", 0.1, 0.0, 0.5, PERCENTAGE },
 		[WAVE_GEN].params_manifest.float_params_manifest[SPEED] = (float_params_manifest_t)				{ 1, "Speed", 440, 110, 880, VALUE },
-		[WAVE_GEN].params_manifest.float_params_manifest[BALANCE_IN] = (float_params_manifest_t)		{ 1, "Balance IN", 0.F, 0.F, 1.F, PERCENTAGE },
-		[WAVE_GEN].params_manifest.float_params_manifest[BALANCE_OUT] = (float_params_manifest_t)		{ 1, "Balance OUT", 1.F, 0.F, 1.F, PERCENTAGE },
+		[WAVE_GEN].params_manifest.float_params_manifest[LEVEL_DRY] = (float_params_manifest_t)			{ 1, "Level dry", 0.5, 0.0, 1.0, PERCENTAGE },
+		[WAVE_GEN].params_manifest.float_params_manifest[LEVEL_WET] = (float_params_manifest_t)			{ 1, "Level wet", 0.5, 0.0, 1.0, PERCENTAGE },
+		[WAVE_GEN].params_manifest.int_params_manifest[COUNTER] = (int_params_manifest_t) 				{ 0, "", 0, 0, 0, VALUE},
 		[WAVE_GEN].effect_process = wave_gen_process
 };
 
@@ -169,16 +175,18 @@ void Pedalboard_DeleteEffect(Pedalboard_Handler *p_pb, uint8_t i) {
 }
 
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value) {
-    float pre;
     if (p_pb->active) {
     	for (uint8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
     		uint8_t type = p_pb->effects[i].effect_formatted.type;
     		if (type != BYPASS) {
-    			pre = *value;
     			Effects_Manifest[type].effect_process(value, &(p_pb->effects[i].effect_formatted.config));
-    			mix(&pre, value, value, &(p_pb->effects[i].effect_formatted.config));
     		}
         }
+    	if (*value > MAX_VAL) {
+			*value = MAX_VAL;
+		} else if (*value < MIN_VAL) {
+			*value = MIN_VAL;
+		}
     }
 }
 
@@ -232,83 +240,110 @@ void Pedalboard_GetActiveParamsByType(uint8_t active_index, uint8_t type, uint8_
 // AMPLIFIER
 
 void amplifier_process(float *value, effect_config_t *conf) {
-    *value *= conf->float_params[INTENSITY];
-    hard_clip(value, conf);
+    *value *= conf->float_params[GAIN];
 }
 
 // BITCRUSHER resolution
 
 void bitcrusher_rs_process(float *value, effect_config_t *conf) {
-    int16_t shift = conf->int_params[REDUCTION];
-    int16_t _out = (int16_t)*value;
+	float dry = *value;
+    int32_t shift = conf->int_params[REDUCTION];
+    int32_t _out = (int32_t)*value;
     _out = (_out >> shift);
     _out = (_out << shift);
     _out += (2 << (shift -2));
     *value = _out;
+    mix(&dry, value, value, conf);
+}
+
+// BITCRUSHER rate
+
+void bitcrusher_rt_process(float *value, effect_config_t *conf) {
+	float dry = *value;
+    // keep the same value until n of ticks
+    mix(&dry, value, value, conf);
 }
 
 // BYPASS
-/*
+
 void bypass_process(float *value, effect_config_t *conf) {
     return;
-}*/
+}
+
+// COMPRESSOR
+
+void compressor_process(float *value, effect_config_t *conf) {
+	return;
+}
+
+// DYNAMIC COMPRESSOR
+
+void dyn_compressor_process(float *value, effect_config_t *conf) {
+	return;
+}
+
 
 // FUZZ
 
 void fuzz_process(float *value, effect_config_t *conf) {
-	float tone = 440.0F;
-	float wave;
-	*value *= conf->float_params[INTENSITY];
-	hard_clip(value, conf);
-	if (*value == conf->float_params[THRESHOLD_HIGH]) {
-		wave_gen(&wave, 's', conf->int_params[COUNTER], tone * conf->float_params[SPEED]);
-		*value += (wave - 1) * conf->float_params[HEIGHT];
-	} else if (*value == - conf->float_params[THRESHOLD_HIGH] - 1.F) {
-		wave_gen(&wave, 's', conf->int_params[COUNTER], tone * conf->float_params[SPEED]);
-		*value += (wave + 1) * conf->float_params[HEIGHT];
-	}
+	float dry = *value;
+	// distort and clip the hell out of it
+	mix(&dry, value, value, conf);
 }
 
 // HPF
 
 void high_pass_filter_process(float *value, effect_config_t *conf) {
-	//new_hpf = (prev_hpf + new_sample - prev_sample) / (1 + time_constant/sample_period)
-
-    float alpha = conf->float_params[SOFTENER];
-    *value = conf->float_params[PAST] * alpha + (1.F - alpha) * *value;
-    conf->float_params[PAST] = *value;
+	float dry = *value;
+	// alpha is attack
+	*value = (1.0 - conf->float_params[ATTACK]) * (conf->float_params[PAST_WET] + *value - conf->float_params[PAST_DRY]);
+	conf->float_params[PAST_DRY] = dry;
+    conf->float_params[PAST_WET] = *value;
 }
 
 // LPF
 
 void low_pass_filter_process(float *value, effect_config_t *conf) {
-    float alpha = conf->float_params[SOFTENER];
-    *value = conf->float_params[PAST] * alpha + (1.F - alpha) * *value;
-    conf->float_params[PAST] = *value;
+	//float dry = *value;
+	// alpha is attack
+	*value = conf->float_params[PAST_WET] + (1.0 - conf->float_params[ATTACK]) * (*value - conf->float_params[PAST_WET]);
+	//conf->float_params[PAST_DRY] = dry;
+    conf->float_params[PAST_WET] = *value;
 }
 
 // NOISE GATE
 
 void noise_gate_process(float *value, effect_config_t *conf) {
-    if (*value < conf->float_params[THRESHOLD_HIGH] && *value >= -conf->float_params[THRESHOLD_HIGH]) {
-    	*value = 0;
+	if (fabsf(*value) < MAX_VAL * conf->float_params[THRESHOLD]) {
+    	conf->int_params[COUNTER]++;
+    } else {
+    	conf->int_params[COUNTER] = 0;
     }
+	// x / 48 = y
+	// (x / a) * (a / 48) = y
+	// x * (a/48) / a = y
+	// se a pot. di due allora bitshift e non si fanno divisioni
+	// 4096/48 = 85.333
+	// 4096 = 2^12
+	if ((conf->int_params[COUNTER] * 85 >> 12) > conf->int_params[HOLD]) {
+		*value *=  (1.0 - conf->float_params[INTENSITY]);
+	}
 }
 
 // OVERDRIVE
 
 void overdrive_process(float *value, effect_config_t *conf) {
-    *value *=  conf->float_params[INTENSITY];
-    soft_clip(value, conf);
-    hard_clip(value, conf);
+	float dry = *value;
+	// distort and clip the hell out of it
+	mix(&dry, value, value, conf);
 }
 
 // OVERDRIVE_SQRT
 
 void overdrive_sqrt_process(float *value, effect_config_t *conf) {
-    square_root(value);
-    *value *= conf->float_params[INTENSITY];
-    hard_clip(value, conf);
+	float dry = *value;
+	// distort and clip the hell out of it
+	mix(&dry, value, value, conf);
 }
 
 // TREMOLO
@@ -321,38 +356,18 @@ void tremolo_process(float *value, effect_config_t *conf) {
 
 // WAVE GEN
 
-
 void wave_gen_process(float *value, effect_config_t *conf) {
-	wave_gen(value, 's', conf->int_params[COUNTER], conf->float_params[SPEED]);
-	*value *= conf->float_params[HEIGHT];
-	//duplicate = conf->float_params[HEIGHT] * sin (6.283185307179586476925286766559 * conf->float_params[SPEED] * conf->int_params[COUNTER] / 48000.F);
+	float wave = 0.0;
+	wave_gen(&wave, 's', conf->int_params[COUNTER], conf->float_params[SPEED]);
+	wave *= (conf->float_params[LEVEL] * MAX_VAL);
 	conf->int_params[COUNTER]++;
+	mix(&wave, value, value, conf);
 }
-
 
 // DSP
 
-void mix(float *raw_in, float *raw_out, float *proc_out, effect_config_t *conf) {
-	*proc_out = *raw_in * conf->float_params[BALANCE_IN] + *raw_out * conf->float_params[BALANCE_OUT];
-}
-
-void hard_clip(float *value, effect_config_t *conf) {
-	float thr = conf->float_params[THRESHOLD_HIGH];
-    if (*value > thr) {
-    	*value = thr;
-    } else if (*value < -thr) {
-    	*value = -thr - 1.;
-    }
-}
-
-void soft_clip(float *value, effect_config_t *conf) {
-	float thr = conf->float_params[THRESHOLD_LOW];
-	float soft = conf->float_params[SOFTENER];
-    if (*value > thr) {
-    	*value = thr + (*value - thr) / soft;
-    } else if (*value < -thr) {
-    	*value = -thr + (*value + thr) / soft;
-    }
+void mix(float *dry_in, float *wet_in, float *wet_out, effect_config_t *conf) {
+	*wet_out = *dry_in * conf->float_params[LEVEL_DRY] + *wet_in * conf->float_params[LEVEL_WET];
 }
 
 void square_root(float *value) {
