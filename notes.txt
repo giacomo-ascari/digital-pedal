@@ -1,1 +1,3 @@
 https://community.st.com/s/article/configuring-dsp-libraries-on-stm32cubeide
+
+https://www.st.com/en/embedded-software/stm32cubef4.html

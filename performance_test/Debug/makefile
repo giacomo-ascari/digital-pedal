@@ -61,7 +61,7 @@ main-build: performance_test.elf secondary-outputs
 
 # Tool invocations
 performance_test.elf performance_test.map: $(OBJS) $(USER_OBJS) C:\Users\Giacomo\Desktop\digital-pedal\performance_test\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "performance_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Giacomo\Desktop\digital-pedal\performance_test\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="performance_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "performance_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Giacomo\Desktop\digital-pedal\performance_test\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="performance_test.map" -Wl,--gc-sections -static -L"C:\Users\Giacomo\Desktop\digital-pedal\performance_test\Drivers\CMSIS\Lib\GCC" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
