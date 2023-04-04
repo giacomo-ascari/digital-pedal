@@ -21,9 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "epddriver.h"
+#include "ili9341.h"
 #include "commander.h"
-#include "painter2.h"
+#include "lcd_painter.h"
 #include "rencoder.h"
 #include "menu.h"
 #include <string.h>
@@ -57,7 +57,7 @@ DMA_HandleTypeDef hdma_usart3_rx;
 
 Commander_HandleTypeDef hcommander;
 
-Menu_HandleTypeDef hmenu;
+Menu_Data menu_data;
 
 uint16_t btn_pins[8] = { BTN1_Pin, BTN2_Pin, BTN3_Pin, BTN4_Pin, BTN5_Pin, BTN6_Pin, BTN_ENC1_Pin, BTN_ENC2_Pin };
 GPIO_TypeDef * btn_ports[8] = { BTN1_GPIO_Port, BTN2_GPIO_Port, BTN3_GPIO_Port, BTN4_GPIO_Port, BTN5_GPIO_Port, BTN6_GPIO_Port, BTN_ENC1_GPIO_Port, BTN_ENC2_GPIO_Port };
@@ -65,9 +65,6 @@ uint8_t btn_flags[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 uint16_t led_pins[6] = { LD1_Pin, LD2_Pin, LD3_Pin, LD4_Pin, LD5_Pin, LD6_Pin };
 GPIO_TypeDef * led_ports[6] = { LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port, LD4_GPIO_Port, LD5_GPIO_Port, LD6_GPIO_Port };
-
-//float display_array[296];
-EPD_HandleTypeDef hepd1;
 
 RE_HandleTypeDef hre1;
 RE_HandleTypeDef hre2;
@@ -166,6 +163,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+
 	// Turning on all LEDs
 	for (uint8_t i = 0; i < 6; i++)
 		HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_SET);
@@ -180,26 +178,37 @@ int main(void)
 	HAL_TIM_Base_Start_IT(&htim3);
 
 	// Display and splash screen
-	EPD_Init(&hepd1);
-	EPD_Clear(&hepd1);
-	Painter_Clean(hepd1.image);
-	Painter_WriteString(hepd1.image, "G33KY TOAD", (296 - 10 * 12) / 2, 30, BOT_LEFT, LARGE);
-	Painter_WriteString(hepd1.image, "@", 50, (296 - 1 * 18) / 2, TOP_LEFT, LARGE);
-	Painter_WriteString(hepd1.image, "BY GIACOMO ASCARI", (296 - 17 * 10) / 2, 70, BOT_LEFT, MEDIUM);
-	Painter_WriteString(hepd1.image, "AND EVGENY DEMENEV", (296 - 18 * 10) / 2, 90, BOT_LEFT, MEDIUM);
-	EPD_Display(&hepd1);
-	EPD_Sleep(&hepd1);
+
+	ILI9341_Init(&hspi1, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port, LCD_DC_Pin, LCD_RST_GPIO_Port, LCD_RST_Pin);
+	ILI9341_setRotation(4);
+	ILI9341_Fill(COLOR_WHITE);
+
+	LCD_Painter_DrawText("G33KY TOAD", (320 - 10 * 12) / 2, 48, COLOR_BLACK, COLOR_WHITE, LARGE);
+	LCD_Painter_DrawText("@", (320 - 1 * 18) / 2, 78, COLOR_BLACK, COLOR_WHITE, LARGE);
+	LCD_Painter_DrawText("BY GIACOMO ASCARI", (320 - 17 * 10) / 2, 108, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+	LCD_Painter_DrawText("AND EVGENY DEMENEV", (320 - 18 * 10) / 2, 124, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+
+	// Now ready
+	HAL_Delay(1000);
+	//LCD_Painter_EraseText(40, 0, 48, COLOR_WHITE, LARGE);
+	//LCD_Painter_EraseText(40, 0, 78, COLOR_WHITE, LARGE);
+	//LCD_Painter_EraseText(40, 0, 108, COLOR_WHITE, MEDIUM);
+	//LCD_Painter_EraseText(40, 0, 124, COLOR_WHITE, MEDIUM);
 
 	// Menu
-	uint8_t new_page;
-	Menu_Init(&hmenu, &hcommander, &hepd1);
-	Menu_Sync(&hmenu, GET_PB);
-	Menu_Sync(&hmenu, GET_LOAD);
-	Menu_Render(&hmenu, FULL);
+	enum Menu_PageType new_page;
+	Menu_Init(&menu_data, &hcommander);
+	Menu_Sync(&menu_data, GET_PB);
+	Menu_Sync(&menu_data, GET_LOAD);
+
+	Menu_GoTo(&menu_data, OVERVIEW, 1);
+	Menu_Render(&menu_data);
 
 	// Turning off
 		for (uint8_t i = 0; i < 6; i++)
 			HAL_GPIO_WritePin(led_ports[i], led_pins[i], GPIO_PIN_RESET);
+
+
 
   /* USER CODE END 2 */
 
@@ -211,7 +220,9 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-		new_page = hmenu.selected_page;
+		// assume new_page will be the same as the current one
+		new_page = menu_data.page;
+		// change in case the buttons did the thing
 		for (uint8_t i = 0; i < 6; i++) {
 			if (btn_flags[i]) {
 				btn_flags[i] = 0;
@@ -219,127 +230,172 @@ int main(void)
 			}
 		}
 
-		for (uint8_t i = 0; i < 6; i++)  {
-			HAL_GPIO_WritePin(led_ports[i], led_pins[i], i == new_page ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		}
-
-		if (Menu_GoTo(&hmenu, new_page)) {
-
+		// change page
+		if (Menu_GoTo(&menu_data, new_page, 0)) {
+			// if page did change, reset interface
 			RE_Reset(&hre1);
 			RE_Reset(&hre2);
 			btn_flags[6] = 0;
 			btn_flags[7] = 0;
-
+			// PAGE CHANGE EVENT (one time)
+			if (menu_data.page == OVERVIEW) {
+				Menu_Sync(&menu_data, GET_PB);
+			} else if (menu_data.page == PLOT) {
+				// nothin'
+			} else if (menu_data.page == EDIT) {
+				Menu_Sync(&menu_data, GET_PB);
+			} else if (menu_data.page == MODE) {
+				Menu_Sync(&menu_data, GET_PB);
+			}
 		}
 
+		// activate led corresponding to the page
+		for (uint8_t i = 0; i < 6; i++)  {
+			HAL_GPIO_WritePin(led_ports[i], led_pins[i], i == menu_data.page ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		}
+
+
 		// MENU PERIODIC AND USER EVENTS
-		if (hmenu.selected_page == OVERVIEW) {
-			Menu_Sync(&hmenu, GET_PB);
-			Menu_Sync(&hmenu, GET_LOAD);
-			Menu_Render(&hmenu, PARTIAL);
+		if (menu_data.page == OVERVIEW) {
 
-		} else if (hmenu.selected_page == PLOT) {
-			hmenu.plot_xscale = RE_GetCount(&hre1, 100) + 1;
-			hmenu.plot_yscale = RE_GetCount(&hre2, 100) + 1;
-			Menu_Sync(&hmenu, GET_SIGNALS);
-			Menu_Render(&hmenu, PARTIAL);
+			// periodic event
+			if (HAL_GetTick() > menu_data.tick + sync_interval[OVERVIEW]) {
+				menu_data.tick = HAL_GetTick();
+				Menu_Sync(&menu_data, GET_LOAD);
+			}
 
-		} else if (hmenu.selected_page == EDIT) {
+		} else if (menu_data.page == PLOT) {
+
+			// user events
+			menu_data.plot_data.xscale = RE_GetCount(&hre1, 100) + 1;
+			menu_data.plot_data.yscale = RE_GetCount(&hre2, 100) + 1;
+			if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+			if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+
+			// periodic
+			if (HAL_GetTick() > menu_data.tick + sync_interval[PLOT]) {
+				menu_data.tick = HAL_GetTick();
+				Menu_Sync(&menu_data, GET_SIGNALS);
+			}
+
+		} else if (menu_data.page == EDIT) {
+
+			if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+			if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+
+			// user event (to and from edit mode)
 			if (btn_flags[6]) {
 				// if low btn pressed
 				btn_flags[6] = 0;
 				btn_flags[7] = 0;
-				if (!hmenu.edit_active) {
+				if (!menu_data.edit_data.active) {
 					// going to edit mode
-					hmenu.edit_active = 1;
-					hmenu.edit_oldvalue1 = hre1.counter;
-					hmenu.edit_oldvalue2 = hre2.counter;
-					hmenu.edit_initialvalue1 = hre1.counter;
-					hmenu.edit_initialvalue2 = hre2.counter;
+					menu_data.edit_data.active = 1;
+					menu_data.edit_data.oldvalue1 = hre1.counter;
+					menu_data.edit_data.oldvalue2 = hre2.counter;
+					menu_data.edit_data.initialvalue1 = hre1.counter;
+					menu_data.edit_data.initialvalue2 = hre2.counter;
+					menu_data.cursor1_changed = 1;
+					menu_data.cursor2_changed = 1;
 				} else {
 					// exiting edit mode
-					hmenu.edit_active = 0;
-					hre1.counter = hmenu.edit_initialvalue1;
-					hre2.counter = hmenu.edit_initialvalue2;
-					Menu_Sync(&hmenu, SET_PB);
+					menu_data.edit_data.active = 0;
+					hre1.counter = menu_data.edit_data.initialvalue1;
+					hre2.counter = menu_data.edit_data.initialvalue2;
+					Menu_Sync(&menu_data, SET_PB);
+					menu_data.cursor1_changed = 1;
+					menu_data.cursor2_changed = 1;
+					menu_data.pedalboard_changed = 1;
 				}
 			}
-			if (hmenu.edit_active) {
+
+			// user event (if edit mode is active)
+			if (menu_data.edit_data.active) {
 				// if edit is active
-				uint8_t type = hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type;
+				uint8_t type = menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.type;
 				uint8_t index, _int;
-				Pedalboard_GetActiveParamsByType(hmenu.edit_index1, type, &_int, &index);
-				effect_config_t *conf = &(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.config);
+				Pedalboard_GetActiveParamsByType(menu_data.edit_data.index1, type, &_int, &index);
+				effect_config_t *conf = &(menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.config);
 				if (_int) {
 					// integer parameter
 					int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[index]);
 					int32_t micro_step = (manifest->max - manifest->min) / 100;
 					int32_t macro_step = (manifest->max - manifest->min) / 10;
-					conf->int_params[index] += micro_step * (hre1.counter - hmenu.edit_oldvalue1);
-					conf->int_params[index] += macro_step * (hre2.counter - hmenu.edit_oldvalue2);
+					conf->int_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
+					conf->int_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
 					if (conf->int_params[index] > manifest->max) conf->int_params[index] = manifest->max;
 					if (conf->int_params[index] < manifest->min) conf->int_params[index] = manifest->min;
-					hmenu.edit_oldvalue1 = hre1.counter;
-					hmenu.edit_oldvalue2 = hre2.counter;
+					menu_data.edit_data.oldvalue1 = hre1.counter;
+					menu_data.edit_data.oldvalue2 = hre2.counter;
 				} else {
 					// float parameter
 					float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[index]);
 					float micro_step = (manifest->max - manifest->min) / 100;
 					float macro_step = (manifest->max - manifest->min) / 10;
-					conf->float_params[index] += micro_step * (hre1.counter - hmenu.edit_oldvalue1);
-					conf->float_params[index] += macro_step * (hre2.counter - hmenu.edit_oldvalue2);
+					conf->float_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
+					conf->float_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
 					if (conf->float_params[index] > manifest->max) conf->float_params[index] = manifest->max;
 					if (conf->float_params[index] < manifest->min) conf->float_params[index] = manifest->min;
-					hmenu.edit_oldvalue1 = hre1.counter;
-					hmenu.edit_oldvalue2 = hre2.counter;
+					menu_data.edit_data.oldvalue1 = hre1.counter;
+					menu_data.edit_data.oldvalue2 = hre2.counter;
 				}
 			} else {
-				hmenu.edit_index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type));
-				hmenu.edit_index2 = RE_GetCount(&hre2, MAX_EFFECTS_COUNT);
+				// update indexes
+				menu_data.edit_data.index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.type));
+				menu_data.edit_data.index2 = RE_GetCount(&hre2, MAX_EFFECTS_COUNT);
 				if (btn_flags[7]) {
+					// go to next effect
 					btn_flags[7] = 0;
 					Pedalboard_SetEffect(
-							&(hmenu.pedalboard),
-							(hmenu.pedalboard.effects[hmenu.edit_index2].effect_formatted.type + 1) % EFFECT_TYPES,
-							hmenu.edit_index2);
-					Menu_Sync(&hmenu, SET_PB);
+							&(menu_data.pedalboard),
+							(menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.type + 1) % EFFECT_TYPES,
+							menu_data.edit_data.index2);
+					Menu_Sync(&menu_data, SET_PB);
+					menu_data.pedalboard_changed = 1;
 				}
 			}
-			Menu_Render(&hmenu, PARTIAL);
 
-		} else if (hmenu.selected_page == MODE) {
-			hmenu.mode_input_selected = RE_GetCount(&hre1, MODE_TYPES);
-			hmenu.mode_output_selected = RE_GetCount(&hre2, MODE_TYPES);
+		} else if (menu_data.page == MODE) {
+
+			// user event
+			menu_data.mode_data.input_selected = RE_GetCount(&hre1, MODE_TYPES);
+			menu_data.mode_data.output_selected = RE_GetCount(&hre2, MODE_TYPES);
+			if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+			if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
 			if (btn_flags[6]) {
 				btn_flags[6] = 0;
-				hmenu.mode_input_active = hmenu.mode_input_selected;
-				Menu_Sync(&hmenu, SET_PB);
+				menu_data.mode_data.input_active = menu_data.mode_data.input_selected;
+				Menu_Sync(&menu_data, SET_PB);
+				menu_data.text_changed = 1;
 			}
 			if (btn_flags[7]) {
 				btn_flags[7] = 0;
-				hmenu.mode_output_active = hmenu.mode_output_selected;
-				Menu_Sync(&hmenu, SET_PB);
+				menu_data.mode_data.output_active = menu_data.mode_data.output_selected;
+				Menu_Sync(&menu_data, SET_PB);
+				menu_data.text_changed = 1;
 			}
-			Menu_Render(&hmenu, PARTIAL);
 
-		} else if (hmenu.selected_page == SPECTRUM) {
+		} else if (menu_data.page == SPECTRUM) {
 
-			Menu_Sync(&hmenu, GET_SPECTRUM);
-			Menu_Render(&hmenu, PARTIAL);
+			//if (HAL_GetTick() > menu_data.tick + sync_interval[OVERVIEW]) {
+			//	menu_data.tick = HAL_GetTick();
+			//	Menu_Sync(&menu_data, GET_SPECTRUM);
+			//}
 
-		} else if (hmenu.selected_page == FILES) {
-			hmenu.usb_selected = RE_GetCount(&hre1, 2);
-			if (btn_flags[6]) {
-				btn_flags[6] = 0;
-				if (hmenu.usb_ready) {
-					Menu_Sync(&hmenu, SET_USB);
-					Menu_Sync(&hmenu, GET_PB);
-				}
-			} else {
-				Menu_Sync(&hmenu, GET_USB);
-			}
-			Menu_Render(&hmenu, PARTIAL);
+		} else if (menu_data.page == FILES) {
+			//menu_data.files_data.usb_selected = RE_GetCount(&hre1, 2);
+			//if (btn_flags[6]) {
+			//	btn_flags[6] = 0;
+			//	if (menu_data.files_data.usb_ready) {
+			//		Menu_Sync(&menu_data, SET_USB);
+			//		Menu_Sync(&menu_data, GET_PB);
+			//	}
+			//} else {
+			//	Menu_Sync(&menu_data, GET_USB);
+			//}
 		}
+
+		Menu_Render(&menu_data);
 
 	}
   /* USER CODE END 3 */
@@ -402,12 +458,12 @@ static void MX_SPI1_Init(void)
   /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -532,11 +588,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LD6_Pin|LD5_Pin|LD4_Pin|EPD_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LD6_Pin|LD5_Pin|LD4_Pin|LCD_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD3_Pin|LD2_Pin|LD1_Pin|EPD_RST_Pin
-                          |EPD_DC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LD3_Pin|LD2_Pin|LD1_Pin|LCD_RST_Pin
+                          |LCD_DC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : BTN_ENC1_Pin */
   GPIO_InitStruct.Pin = BTN_ENC1_Pin;
@@ -550,8 +606,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD6_Pin LD5_Pin LD4_Pin EPD_CS_Pin */
-  GPIO_InitStruct.Pin = LD6_Pin|LD5_Pin|LD4_Pin|EPD_CS_Pin;
+  /*Configure GPIO pins : LD6_Pin LD5_Pin LD4_Pin LCD_CS_Pin */
+  GPIO_InitStruct.Pin = LD6_Pin|LD5_Pin|LD4_Pin|LCD_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -569,17 +625,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD3_Pin LD2_Pin LD1_Pin EPD_RST_Pin
-                           EPD_DC_Pin */
-  GPIO_InitStruct.Pin = LD3_Pin|LD2_Pin|LD1_Pin|EPD_RST_Pin
-                          |EPD_DC_Pin;
+  /*Configure GPIO pins : LD3_Pin LD2_Pin LD1_Pin LCD_RST_Pin
+                           LCD_DC_Pin */
+  GPIO_InitStruct.Pin = LD3_Pin|LD2_Pin|LD1_Pin|LCD_RST_Pin
+                          |LCD_DC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : EPD_BUSY_Pin ENC1B_Pin ENC1A_Pin */
-  GPIO_InitStruct.Pin = EPD_BUSY_Pin|ENC1B_Pin|ENC1A_Pin;
+  /*Configure GPIO pins : ENC1B_Pin ENC1A_Pin */
+  GPIO_InitStruct.Pin = ENC1B_Pin|ENC1A_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

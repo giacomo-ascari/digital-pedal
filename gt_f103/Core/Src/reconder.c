@@ -17,6 +17,7 @@ void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, ui
 	hre->currentB = 0;
 	hre->lastA = 0;
 	hre->lastB = 0;
+	hre->changed = 0;
 }
 
 void RE_Process(RE_HandleTypeDef *hre) {
@@ -42,6 +43,7 @@ void RE_Process(RE_HandleTypeDef *hre) {
 		} else {
 			hre->counter++;
 		}
+		hre->changed = 1;
 
 	} else if (hre->lastA > thr && hre->currentA <= thr) {
 
@@ -50,18 +52,32 @@ void RE_Process(RE_HandleTypeDef *hre) {
 		} else {
 			hre->counter--;
 		}
+		hre->changed = 1;
 
 	}
 }
 
 void RE_Reset(RE_HandleTypeDef *hre) {
 	hre->counter = 0;
+	hre->changed = 0;
 }
 
-uint8_t RE_GetCount(RE_HandleTypeDef *hre, uint8_t max) {
-	if (hre->counter >= 0) {
-		return hre->counter % max;
-	} else {
-		return (max - (0 - hre->counter % max));
+uint32_t RE_GetCount(RE_HandleTypeDef *hre, uint32_t max) {
+	if (max != 0) {
+		if (hre->counter >= 0) {
+			return hre->counter % max;
+		} else {
+			return (max - ((-hre->counter) % max)) % max;
+		}
 	}
+	return 0;
+
+}
+
+uint8_t RE_ChangeFromLastChange(RE_HandleTypeDef *hre) {
+	if (hre->changed) {
+		hre->changed = 0;
+		return 1;
+	}
+	return 0;
 }

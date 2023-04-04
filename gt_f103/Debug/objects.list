@@ -1,6 +1,6 @@
-"./Core/Src/epddriver.o"
+"./Core/Src/ili9341.o"
+"./Core/Src/lcd_painter.o"
 "./Core/Src/main.o"
-"./Core/Src/painter2.o"
 "./Core/Src/reconder.o"
 "./Core/Src/stm32f1xx_hal_msp.o"
 "./Core/Src/stm32f1xx_it.o"

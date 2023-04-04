@@ -13,9 +13,10 @@
 typedef struct _RE_HandleTypeDef {
 	GPIO_TypeDef *portA, *portB;
 	uint16_t pinA, pinB;
-	int16_t counter;
+	int32_t counter;
 	uint16_t currentA, lastA;
 	uint16_t currentB, lastB;
+	uint8_t changed;
 } RE_HandleTypeDef;
 
 void RE_Init(RE_HandleTypeDef *hre, GPIO_TypeDef *portA, GPIO_TypeDef *portB, uint16_t pinA, uint16_t pinB);
@@ -24,6 +25,8 @@ void RE_Process(RE_HandleTypeDef *hre);
 
 void RE_Reset(RE_HandleTypeDef *hre);
 
-uint8_t RE_GetCount(RE_HandleTypeDef *hre, uint8_t max);
+uint32_t RE_GetCount(RE_HandleTypeDef *hre, uint32_t max);
+
+uint8_t RE_ChangeFromLastChange(RE_HandleTypeDef *hre);
 
 #endif /* ROTARYENCODER_RENCODER_H_ */

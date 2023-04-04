@@ -19,7 +19,7 @@ Description:			This is an STM32 device driver library for the ILI9341 SPI LCD di
 //List of includes
 #include <stdbool.h>
 //** CHANGE BASED ON STM32 CHIP F4/F7/F1...**//
-#include "stm32f4xx_hal.h"
+#include "stm32f1xx_hal.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -76,29 +76,29 @@ Description:			This is an STM32 device driver library for the ILI9341 SPI LCD di
 #define ILI9341_MADCTL_MH  0x04
 
 //List of colors
-#define COLOR_BLACK           0x0000
-#define COLOR_NAVY            0x000F
-#define COLOR_DGREEN          0x03E0
-#define COLOR_DCYAN           0x03EF
-#define COLOR_MAROON          0x7800
-#define COLOR_PURPLE          0x780F
-#define COLOR_OLIVE           0x7BE0
-#define COLOR_LGRAY           0xC618
-#define COLOR_DGRAY           0x7BEF
-#define COLOR_BLUE            0x001F
-#define COLOR_BLUE2			      0x051D
-#define COLOR_GREEN           0x07E0
-#define COLOR_GREEN2		      0xB723
-#define COLOR_GREEN3		      0x8000
-#define COLOR_CYAN            0x07FF
-#define COLOR_RED             0xF800
-#define COLOR_MAGENTA         0xF81F
-#define COLOR_YELLOW          0xFFE0
-#define COLOR_WHITE           0xFFFF
-#define COLOR_ORANGE          0xFD20
-#define COLOR_GREENYELLOW     0xAFE5
-#define COLOR_BROWN 			    0XBC40
-#define COLOR_BRRED 			    0XFC07
+#define COLOR_BLACK			0x0000
+#define COLOR_NAVY			0x000F
+#define COLOR_DGREEN		0x03E0
+#define COLOR_DCYAN			0x03EF
+#define COLOR_MAROON		0x7800
+#define COLOR_PURPLE		0x780F
+#define COLOR_OLIVE			0x7BE0
+#define COLOR_LGRAY			0xC618
+#define COLOR_DGRAY			0x7BEF
+#define COLOR_BLUE			0x001F
+#define COLOR_BLUE2			0x051D
+#define COLOR_GREEN			0x07E0
+#define COLOR_GREEN2		0xB723
+#define COLOR_GREEN3		0x8000
+#define COLOR_CYAN			0x07FF
+#define COLOR_RED			0xF800
+#define COLOR_MAGENTA		0xF81F
+#define COLOR_YELLOW		0xFFE0
+#define COLOR_WHITE			0xFFFF
+#define COLOR_ORANGE		0xFD20
+#define COLOR_GREENYELLOW	0xAFE5
+#define COLOR_BROWN			0XBC40
+#define COLOR_BRRED			0XFC07
 
 //Functions defines Macros
 #define swap(a, b) { int16_t t = a; a = b; b = t; }

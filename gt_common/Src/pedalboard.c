@@ -72,10 +72,6 @@ const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[COMPRESSOR].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)		{ 1, "Gain", 1.0, 0.0, 5.0, VALUE },
 		[COMPRESSOR].effect_process = compressor_process,
 
-		[DYN_COMPRESSOR] = (effect_manifest_t){"dcmp","dynamic compressor"},
-		[DYN_COMPRESSOR].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)		{ 1, "Gain", 1.0, 0.0, 5.0, VALUE },
-		[DYN_COMPRESSOR].effect_process = dyn_compressor_process,
-
 		[FUZZ] = (effect_manifest_t){"fzz","fuzz"},
 		[FUZZ].params_manifest.float_params_manifest[GAIN] = (float_params_manifest_t)				{ 1, "Gain", 4.0, 1.0, 10.0, VALUE },
 		[FUZZ].params_manifest.float_params_manifest[LEVEL] = (float_params_manifest_t)				{ 1, "Level", 0.3, 0.0, 1.0, PERCENTAGE },
@@ -141,7 +137,7 @@ const char mode_manifest[MODE_TYPES][10] = {
 void Pedalboard_Init(Pedalboard_Handler *p_pb) {
 	p_pb->active = 1;
 	p_pb->input_mode = TS;
-	p_pb->output_mode = TRS_B;
+	p_pb->output_mode = TS;
 	for (u_int8_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
 		p_pb->effects[i].effect_formatted.type = BYPASS;
 	}

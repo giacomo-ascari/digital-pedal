@@ -97,18 +97,16 @@ void Error_Handler(void);
 #define BTN1_Pin GPIO_PIN_8
 #define BTN1_GPIO_Port GPIOA
 #define BTN1_EXTI_IRQn EXTI9_5_IRQn
-#define EPD_CS_Pin GPIO_PIN_15
-#define EPD_CS_GPIO_Port GPIOA
-#define EPD_BUSY_Pin GPIO_PIN_4
-#define EPD_BUSY_GPIO_Port GPIOB
+#define LCD_CS_Pin GPIO_PIN_15
+#define LCD_CS_GPIO_Port GPIOA
 #define ENC1B_Pin GPIO_PIN_6
 #define ENC1B_GPIO_Port GPIOB
 #define ENC1A_Pin GPIO_PIN_7
 #define ENC1A_GPIO_Port GPIOB
-#define EPD_RST_Pin GPIO_PIN_8
-#define EPD_RST_GPIO_Port GPIOB
-#define EPD_DC_Pin GPIO_PIN_9
-#define EPD_DC_GPIO_Port GPIOB
+#define LCD_RST_Pin GPIO_PIN_8
+#define LCD_RST_GPIO_Port GPIOB
+#define LCD_DC_Pin GPIO_PIN_9
+#define LCD_DC_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

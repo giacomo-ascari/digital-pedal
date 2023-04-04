@@ -5,9 +5,9 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Core/Src/epddriver.c \
+../Core/Src/ili9341.c \
+../Core/Src/lcd_painter.c \
 ../Core/Src/main.c \
-../Core/Src/painter2.c \
 ../Core/Src/reconder.c \
 ../Core/Src/stm32f1xx_hal_msp.c \
 ../Core/Src/stm32f1xx_it.c \
@@ -16,9 +16,9 @@ C_SRCS += \
 ../Core/Src/system_stm32f1xx.c 
 
 OBJS += \
-./Core/Src/epddriver.o \
+./Core/Src/ili9341.o \
+./Core/Src/lcd_painter.o \
 ./Core/Src/main.o \
-./Core/Src/painter2.o \
 ./Core/Src/reconder.o \
 ./Core/Src/stm32f1xx_hal_msp.o \
 ./Core/Src/stm32f1xx_it.o \
@@ -27,9 +27,9 @@ OBJS += \
 ./Core/Src/system_stm32f1xx.o 
 
 C_DEPS += \
-./Core/Src/epddriver.d \
+./Core/Src/ili9341.d \
+./Core/Src/lcd_painter.d \
 ./Core/Src/main.d \
-./Core/Src/painter2.d \
 ./Core/Src/reconder.d \
 ./Core/Src/stm32f1xx_hal_msp.d \
 ./Core/Src/stm32f1xx_it.d \
@@ -45,7 +45,7 @@ Core/Src/%.o Core/Src/%.su: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/epddriver.d ./Core/Src/epddriver.o ./Core/Src/epddriver.su ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/painter2.d ./Core/Src/painter2.o ./Core/Src/painter2.su ./Core/Src/reconder.d ./Core/Src/reconder.o ./Core/Src/reconder.su ./Core/Src/stm32f1xx_hal_msp.d ./Core/Src/stm32f1xx_hal_msp.o ./Core/Src/stm32f1xx_hal_msp.su ./Core/Src/stm32f1xx_it.d ./Core/Src/stm32f1xx_it.o ./Core/Src/stm32f1xx_it.su ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f1xx.d ./Core/Src/system_stm32f1xx.o ./Core/Src/system_stm32f1xx.su
+	-$(RM) ./Core/Src/ili9341.d ./Core/Src/ili9341.o ./Core/Src/ili9341.su ./Core/Src/lcd_painter.d ./Core/Src/lcd_painter.o ./Core/Src/lcd_painter.su ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/reconder.d ./Core/Src/reconder.o ./Core/Src/reconder.su ./Core/Src/stm32f1xx_hal_msp.d ./Core/Src/stm32f1xx_hal_msp.o ./Core/Src/stm32f1xx_hal_msp.su ./Core/Src/stm32f1xx_it.d ./Core/Src/stm32f1xx_it.o ./Core/Src/stm32f1xx_it.su ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f1xx.d ./Core/Src/system_stm32f1xx.o ./Core/Src/system_stm32f1xx.su
 
 .PHONY: clean-Core-2f-Src
 

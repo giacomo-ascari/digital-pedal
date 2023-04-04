@@ -35,7 +35,6 @@ enum effect_type {
 	BITCRUSHER_RT,  // BITRT
     BYPASS,         //  -
 	COMPRESSOR,		// CMP
-	DYN_COMPRESSOR,	// DCMP
     FUZZ,           // FZZ
 	HPF,			// HPF
     LPF,            // LPF
