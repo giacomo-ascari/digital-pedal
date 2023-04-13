@@ -28,13 +28,15 @@
 // Commands are from F103 (ui) perspective
 enum Menu_CommandHeader {
 	OTHER = 0,
-	GET_PB = 1,
-	SET_PB = 2,
-	GET_SIGNALS = 3,
-	GET_USB = 4,
-	SET_USB = 5,
-	GET_SPECTRUM = 6,
-	GET_LOAD = 7
+	GET_PB,
+	SET_PB,
+	GET_SIGNALS,
+	GET_SPECTRUM,
+	GET_LOAD,
+	GET_FLASH,
+	SAVE_FLASH,
+	LOAD_FLASH,
+	DEL_FLASH
 };
 
 enum Menu_PageType {
@@ -88,9 +90,11 @@ typedef struct _Menu_Spectrum_Data {
 } Menu_Spectrum_Data;
 
 typedef struct _Menu_Files_Data {
-	uint8_t usb_ready;
-	uint8_t usb_selected;
-	int8_t usb_result;
+	uint8_t save_slots;
+	uint8_t saves[16][MAX_EFFECTS_COUNT];
+	uint8_t full[16];
+	uint8_t slot_selected;
+	uint8_t action_selected;
 } Menu_Files_Data;
 
 typedef struct _Menu_Data {
@@ -134,7 +138,7 @@ void Menu_Render(Menu_Data *data);
 // smart draw and erase
 
 #define TEXT_CLASSES 5
-#define MAX_TEXTS 20
+#define MAX_TEXTS 50
 typedef struct _Menu_TextToErase {
 	uint16_t x;
 	uint16_t y;

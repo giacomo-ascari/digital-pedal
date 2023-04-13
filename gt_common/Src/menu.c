@@ -40,9 +40,9 @@ void Menu_Init(Menu_Data *data, Commander_HandleTypeDef *_hcptr) {
 	data->spectrum_data.xshift = 0;
 	data->spectrum_data.yscale = 1;
 
-	data->files_data.usb_ready = 0;
-	data->files_data.usb_selected = 0;
-	data->files_data.usb_result = -1;
+	data->files_data.save_slots = 0;
+	data->files_data.slot_selected = 0;
+	data->files_data.action_selected = 0;
 
 	data->pedalboard_changed = 1; 	// changed by SYNC
 	data->cursor1_changed = 1; 		// changed by MAIN LOOP
@@ -130,17 +130,6 @@ void Menu_Sync(Menu_Data *data, enum Menu_CommandHeader type) {
 		// changes
 		data->signal_changed = 1;
 
-	} else if (type == GET_USB) {
-
-		//Commander_SendAndWait(data->hcptr);
-		//data->files_data.usb_ready = data->hcptr->in_command.param;
-
-	} else if (type == SET_USB) {
-
-		//out_command->param = data->files_data.usb_selected % 2;
-		//Commander_SendAndWait(data->hcptr);
-		//data->files_data.usb_result = data->hcptr->in_command.param;
-
 	} else if (type == GET_SPECTRUM) {
 
 		//Commander_SendAndWait(data->hcptr);
@@ -150,6 +139,43 @@ void Menu_Sync(Menu_Data *data, enum Menu_CommandHeader type) {
 
 		Commander_SendAndWait(data->hcptr);
 		memcpy((uint8_t *)&(data->overview_data.elapsedus), data->hcptr->in_command.payload.bytes, 2);
+		// changes
+		data->text_changed = 1;
+
+	} else if (type == GET_FLASH) {
+
+		Commander_SendAndWait(data->hcptr);
+		data->files_data.save_slots = data->hcptr->in_command.subheader;
+		for (uint8_t i = 0; i < data->files_data.save_slots; i++) {
+			data->files_data.full[i] = data->hcptr->in_command.payload.bytes[i*(MAX_EFFECTS_COUNT+1)+0];
+			if (data->files_data.full[i]) {
+				for (uint8_t j = 0; j < MAX_EFFECTS_COUNT; j++) {
+					data->files_data.saves[i][j] = data->hcptr->in_command.payload.bytes[i*(MAX_EFFECTS_COUNT+1)+j+1];
+				}
+			}
+		}
+		// changes
+		data->text_changed = 1;
+
+	} else if (type == SAVE_FLASH) {
+
+		data->hcptr->out_command.subheader = data->files_data.slot_selected;
+		Commander_SendAndWait(data->hcptr);
+		// changes
+		data->text_changed = 1;
+
+	} else if (type == LOAD_FLASH) {
+
+		//if (data->files_data.full[data->files_data.slot_selected]) f407 accountable
+		data->hcptr->out_command.subheader = data->files_data.slot_selected;
+		Commander_SendAndWait(data->hcptr);
+		// changes
+		data->text_changed = 1;
+
+	} else if (type == DEL_FLASH) {
+
+		data->hcptr->out_command.subheader = data->files_data.slot_selected;
+		Commander_SendAndWait(data->hcptr);
 		// changes
 		data->text_changed = 1;
 
@@ -212,6 +238,8 @@ void Menu_Render(Menu_Data *data) {
 			}
 			sprintf(row, "active %d/%d ", active_pedals, MAX_EFFECTS_COUNT);
 			LCD_Painter_DrawText(row, 200, 40, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			sprintf(row, "%s to %s", mode_manifest[data->pedalboard.input_mode], mode_manifest[data->pedalboard.output_mode]);
+			LCD_Painter_DrawText(row, 10, 190, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 		}
 
 		if (data->text_changed) {
@@ -310,7 +338,7 @@ void Menu_Render(Menu_Data *data) {
 					char unit[4] = "xy";
 					float value = data->pedalboard.effects[selected].effect_formatted.config.int_params[j];
 					if (manifest->qual == PERCENTAGE) 		sprintf(row, "%s: %l %%", manifest->name, value * 100);
-					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %l", 	  manifest->name, value);
+					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %l xx", 	  manifest->name, value);
 					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %l Hz", manifest->name, value);
 					else if (manifest->qual == TIME) 		sprintf(row, "%s: %l ms", manifest->name, value);
 					Menu_DrawText(
@@ -331,7 +359,7 @@ void Menu_Render(Menu_Data *data) {
 					char unit[4] = "xy";
 					float value = data->pedalboard.effects[selected].effect_formatted.config.float_params[j];
 					if (manifest->qual == PERCENTAGE) 		sprintf(row, "%s: %.1f %%", manifest->name, value * 100);
-					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %.1f",    manifest->name, value);
+					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %.1f yy",    manifest->name, value);
 					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %.1f Hz", manifest->name, value);
 					else if (manifest->qual == TIME) 		sprintf(row, "%s: %.1f ms", manifest->name, value);
 					Menu_DrawText(
@@ -436,29 +464,33 @@ void Menu_Render(Menu_Data *data) {
 
 	} else if (data->page == FILES) {
 
-		/*
-		// content
-		if (hm->usb_result == -1) {
-			if (hm->usb_ready) {
-				if (hm->usb_selected == 1) {
-					Painter_WriteString(image, ">", 296/3*2 - 5*8 -2, 55, BOT_LEFT, SMALL);
-				} else if (hm->usb_selected == 0) {
-					Painter_WriteString(image, ">", 296/3 - 5*8 -2, 55, BOT_LEFT, SMALL);
-				}
-				Painter_WriteString(image, "load", 296/3 - 4*8, 55, BOT_LEFT, SMALL);
-				Painter_WriteString(image, "save", 296/3*2 - 4*8, 55, BOT_LEFT, SMALL);
-			} else {
-				Painter_WriteString(image, "disconnected", 294/2 - 6*8, 55, BOT_LEFT, SMALL);
-			}
-		} else {
-			if (hm->usb_result == 1) {
-				Painter_WriteString(image, "ok", 296/2 - 8, 55, BOT_LEFT, SMALL);
-			} else {
-				Painter_WriteString(image, "error", 296/2 - 20, 55, BOT_LEFT, SMALL);
-			}
-			hm->usb_result = -1;
+		if (data->cursor1_changed) {
+			Menu_EraseTexts(0);
+			Menu_DrawText(0, ">", 30-10, 50+20*data->files_data.slot_selected, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 		}
-		*/
+
+		if (data->cursor2_changed) {
+			Menu_EraseTexts(1);
+			Menu_DrawText(1, "<", ILI9341_HEIGHT-80+40, 160+20*data->files_data.action_selected, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+		}
+
+		if (data->text_changed) {
+			Menu_EraseTexts(2);
+			for (uint8_t i = 0; i < data->files_data.save_slots; i++) {
+				if (data->files_data.full[i]) {
+					for (uint8_t j = 0; j < MAX_EFFECTS_COUNT; j++) {
+						uint8_t type = data->files_data.saves[i][j];
+						Menu_DrawText(2, Effects_Manifest[type].short_name, 30+j*(40+4), 50+20*i, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+					}
+				} else {
+					Menu_DrawText(2, "empty slot", 30, 50+20*i, COLOR_LGRAY, COLOR_WHITE, MEDIUM);
+				}
+			}
+
+			LCD_Painter_DrawText("save", ILI9341_HEIGHT-80, 160, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			LCD_Painter_DrawText("load", ILI9341_HEIGHT-80, 180, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			LCD_Painter_DrawText("del.", ILI9341_HEIGHT-80, 200, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+		}
 
 	}
 

@@ -18,8 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "fatfs.h"
-#include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -27,6 +25,7 @@
 #include "AUDIO.h"
 #include "pedalboard.h"
 #include "menu.h"
+#include "w25qxx.h"
 
 #define ARM_MATH_CM4
 #include "arm_math.h"
@@ -60,6 +59,8 @@ I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_spi2_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
+SPI_HandleTypeDef hspi1;
+
 TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart1;
@@ -72,15 +73,8 @@ uint16_t timer_start;
 uint16_t timer_stop;
 uint16_t timer_elapsed;
 
-// USB
-FATFS usbFatFS;
-extern char USBHPath[4];
-extern ApplicationTypeDef Appli_state;
-uint8_t usb_ready = 0;
-uint8_t usb_mounted = 0;
-FIL pbFile;
-FRESULT res;
-unsigned int byteswritten, bytesread;
+// FLASH
+#define SAVE_SLOTS 4
 
 // COMMANDER
 Commander_HandleTypeDef hcommander;
@@ -143,8 +137,7 @@ static void MX_I2S3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_TIM6_Init(void);
-void MX_USB_HOST_Process(void);
-
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -166,35 +159,33 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	hcommander.command_to_process = 1;
 }
 
-uint8_t usb_save() {
-
-	res = f_open(&pbFile, "pb.pb", FA_WRITE | FA_CREATE_ALWAYS);
-	if (res != FR_OK) return 0;
-
-	res = f_write(&pbFile, (const void *)&hpedalboard, PEDALBOARD_HANDLER_SIZE, &byteswritten);
-	if((res != FR_OK) || (byteswritten == 0)) return 0;
-
-	res = f_close(&pbFile);
-	if (res != FR_OK) return 0;
-	return 1;
+void flash_save(uint32_t slot_index, Pedalboard_Handler *hpb) {
+	// one sector per save
+	if (slot_index < SAVE_SLOTS) {
+		W25qxx_WriteSector((uint8_t *)hpb, slot_index, 0, PEDALBOARD_HANDLER_SIZE);
+	}
 }
 
-uint8_t usb_load() {
+uint8_t flash_isempty(uint32_t slot_index) {
+	if (slot_index < SAVE_SLOTS) {
+		return W25qxx_IsEmptySector(slot_index, 0, PEDALBOARD_HANDLER_SIZE);
+	}
+	return 0;
+}
 
-	res = f_open(&pbFile, "pb.pb", FA_READ);
-	if (res != FR_OK) return 0;
+void flash_load(uint32_t slot_index, Pedalboard_Handler *hpb) {
+	// one sector per save
+	if (slot_index < SAVE_SLOTS && !flash_isempty(slot_index)) {
+		hpedalboard.active = 0;
+		W25qxx_ReadSector((uint8_t *)hpb, slot_index, 0, PEDALBOARD_HANDLER_SIZE);
+		hpedalboard.active = 1;
+	}
+}
 
-	uint8_t buff[PEDALBOARD_HANDLER_SIZE];
-
-	res = f_read(&pbFile, buff, PEDALBOARD_HANDLER_SIZE, &bytesread);
-	if((res != FR_OK) || (bytesread == 0)) return 0;
-	hpedalboard.active = 0;
-	memcpy(&hpedalboard, buff, PEDALBOARD_HANDLER_SIZE);
-	hpedalboard.active = 1;
-
-	res = f_close(&pbFile);
-	if (res != FR_OK) return 0;
-	return 1;
+void flash_delete(uint32_t slot_index) {
+	if (slot_index < SAVE_SLOTS) {
+		W25qxx_EraseSector(slot_index);
+	}
 }
 
 void command_callback() {
@@ -205,125 +196,138 @@ void command_callback() {
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
-	if (1) {
+	out_command->header = in_command->header;
+	out_command->param = in_command->param;
 
-		out_command->header = in_command->header;
-		out_command->param = in_command->param;
+	if (in_command->header == GET_PB) {
 
-		if (in_command->header == GET_PB) {
+		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
+		if (in_command->param == segments) {
+			//partial copy
+			memcpy(
+				out_command->payload.bytes,
+				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+				PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
+		} else {
+			// full copy
+			memcpy(
+				out_command->payload.bytes,
+				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+				PAYLOAD_BYTESIZE);
+		}
+		Commander_Send(&hcommander);
 
-			uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
-			if (in_command->param == segments) {
-				//partial copy
-				memcpy(
-					out_command->payload.bytes,
-					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
-			} else {
-				// full copy
-				memcpy(
-					out_command->payload.bytes,
-					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-					PAYLOAD_BYTESIZE);
-			}
-			Commander_Send(&hcommander);
+	} else if (in_command->header == SET_PB) {
 
-		} else if (in_command->header == SET_PB) {
+		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
+		if (in_command->param == segments) {
+			//partial copy
+			memcpy(
+				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+				in_command->payload.bytes,
+				PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
+		} else {
+			// full copy
+			memcpy(
+				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
+				in_command->payload.bytes,
+				PAYLOAD_BYTESIZE);
+		}
+		Commander_Send(&hcommander);
 
-			uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
-			if (in_command->param == segments) {
-				//partial copy
-				memcpy(
-					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-					in_command->payload.bytes,
-					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
-			} else {
-				// full copy
-				memcpy(
-					(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-					in_command->payload.bytes,
-					PAYLOAD_BYTESIZE);
-			}
-			Commander_Send(&hcommander);
+	} else if (in_command->header == GET_SIGNALS) {
 
-		} else if (in_command->header == GET_SIGNALS) {
+		plot_xscale = in_command->payload.bytes[0] ? in_command->payload.bytes[0] : 1;
+		plot_yscale = in_command->payload.bytes[1];
+		signal_index = 0;
+		while (signal_index < SIGNAL_SIZE);
+		memcpy(out_command->payload.bytes, signal_in, SIGNAL_SIZE);
+		memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
+		Commander_Send(&hcommander);
 
-			plot_xscale = in_command->payload.bytes[0] ? in_command->payload.bytes[0] : 1;
-			plot_yscale = in_command->payload.bytes[1];
-			signal_index = 0;
-			while (signal_index < SIGNAL_SIZE);
-			memcpy(out_command->payload.bytes, signal_in, SIGNAL_SIZE);
-			memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
-			Commander_Send(&hcommander);
+	} else if (in_command->header == GET_SPECTRUM) {
 
-		} else if (in_command->header == GET_USB) {
+		//signal_index = 0;
+		//while (signal_index < SIGNAL_SIZE);
+		//memcpy(out_command->payload.bytes, signal_in, SIGNAL_SIZE);
+		//memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
+		//Commander_Send(&hcommander);
 
-			out_command->param = usb_ready;
-			Commander_Send(&hcommander);
+		spectrum_index = 0;
+		while (spectrum_index < FFT_SAMPLES_COUNT);
+		float32_t maxValue;
+		uint32_t maxIndex;
+		arm_cfft_radix4_init_f32(&S, FFT_SIZE, 0, 1); //ifftFlag, doBitReverse
+		arm_cfft_radix4_f32(&S, spectrum_input);
+		arm_cmplx_mag_f32(spectrum_input, spectrum_output, FFT_SIZE);
+		arm_max_f32(spectrum_output, FFT_SIZE, &maxValue, &maxIndex);
+		//frequency = ((48000/FFT_SIZE) * (maxIndex));
 
-		} else if (in_command->header == SET_USB) {
-
-			if (usb_ready) {
-				out_command->param = 0;
-				if (in_command->param == 1) {
-					out_command->param = usb_save();
-				} else {
-					out_command->param = usb_load();
-				}
-			}
-			Commander_Send(&hcommander);
-
-		} else if (in_command->header == GET_SPECTRUM) {
-
-			//signal_index = 0;
-			//while (signal_index < SIGNAL_SIZE);
-			//memcpy(out_command->payload.bytes, signal_in, SIGNAL_SIZE);
-			//memcpy(out_command->payload.bytes + SIGNAL_SIZE, signal_out, SIGNAL_SIZE);
-			//Commander_Send(&hcommander);
-
-			spectrum_index = 0;
-			while (spectrum_index < FFT_SAMPLES_COUNT);
-			float32_t maxValue;
-			uint32_t maxIndex;
-			arm_cfft_radix4_init_f32(&S, FFT_SIZE, 0, 1); //ifftFlag, doBitReverse
-			arm_cfft_radix4_f32(&S, spectrum_input);
-			arm_cmplx_mag_f32(spectrum_input, spectrum_output, FFT_SIZE);
-			arm_max_f32(spectrum_output, FFT_SIZE, &maxValue, &maxIndex);
-			//frequency = ((48000/FFT_SIZE) * (maxIndex));
-
-			uint32_t max_value = 0;
-			uint16_t window_size = FFT_SIZE / PAYLOAD_BYTESIZE;
-			for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
-				uint32_t value = 0;
-				for (uint16_t j = 0; j < window_size; j++) value += spectrum_output[i * window_size + j];
-				value /= window_size;
-				if (value > max_value) max_value = value;
-				spectrum_reduced[i] = value;
-			}
-
-			uint32_t scale = (uint32_t)max_value / 256;
-			for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
-				uint32_t value = spectrum_reduced[i];
-				value /= scale;
-				out_command->payload.bytes[i] = value;
-			}
-
-			Commander_Send(&hcommander);
-
-		} else if (in_command->header == GET_LOAD) {
-
-			memcpy(out_command->payload.bytes, (uint8_t *)&timer_elapsed, 2);
-			Commander_Send(&hcommander);
-
+		uint32_t max_value = 0;
+		uint16_t window_size = FFT_SIZE / PAYLOAD_BYTESIZE;
+		for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
+			uint32_t value = 0;
+			for (uint16_t j = 0; j < window_size; j++) value += spectrum_output[i * window_size + j];
+			value /= window_size;
+			if (value > max_value) max_value = value;
+			spectrum_reduced[i] = value;
 		}
 
-	} else {
+		uint32_t scale = (uint32_t)max_value / 256;
+		for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
+			uint32_t value = spectrum_reduced[i];
+			value /= scale;
+			out_command->payload.bytes[i] = value;
+		}
 
-		// surely faulty command
-		Commander_Pause(&hcommander);
-		HAL_Delay(5000);
-		Commander_Resume(&hcommander);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == GET_LOAD) {
+
+		memcpy(out_command->payload.bytes, (uint8_t *)&timer_elapsed, 2);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == GET_FLASH) {
+
+		out_command->subheader = SAVE_SLOTS;
+		// assuming real payload is always smaller than max capacity
+		// assert ( SAVE_SLOTS * (MAX_EFFECTS_COUNT+1) < PAYLOAD_BYTESIZE )
+		// first byte per slot in payload mean if it is full or empty
+		for (uint8_t i = 0; i < SAVE_SLOTS; i++) {
+			Pedalboard_Handler temp;
+			if (flash_isempty(i)) {
+				out_command->payload.bytes[i*(MAX_EFFECTS_COUNT+1)+0] = 0;
+			} else {
+				out_command->payload.bytes[i*(MAX_EFFECTS_COUNT+1)+0] = 1;
+				flash_load(i, &temp);
+				for (uint8_t j = 0; j < MAX_EFFECTS_COUNT; j++) {
+					out_command->payload.bytes[i*(MAX_EFFECTS_COUNT+1)+j+1] = temp.effects[j].effect_formatted.type;
+				}
+			}
+		}
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == SAVE_FLASH) {
+
+		flash_save(in_command->subheader, &hpedalboard);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == LOAD_FLASH) {
+
+		flash_load(in_command->subheader, &hpedalboard);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == DEL_FLASH) {
+
+		flash_delete(in_command->subheader);
+		Commander_Send(&hcommander);
+
 	}
+
+	// surely faulty command
+	//Commander_Pause(&hcommander);
+	//HAL_Delay(5000);
+	//Commander_Resume(&hcommander);
 
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
@@ -489,12 +493,11 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART1_UART_Init();
-  MX_FATFS_Init();
-  MX_USB_HOST_Init();
   MX_I2S3_Init();
   MX_I2C1_Init();
   MX_I2S2_Init();
   MX_TIM6_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
 	// COMMANDER
@@ -503,7 +506,7 @@ int main(void)
 
 	// PEDALBOARD
 	Pedalboard_Init(&hpedalboard);
-	//Pedalboard_SetEffect(&hpedalboard, WAVE_GEN, 0);
+	//Pedalboard_SetEffect(&hpedalboard, NOISE_GATE, 0);
 
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
@@ -515,6 +518,13 @@ int main(void)
 	// ADC
 	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
 
+	// tests on FLASH
+	//	----	Size	Count
+	//	Block	65536	1024
+	//	Sector	4096	16384
+	//	Page	256		262144
+	W25qxx_Init();
+
 	// TIMER
 	HAL_TIM_Base_Start(&htim6);
 
@@ -525,32 +535,10 @@ int main(void)
 	while (1)
 	{
     /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-		HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
 
 		Commander_ProcessIncoming(&hcommander);
-
-		if (Appli_state == APPLICATION_START) {
-			res = f_mount(&usbFatFS, (TCHAR const*)USBHPath, 0);
-			if (res == FR_OK) {
-				usb_mounted = 1;
-			} else {
-				usb_mounted = 0;
-			}
-			usb_ready = 0;
-		} else if (Appli_state == APPLICATION_READY) {
-			if (usb_mounted) {
-				usb_ready = 1;
-			} else {
-				usb_ready = 0;
-			}
-		} else {
-			// Appli_state == APPLICATION_DISCONNECT || Appli_state == APPLICATION_IDLE
-			usb_mounted = 0;
-			usb_ready = 0;
-		}
 
 		/* USER CODE END WHILE */
 
@@ -746,6 +734,44 @@ static void MX_I2S3_Init(void)
 }
 
 /**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
   * @brief TIM6 Initialization Function
   * @param None
   * @retval None
@@ -859,10 +885,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(OtgPower_GPIO_Port, OtgPower_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LD1_Pin|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, FLASH_CS_Pin|LD1_Pin|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SPKRPower_Pin */
   GPIO_InitStruct.Pin = SPKRPower_Pin;
@@ -871,15 +894,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SPKRPower_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : OtgPower_Pin */
-  GPIO_InitStruct.Pin = OtgPower_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(OtgPower_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : LD1_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD2_Pin;
+  /*Configure GPIO pins : FLASH_CS_Pin LD1_Pin LD2_Pin */
+  GPIO_InitStruct.Pin = FLASH_CS_Pin|LD1_Pin|LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

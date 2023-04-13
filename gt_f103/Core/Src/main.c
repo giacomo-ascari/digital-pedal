@@ -28,6 +28,7 @@
 #include "menu.h"
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 /* USER CODE END Includes */
 
@@ -43,11 +44,15 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 
+#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+#define max(X, Y)  ((X) > (Y) ? (X) : (Y))
+
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart3;
@@ -80,6 +85,7 @@ static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -89,17 +95,27 @@ static void MX_TIM3_Init(void);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	for (uint8_t i = 0; i < 8; i++) {
-		if(btn_pins[i] == GPIO_Pin) {
-			btn_flags[i] = 1;
-		}
-	}
+	HAL_TIM_Base_Start_IT(&htim2);
+	//for (uint8_t i = 0; i < 8; i++) {
+	//	if(btn_pins[i] == GPIO_Pin) {
+	//		btn_flags[i] = 1;
+	//	}
+	//}
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim == &htim3)
-	{
+	if (htim == &htim2) {
+
+		for (uint8_t i = 0; i < 8; i++) {
+			if(HAL_GPIO_ReadPin(btn_ports[i], btn_pins[i]) == GPIO_PIN_RESET) {
+				btn_flags[i] = 1;
+			}
+		}
+		HAL_TIM_Base_Stop_IT(&htim2);
+
+	} else if (htim == &htim3) {
+
 		RE_Process(&hre1);
 		RE_Process(&hre2);
 	}
@@ -161,6 +177,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_SPI1_Init();
   MX_TIM3_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -246,6 +263,10 @@ int main(void)
 				Menu_Sync(&menu_data, GET_PB);
 			} else if (menu_data.page == MODE) {
 				Menu_Sync(&menu_data, GET_PB);
+			} else if (menu_data.page == SPECTRUM) {
+				// nothin'
+			} else if (menu_data.page == FILES) {
+				Menu_Sync(&menu_data, GET_FLASH);
 			}
 		}
 
@@ -254,6 +275,8 @@ int main(void)
 			HAL_GPIO_WritePin(led_ports[i], led_pins[i], i == menu_data.page ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		}
 
+		if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+		if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
 
 		// MENU PERIODIC AND USER EVENTS
 		if (menu_data.page == OVERVIEW) {
@@ -269,8 +292,7 @@ int main(void)
 			// user events
 			menu_data.plot_data.xscale = RE_GetCount(&hre1, 100) + 1;
 			menu_data.plot_data.yscale = RE_GetCount(&hre2, 100) + 1;
-			if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
-			if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+
 
 			// periodic
 			if (HAL_GetTick() > menu_data.tick + sync_interval[PLOT]) {
@@ -280,8 +302,8 @@ int main(void)
 
 		} else if (menu_data.page == EDIT) {
 
-			if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
-			if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
 
 			// user event (to and from edit mode)
 			if (btn_flags[6]) {
@@ -319,8 +341,20 @@ int main(void)
 				if (_int) {
 					// integer parameter
 					int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[index]);
-					int32_t micro_step = (manifest->max - manifest->min) / 100;
-					int32_t macro_step = (manifest->max - manifest->min) / 10;
+					int32_t micro_step = 1, macro_step = 1;
+					if (manifest->qual == FREQUENCY) {
+						micro_step = 1;
+						macro_step = 10;
+					} else if (manifest->qual == PERCENTAGE) {
+						micro_step = (manifest->max - manifest->min) / 100;
+						macro_step = (manifest->max - manifest->min) / 10;
+					} else if (manifest->qual == VALUE) {
+						micro_step = max(1, (manifest->max - manifest->min) / 100);
+						macro_step = max(2, (manifest->max - manifest->min) / 10);
+					} else if (manifest->qual == TIME) {
+						micro_step = 5;
+						macro_step = 50;
+					}
 					conf->int_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
 					conf->int_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
 					if (conf->int_params[index] > manifest->max) conf->int_params[index] = manifest->max;
@@ -330,8 +364,20 @@ int main(void)
 				} else {
 					// float parameter
 					float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[index]);
-					float micro_step = (manifest->max - manifest->min) / 100;
-					float macro_step = (manifest->max - manifest->min) / 10;
+					float micro_step = 1.F, macro_step = 1.F;
+					if (manifest->qual == FREQUENCY) {
+						micro_step = 1;
+						macro_step = 10;
+					} else if (manifest->qual == PERCENTAGE) {
+						micro_step = (manifest->max - manifest->min) / 100;
+						macro_step = (manifest->max - manifest->min) / 10;
+					} else if (manifest->qual == VALUE) {
+						micro_step = (manifest->max - manifest->min) / 100;
+						macro_step = (manifest->max - manifest->min) / 10;
+					} else if (manifest->qual == TIME) {
+						micro_step = 5;
+						macro_step = 50;
+					}
 					conf->float_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
 					conf->float_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
 					if (conf->float_params[index] > manifest->max) conf->float_params[index] = manifest->max;
@@ -360,8 +406,8 @@ int main(void)
 			// user event
 			menu_data.mode_data.input_selected = RE_GetCount(&hre1, MODE_TYPES);
 			menu_data.mode_data.output_selected = RE_GetCount(&hre2, MODE_TYPES);
-			if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
-			if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
 			if (btn_flags[6]) {
 				btn_flags[6] = 0;
 				menu_data.mode_data.input_active = menu_data.mode_data.input_selected;
@@ -383,16 +429,24 @@ int main(void)
 			//}
 
 		} else if (menu_data.page == FILES) {
-			//menu_data.files_data.usb_selected = RE_GetCount(&hre1, 2);
-			//if (btn_flags[6]) {
-			//	btn_flags[6] = 0;
-			//	if (menu_data.files_data.usb_ready) {
-			//		Menu_Sync(&menu_data, SET_USB);
-			//		Menu_Sync(&menu_data, GET_PB);
-			//	}
-			//} else {
-			//	Menu_Sync(&menu_data, GET_USB);
-			//}
+
+			// user event
+			menu_data.files_data.slot_selected = RE_GetCount(&hre1, menu_data.files_data.save_slots);
+			menu_data.files_data.action_selected = RE_GetCount(&hre2, 3);
+			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
+			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+			if (btn_flags[7]) {
+				btn_flags[7] = 0;
+				if (menu_data.files_data.action_selected == 0) {
+					Menu_Sync(&menu_data, SAVE_FLASH);
+				} else if (menu_data.files_data.action_selected == 1) {
+					Menu_Sync(&menu_data, LOAD_FLASH);
+				} else if (menu_data.files_data.action_selected == 2) {
+					Menu_Sync(&menu_data, DEL_FLASH);
+				}
+				Menu_Sync(&menu_data, GET_FLASH);
+				menu_data.text_changed = 1;
+			}
 		}
 
 		Menu_Render(&menu_data);
@@ -475,6 +529,51 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 72;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 10000-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
 
 }
 
@@ -596,7 +695,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : BTN_ENC1_Pin */
   GPIO_InitStruct.Pin = BTN_ENC1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BTN_ENC1_GPIO_Port, &GPIO_InitStruct);
 
@@ -615,13 +714,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : BTN6_Pin BTN5_Pin BTN1_Pin */
   GPIO_InitStruct.Pin = BTN6_Pin|BTN5_Pin|BTN1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : BTN4_Pin BTN3_Pin BTN2_Pin BTN_ENC2_Pin */
   GPIO_InitStruct.Pin = BTN4_Pin|BTN3_Pin|BTN2_Pin|BTN_ENC2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 

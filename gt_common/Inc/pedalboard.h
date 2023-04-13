@@ -27,7 +27,7 @@ enum mode_type {
 
 extern const char mode_manifest[MODE_TYPES][10];
 
-#define EFFECT_TYPES 13
+#define EFFECT_TYPES 12
 
 enum effect_type {
     AMPLIFIER,		// AMP
@@ -40,7 +40,6 @@ enum effect_type {
     LPF,            // LPF
 	NOISE_GATE,		// NGT
     OVERDRIVE,      // OVR
-    OVERDRIVE_SQRT, // OVRS
     TREMOLO,        // TRM
 	WAVE_GEN,		// WAV
 };
@@ -79,27 +78,32 @@ enum float_param_type {
 
 typedef struct _int_params_manifest_t {
     uint8_t active;
-    char name[24];
+    char name[17]; //16+null
     int32_t def;
     int32_t min;
     int32_t max;
     uint8_t qual;
+    int32_t micro_step;
+    int32_t macro_step;
 } int_params_manifest_t;
 
 typedef struct _float_params_manifest_t {
     uint8_t active;
-    char name[24];
+    char name[17]; //16+null
     float def;
     float min;
     float max;
     uint8_t qual;
+    float micro_step;
+    float macro_step;
 } float_params_manifest_t;
 
 enum param_qualifier {
 	FREQUENCY,		// always in Hz
-	PERCENTAGE,		//
-	VALUE,			//
-	TIME			// always in ms
+	PERCENTAGE,		// should be [0,1]
+	VALUE,			// whatever m8
+	TIME,			// always in ms
+	DB				// expressed in db
 };
 
 typedef struct _params_manifest_t {
