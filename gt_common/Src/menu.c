@@ -147,10 +147,10 @@ void Menu_Sync(Menu_Data *data, enum Menu_CommandHeader type) {
 		Commander_SendAndWait(data->hcptr);
 		data->files_data.save_slots = data->hcptr->in_command.subheader;
 		for (uint8_t i = 0; i < data->files_data.save_slots; i++) {
-			data->files_data.full[i] = data->hcptr->in_command.payload.bytes[i*(MAX_EFFECTS_COUNT+1)+0];
+			data->files_data.full[i] = data->hcptr->in_command.payload.bytes[i*(EFFECT_SLOTS_COUNT+1)+0];
 			if (data->files_data.full[i]) {
-				for (uint8_t j = 0; j < MAX_EFFECTS_COUNT; j++) {
-					data->files_data.saves[i][j] = data->hcptr->in_command.payload.bytes[i*(MAX_EFFECTS_COUNT+1)+j+1];
+				for (uint8_t j = 0; j < EFFECT_SLOTS_COUNT; j++) {
+					data->files_data.saves[i][j] = data->hcptr->in_command.payload.bytes[i*(EFFECT_SLOTS_COUNT+1)+j+1];
 				}
 			}
 		}
@@ -223,10 +223,10 @@ void Menu_Render(Menu_Data *data) {
 		if (data->pedalboard_changed) {
 			// big rectangles of the pedals
 			uint8_t active_pedals = 0;
-			uint16_t width = ILI9341_HEIGHT / MAX_EFFECTS_COUNT;
-			for (uint16_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-				uint8_t t = data->pedalboard.effects[i].effect_formatted.type;
-				if (t == BYPASS) {
+			uint16_t width = ILI9341_HEIGHT / EFFECT_SLOTS_COUNT;
+			for (uint16_t i = 0; i < EFFECT_SLOTS_COUNT; i++) {
+				uint8_t t = data->pedalboard.effects[i].type;
+				if (t == BYP) {
 					ILI9341_Fill_Rect(width * i + 4, 70,  width * (i+1) - 4, 170, COLOR_LGRAY);
 				} else {
 					active_pedals++;
@@ -236,7 +236,7 @@ void Menu_Render(Menu_Data *data) {
 					}
 				}
 			}
-			sprintf(row, "active %d/%d ", active_pedals, MAX_EFFECTS_COUNT);
+			sprintf(row, "active %d/%d ", active_pedals, EFFECT_SLOTS_COUNT);
 			LCD_Painter_DrawText(row, 200, 40, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			sprintf(row, "%s to %s", mode_manifest[data->pedalboard.input_mode], mode_manifest[data->pedalboard.output_mode]);
 			LCD_Painter_DrawText(row, 10, 190, COLOR_BLACK, COLOR_WHITE, MEDIUM);
@@ -296,9 +296,9 @@ void Menu_Render(Menu_Data *data) {
 		// numbers when edit is active
 
 		uint8_t selected = data->edit_data.index2;
-		uint8_t type = data->pedalboard.effects[selected].effect_formatted.type;
+		uint8_t type = data->pedalboard.effects[selected].type;
 		uint16_t upper = 70;
-		uint8_t height = (ILI9341_WIDTH - upper) / MAX_EFFECTS_COUNT;
+		uint8_t height = (ILI9341_WIDTH - upper) / EFFECT_SLOTS_COUNT;
 		uint16_t left = 80;
 
 		// just cursor 2
@@ -310,8 +310,8 @@ void Menu_Render(Menu_Data *data) {
 
 		if (data->pedalboard_changed) {
 			// rectangles on the side
-			for (uint16_t i = 0; i < MAX_EFFECTS_COUNT; i++) {
-				if (data->pedalboard.effects[i].effect_formatted.type == BYPASS) {
+			for (uint16_t i = 0; i < EFFECT_SLOTS_COUNT; i++) {
+				if (data->pedalboard.effects[i].type == BYP) {
 					ILI9341_Fill_Rect(2, upper + height * i + 2,  44 -1, upper + height * (i+1) - 2 -1, COLOR_LGRAY);
 				} else {
 					ILI9341_Fill_Rect(2, upper + height * i + 2,  44 -1, upper + height * (i+1) - 2 -1, COLOR_ORANGE);
@@ -333,10 +333,10 @@ void Menu_Render(Menu_Data *data) {
 			// param selection
 			row_index = 0;
 			for (uint8_t j = 0; j < INT_PARAM_TYPES; j++) {
-				if (Effects_Manifest[type].params_manifest.int_params_manifest[j].active) {
-					int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[j]);
+				if (Effects_Manifest[type].int_params_manifest[j].active) {
+					int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[j]);
 					char unit[4] = "xy";
-					float value = data->pedalboard.effects[selected].effect_formatted.config.int_params[j];
+					float value = data->pedalboard.effects[selected].config.int_params[j];
 					if (manifest->qual == PERCENTAGE) 		sprintf(row, "%s: %l %%", manifest->name, value * 100);
 					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %l xx", 	  manifest->name, value);
 					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %l Hz", manifest->name, value);
@@ -354,10 +354,10 @@ void Menu_Render(Menu_Data *data) {
 			}
 
 			for (uint8_t j = 0; j < FLOAT_PARAM_TYPES; j++) {
-				if (Effects_Manifest[type].params_manifest.float_params_manifest[j].active) {
-					float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[j]);
+				if (Effects_Manifest[type].float_params_manifest[j].active) {
+					float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[j]);
 					char unit[4] = "xy";
-					float value = data->pedalboard.effects[selected].effect_formatted.config.float_params[j];
+					float value = data->pedalboard.effects[selected].config.float_params[j];
 					if (manifest->qual == PERCENTAGE) 		sprintf(row, "%s: %.1f %%", manifest->name, value * 100);
 					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %.1f yy",    manifest->name, value);
 					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %.1f Hz", manifest->name, value);
@@ -379,7 +379,7 @@ void Menu_Render(Menu_Data *data) {
 		// just cursor 1
 		if (data->pedalboard_changed ||data->cursor1_changed || data->cursor2_changed) {
 			Menu_EraseTexts(0);
-			if (type != BYPASS && !data->edit_data.active) {
+			if (type != BYP && !data->edit_data.active) {
 				Menu_DrawText(0, ">", left - 10, upper + (data->edit_data.index1 % row_index) * 18, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			}
 		}
@@ -390,7 +390,7 @@ void Menu_Render(Menu_Data *data) {
 
 		if (data->cursor1_changed) {
 			Menu_EraseTexts(0);
-			for (uint16_t i = 0; i < MODE_TYPES; i++) {
+			for (uint16_t i = 0; i < INPUT_MODE_TYPES; i++) {
 				if (i == data->mode_data.input_selected) {
 					Menu_DrawText(0, ">", ILI9341_HEIGHT/2 - 100 - 10, i*20+76, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 				}
@@ -399,7 +399,7 @@ void Menu_Render(Menu_Data *data) {
 
 		if (data->cursor2_changed) {
 			Menu_EraseTexts(1);
-			for (uint16_t i = 0; i < MODE_TYPES; i++) {
+			for (uint16_t i = 0; i < OUTPUT_MODE_TYPES; i++) {
 				if (i == data->mode_data.output_selected) {
 					Menu_DrawText(1, "<", ILI9341_HEIGHT/2 + 100, i*20+76, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 				}
@@ -409,7 +409,7 @@ void Menu_Render(Menu_Data *data) {
 		if (data->text_changed) {
 			LCD_Painter_DrawText("input", ILI9341_HEIGHT/2 - 5*10 - 30, 50, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			LCD_Painter_DrawText("output", ILI9341_HEIGHT/2 + 30, 50, COLOR_BLACK, COLOR_WHITE, MEDIUM);
-			for (uint16_t i = 0; i < MODE_TYPES; i++) {
+			for (uint16_t i = 0; i < INPUT_MODE_TYPES; i++) {
 				LCD_Painter_DrawText(
 						mode_manifest[i],
 						ILI9341_HEIGHT/2 - 8 * 10 - 15,
@@ -417,6 +417,8 @@ void Menu_Render(Menu_Data *data) {
 						COLOR_BLACK,
 						(i == data->mode_data.input_active) ? COLOR_ORANGE : COLOR_WHITE,
 						MEDIUM);
+			}
+			for (uint16_t i = 0; i < OUTPUT_MODE_TYPES; i++) {
 				LCD_Painter_DrawText(
 						mode_manifest[i],
 						ILI9341_HEIGHT/2 + 15,
@@ -478,7 +480,7 @@ void Menu_Render(Menu_Data *data) {
 			Menu_EraseTexts(2);
 			for (uint8_t i = 0; i < data->files_data.save_slots; i++) {
 				if (data->files_data.full[i]) {
-					for (uint8_t j = 0; j < MAX_EFFECTS_COUNT; j++) {
+					for (uint8_t j = 0; j < EFFECT_SLOTS_COUNT; j++) {
 						uint8_t type = data->files_data.saves[i][j];
 						Menu_DrawText(2, Effects_Manifest[type].short_name, 30+j*(40+4), 50+20*i, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 					}

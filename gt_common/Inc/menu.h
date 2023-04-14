@@ -91,7 +91,7 @@ typedef struct _Menu_Spectrum_Data {
 
 typedef struct _Menu_Files_Data {
 	uint8_t save_slots;
-	uint8_t saves[16][MAX_EFFECTS_COUNT];
+	uint8_t saves[16][EFFECT_SLOTS_COUNT];
 	uint8_t full[16];
 	uint8_t slot_selected;
 	uint8_t action_selected;

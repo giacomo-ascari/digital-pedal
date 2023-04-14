@@ -8,71 +8,66 @@
 #ifndef PEDALBOARD_PEDALBOARD_H_
 #define PEDALBOARD_PEDALBOARD_H_
 
+// GENERIC STUFF
+
 // max and min for 24 bit samples
 #define MAX_VAL 8388608.0
 #define MIN_VAL -8388607.0
 
-#define MAX_EFFECTS_COUNT 6
+#define EFFECT_SLOTS_COUNT 6
 
-// ENUMERATION
+// INPUT AND OUTPUT MODES (LEFT, RIGHT, BALANCING ETC.)
 
-#define MODE_TYPES 4
+#define INPUT_MODE_TYPES 2
+#define OUTPUT_MODE_TYPES 4
+#define MODE_STRING_SIZE 8+1
 
 enum mode_type {
-	TS = 0, // right
-	RS = 1, // left
-	TRS_B = 2,
-	TRS_UB = 3
+	TS = 0, //left
+	RS, //right
+	TRS_B,
+	TRS_UB
 };
 
-extern const char mode_manifest[MODE_TYPES][10];
+extern const char mode_manifest[OUTPUT_MODE_TYPES][MODE_STRING_SIZE];
+
+// EFFECTS TYPES AND MANIFEST
 
 #define EFFECT_TYPES 12
 
 enum effect_type {
-    AMPLIFIER,		// AMP
-    BITCRUSHER_RS,  // BITRS
-	BITCRUSHER_RT,  // BITRT
-    BYPASS,         //  -
-	COMPRESSOR,		// CMP
-    FUZZ,           // FZZ
-	HPF,			// HPF
-    LPF,            // LPF
-	NOISE_GATE,		// NGT
-    OVERDRIVE,      // OVR
-    TREMOLO,        // TRM
-	WAVE_GEN,		// WAV
+    AMP,
+    BRS,
+	BRT,
+    BYP,
+	CMP,
+    FZZ,
+	HPF,
+    LPF,
+	NGT,
+    OVR,
+    TRM,
+	WAV
 };
 
-#define INT_PARAM_TYPES 4
+#define INT_PARAMS_COUNT 2
+#define FLOAT_PARAMS_COUNT 6
 
-enum int_param_type {
-    REDUCTION,   		// reduction
-	DIVIDER,			// divider
-	HOLD,				// hold
-	// utils
-	COUNTER,            // counter
+enum int_param_raw {
+    IP0 = 0,
+	IP1 = 1
 };
 
-#define FLOAT_PARAM_TYPES 11
-
-enum float_param_type {
-	GAIN,				// gain, pre-gain, drive
-	SPEED,			    // speed
-    ATTACK,             // attack
-	THRESHOLD,          // threshold
-	INTENSITY,			// intensity
-	RELEASE,            // release
-	LEVEL,				// level, volume
-	// mixing
-    LEVEL_DRY,          // / mixing input (dry) and... output (wet) channel
-	LEVEL_WET,          // \ ...output (wet) channel
-    // utils
-    PAST_DRY,               // past dry
-	PAST_WET,               // past wet
+enum float_param_raw {
+    FP0 = 0,
+	FP1 = 1,
+	FP2 = 2,
+	FP3 = 3,
+	FP4 = 4,
+	FP5 = 5,
 };
 
-#define TOTAL_PARAM_TYPES (INT_PARAM_TYPES + FLOAT_PARAM_TYPES)
+#define TOTAL_PARAMS_COUNT (INT_PARAMS_COUNT + FLOAT_PARAMS_COUNT)
 
 // PARAMETERS structs
 
@@ -106,18 +101,13 @@ enum param_qualifier {
 	DB				// expressed in db
 };
 
-typedef struct _params_manifest_t {
-	int_params_manifest_t int_params_manifest[INT_PARAM_TYPES];
-	float_params_manifest_t float_params_manifest[FLOAT_PARAM_TYPES];
-} params_manifest_t;
-
 // EFFECT structs
 
-#define RAW_EFFECT_SIZE (1 + 4 * (TOTAL_PARAM_TYPES))
+#define RAW_EFFECT_SIZE (1 + 4 * TOTAL_PARAMS_COUNT)
 
 typedef struct _effect_config_t {
-	int32_t int_params[INT_PARAM_TYPES];
-	float float_params[FLOAT_PARAM_TYPES];
+	int32_t int_params[INT_PARAMS_COUNT];
+	float float_params[FLOAT_PARAMS_COUNT];
 } effect_config_t;
 
 typedef struct _effect_t {
@@ -125,15 +115,11 @@ typedef struct _effect_t {
 	effect_config_t config;
 } effect_t;
 
-typedef union _effect_union_t {
-	effect_t effect_formatted;
-	uint8_t effect_raw[RAW_EFFECT_SIZE];
-} effect_union_t;
-
 typedef struct _effect_manifest_t {
     char short_name[8];
     char long_name[24];
-    params_manifest_t params_manifest;
+    int_params_manifest_t int_params_manifest[INT_PARAMS_COUNT];
+	float_params_manifest_t float_params_manifest[FLOAT_PARAMS_COUNT];
     void (*effect_process)(float *value, effect_config_t *p_config);
 } effect_manifest_t;
 
@@ -141,13 +127,13 @@ extern const effect_manifest_t Effects_Manifest[EFFECT_TYPES];
 
 // PEDALBOARD
 
-#define PEDALBOARD_HANDLER_SIZE (RAW_EFFECT_SIZE * MAX_EFFECTS_COUNT + 1 + 1 + 1)
+#define PEDALBOARD_HANDLER_SIZE (RAW_EFFECT_SIZE * EFFECT_SLOTS_COUNT + 1 + 1 + 1)
 
 typedef struct _Pedalboard_Handler {
 	uint8_t input_mode;
 	uint8_t output_mode;
 	uint8_t active;
-    effect_union_t effects[MAX_EFFECTS_COUNT];
+	effect_t effects[EFFECT_SLOTS_COUNT];
 } Pedalboard_Handler;
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb);

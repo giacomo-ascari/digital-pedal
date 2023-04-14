@@ -334,13 +334,13 @@ int main(void)
 			// user event (if edit mode is active)
 			if (menu_data.edit_data.active) {
 				// if edit is active
-				uint8_t type = menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.type;
+				uint8_t type = menu_data.pedalboard.effects[menu_data.edit_data.index2].type;
 				uint8_t index, _int;
 				Pedalboard_GetActiveParamsByType(menu_data.edit_data.index1, type, &_int, &index);
-				effect_config_t *conf = &(menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.config);
+				effect_config_t *conf = &(menu_data.pedalboard.effects[menu_data.edit_data.index2].config);
 				if (_int) {
 					// integer parameter
-					int_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.int_params_manifest[index]);
+					int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[index]);
 					int32_t micro_step = 1, macro_step = 1;
 					if (manifest->qual == FREQUENCY) {
 						micro_step = 1;
@@ -363,7 +363,7 @@ int main(void)
 					menu_data.edit_data.oldvalue2 = hre2.counter;
 				} else {
 					// float parameter
-					float_params_manifest_t *manifest = &(Effects_Manifest[type].params_manifest.float_params_manifest[index]);
+					float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[index]);
 					float micro_step = 1.F, macro_step = 1.F;
 					if (manifest->qual == FREQUENCY) {
 						micro_step = 1;
@@ -387,14 +387,14 @@ int main(void)
 				}
 			} else {
 				// update indexes
-				menu_data.edit_data.index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.type));
-				menu_data.edit_data.index2 = RE_GetCount(&hre2, MAX_EFFECTS_COUNT);
+				menu_data.edit_data.index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(menu_data.pedalboard.effects[menu_data.edit_data.index2].type));
+				menu_data.edit_data.index2 = RE_GetCount(&hre2, EFFECT_SLOTS_COUNT);
 				if (btn_flags[7]) {
 					// go to next effect
 					btn_flags[7] = 0;
 					Pedalboard_SetEffect(
 							&(menu_data.pedalboard),
-							(menu_data.pedalboard.effects[menu_data.edit_data.index2].effect_formatted.type + 1) % EFFECT_TYPES,
+							(menu_data.pedalboard.effects[menu_data.edit_data.index2].type + 1) % EFFECT_TYPES,
 							menu_data.edit_data.index2);
 					Menu_Sync(&menu_data, SET_PB);
 					menu_data.pedalboard_changed = 1;
@@ -404,8 +404,8 @@ int main(void)
 		} else if (menu_data.page == MODE) {
 
 			// user event
-			menu_data.mode_data.input_selected = RE_GetCount(&hre1, MODE_TYPES);
-			menu_data.mode_data.output_selected = RE_GetCount(&hre2, MODE_TYPES);
+			menu_data.mode_data.input_selected = RE_GetCount(&hre1, INPUT_MODE_TYPES);
+			menu_data.mode_data.output_selected = RE_GetCount(&hre2, OUTPUT_MODE_TYPES);
 			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
 			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
 			if (btn_flags[6]) {

@@ -32,6 +32,10 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#define ARM_MATH_CM4
+#include "arm_math.h"
+#include "arm_const_structs.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

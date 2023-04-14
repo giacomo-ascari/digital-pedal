@@ -27,10 +27,6 @@
 #include "menu.h"
 #include "w25qxx.h"
 
-#define ARM_MATH_CM4
-#include "arm_math.h"
-#include "arm_const_structs.h"
-
 //tutorial for CMSIS DSP
 //https://stm32f4-discovery.net/2014/10/stm32f4-fft-example/
 //https://community.st.com/s/article/configuring-dsp-libraries-on-stm32cubeide
@@ -296,12 +292,12 @@ void command_callback() {
 		for (uint8_t i = 0; i < SAVE_SLOTS; i++) {
 			Pedalboard_Handler temp;
 			if (flash_isempty(i)) {
-				out_command->payload.bytes[i*(MAX_EFFECTS_COUNT+1)+0] = 0;
+				out_command->payload.bytes[i*(EFFECT_SLOTS_COUNT+1)+0] = 0;
 			} else {
-				out_command->payload.bytes[i*(MAX_EFFECTS_COUNT+1)+0] = 1;
+				out_command->payload.bytes[i*(EFFECT_SLOTS_COUNT+1)+0] = 1;
 				flash_load(i, &temp);
-				for (uint8_t j = 0; j < MAX_EFFECTS_COUNT; j++) {
-					out_command->payload.bytes[i*(MAX_EFFECTS_COUNT+1)+j+1] = temp.effects[j].effect_formatted.type;
+				for (uint8_t j = 0; j < EFFECT_SLOTS_COUNT; j++) {
+					out_command->payload.bytes[i*(EFFECT_SLOTS_COUNT+1)+j+1] = temp.effects[j].type;
 				}
 			}
 		}
