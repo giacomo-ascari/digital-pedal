@@ -44,8 +44,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 
-#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
-#define max(X, Y)  ((X) > (Y) ? (X) : (Y))
+#define MIN(X, Y)  ((X) < (Y) ? (X) : (Y))
+#define MAX(X, Y)  ((X) > (Y) ? (X) : (Y))
 
 /* USER CODE END PM */
 
@@ -340,21 +340,9 @@ int main(void)
 				effect_config_t *conf = &(menu_data.pedalboard.effects[menu_data.edit_data.index2].config);
 				if (_int) {
 					// integer parameter
-					int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[index]);
-					int32_t micro_step = 1, macro_step = 1;
-					if (manifest->qual == FREQUENCY) {
-						micro_step = 1;
-						macro_step = 10;
-					} else if (manifest->qual == PERCENTAGE) {
-						micro_step = (manifest->max - manifest->min) / 100;
-						macro_step = (manifest->max - manifest->min) / 10;
-					} else if (manifest->qual == VALUE) {
-						micro_step = max(1, (manifest->max - manifest->min) / 100);
-						macro_step = max(2, (manifest->max - manifest->min) / 10);
-					} else if (manifest->qual == TIME) {
-						micro_step = 5;
-						macro_step = 50;
-					}
+					const int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[index]);
+					int32_t micro_step = manifest->micro_step;
+					int32_t macro_step = manifest->macro_step;
 					conf->int_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
 					conf->int_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
 					if (conf->int_params[index] > manifest->max) conf->int_params[index] = manifest->max;
@@ -363,21 +351,9 @@ int main(void)
 					menu_data.edit_data.oldvalue2 = hre2.counter;
 				} else {
 					// float parameter
-					float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[index]);
-					float micro_step = 1.F, macro_step = 1.F;
-					if (manifest->qual == FREQUENCY) {
-						micro_step = 1;
-						macro_step = 10;
-					} else if (manifest->qual == PERCENTAGE) {
-						micro_step = (manifest->max - manifest->min) / 100;
-						macro_step = (manifest->max - manifest->min) / 10;
-					} else if (manifest->qual == VALUE) {
-						micro_step = (manifest->max - manifest->min) / 100;
-						macro_step = (manifest->max - manifest->min) / 10;
-					} else if (manifest->qual == TIME) {
-						micro_step = 5;
-						macro_step = 50;
-					}
+					const float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[index]);
+					float micro_step = manifest->micro_step;
+					float macro_step = manifest->macro_step;
 					conf->float_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
 					conf->float_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
 					if (conf->float_params[index] > manifest->max) conf->float_params[index] = manifest->max;

@@ -289,7 +289,6 @@ void Menu_Render(Menu_Data *data) {
 
 		// 0 cursor1, 1 cursor2, 2 content, 3 title
 
-
 		// cursors move and disapper when the edit is active
 		// rectangles changes color when pb changes
 		// texts when pb changes
@@ -332,15 +331,16 @@ void Menu_Render(Menu_Data *data) {
 			Menu_EraseTexts(2);
 			// param selection
 			row_index = 0;
-			for (uint8_t j = 0; j < INT_PARAM_TYPES; j++) {
+			for (uint8_t j = 0; j < INT_PARAMS_COUNT; j++) {
 				if (Effects_Manifest[type].int_params_manifest[j].active) {
-					int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[j]);
-					char unit[4] = "xy";
-					float value = data->pedalboard.effects[selected].config.int_params[j];
-					if (manifest->qual == PERCENTAGE) 		sprintf(row, "%s: %l %%", manifest->name, value * 100);
-					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %l xx", 	  manifest->name, value);
-					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %l Hz", manifest->name, value);
-					else if (manifest->qual == TIME) 		sprintf(row, "%s: %l ms", manifest->name, value);
+					const int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[j]);
+					int32_t value = data->pedalboard.effects[selected].config.int_params[j];
+					if (manifest->qual == PERCENTAGE) 		sprintf(row, "n/a");
+					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %ld", manifest->name, value);
+					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %ld Hz", manifest->name, value);
+					else if (manifest->qual == TIME) 		sprintf(row, "%s: %ld ms", manifest->name, value);
+					else if (manifest->qual == DB)			sprintf(row, "n/a");
+					else if (manifest->qual == KEY)			sprintf(row, "%s: %s", manifest->name, note_manifest[value]);
 					Menu_DrawText(
 							2,
 							row,
@@ -353,15 +353,16 @@ void Menu_Render(Menu_Data *data) {
 				}
 			}
 
-			for (uint8_t j = 0; j < FLOAT_PARAM_TYPES; j++) {
+			for (uint8_t j = 0; j < FLOAT_PARAMS_COUNT; j++) {
 				if (Effects_Manifest[type].float_params_manifest[j].active) {
-					float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[j]);
-					char unit[4] = "xy";
+					const float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[j]);
 					float value = data->pedalboard.effects[selected].config.float_params[j];
 					if (manifest->qual == PERCENTAGE) 		sprintf(row, "%s: %.1f %%", manifest->name, value * 100);
-					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %.1f yy",    manifest->name, value);
+					else if (manifest->qual == VALUE) 		sprintf(row, "%s: %.2f", manifest->name, value);
 					else if (manifest->qual == FREQUENCY) 	sprintf(row, "%s: %.1f Hz", manifest->name, value);
-					else if (manifest->qual == TIME) 		sprintf(row, "%s: %.1f ms", manifest->name, value);
+					else if (manifest->qual == TIME) 		sprintf(row, "n/a");
+					else if (manifest->qual == DB)			sprintf(row, "%s: %.1f dB", manifest->name, value);
+					else if (manifest->qual == KEY)			sprintf(row, "n/a");
 					Menu_DrawText(
 							2,
 							row,
@@ -379,7 +380,7 @@ void Menu_Render(Menu_Data *data) {
 		// just cursor 1
 		if (data->pedalboard_changed ||data->cursor1_changed || data->cursor2_changed) {
 			Menu_EraseTexts(0);
-			if (type != BYP && !data->edit_data.active) {
+			if (type != BYP && !data->edit_data.active && Pedalboard_CountActiveParamsByType(type) > 0) {
 				Menu_DrawText(0, ">", left - 10, upper + (data->edit_data.index1 % row_index) * 18, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			}
 		}

@@ -11,8 +11,9 @@
 // GENERIC STUFF
 
 // max and min for 24 bit samples
-#define MAX_VAL 8388608.0
-#define MIN_VAL -8388607.0
+#define MAX_VAL 8388608.F
+#define MIN_VAL -8388607.F
+#define ILLEGAL_VAL 8388609.F
 
 #define EFFECT_SLOTS_COUNT 6
 
@@ -30,6 +31,14 @@ enum mode_type {
 };
 
 extern const char mode_manifest[OUTPUT_MODE_TYPES][MODE_STRING_SIZE];
+
+// NOTES
+
+#define SEMITONES 12
+#define OCTAVES 7
+
+extern const float notes[SEMITONES*OCTAVES];
+extern const char note_manifest[SEMITONES*OCTAVES][7];
 
 // EFFECTS TYPES AND MANIFEST
 
@@ -94,11 +103,12 @@ typedef struct _float_params_manifest_t {
 } float_params_manifest_t;
 
 enum param_qualifier {
-	FREQUENCY,		// always in Hz
-	PERCENTAGE,		// should be [0,1]
-	VALUE,			// whatever m8
-	TIME,			// always in ms
-	DB				// expressed in db
+	FREQUENCY = 0,	// always in Hz			int and float
+	PERCENTAGE,		// should be [0,1]		float
+	VALUE,			// whatever m8			int and float
+	TIME,			// always in ms			int
+	DB,				// expressed in db		float
+	KEY				// musical note			int
 };
 
 // EFFECT structs
@@ -120,7 +130,7 @@ typedef struct _effect_manifest_t {
     char long_name[24];
     int_params_manifest_t int_params_manifest[INT_PARAMS_COUNT];
 	float_params_manifest_t float_params_manifest[FLOAT_PARAMS_COUNT];
-    void (*effect_process)(float *value, effect_config_t *p_config);
+	void (*effect_process)(float *value, effect_config_t *p_config);
 } effect_manifest_t;
 
 extern const effect_manifest_t Effects_Manifest[EFFECT_TYPES];
