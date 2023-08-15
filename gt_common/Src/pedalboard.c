@@ -16,7 +16,7 @@
 
 // DSP FUNCTIONS/MACROS
 
-#define CACHE_SIZE 5
+#define CACHE_SIZE EFFECT_SLOTS_COUNT
 float cached_log10f(float x, uint8_t slot);
 float cached_exp10f(float x, uint8_t slot);
 
@@ -48,13 +48,19 @@ const char note_manifest[SEMITONES*OCTAVES][7] = {
 		"C6",	"C#/D,6",	"D6",	"D#/E,6",	"E6",	"F6",	"F#/G,6",	"G6",	"G#/A,6",	"A6",	"A#/B,6",	"B6"
 };
 
+// CACHE
+
+#ifdef F407
+caches_t caches;
+#endif
+
 // AMPLIFIER
 
 #define AMP_GAIN FP0
 
-void amp_process(float *value, effect_config_t *conf) {
+void amp_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
-    *value *= cached_exp10f(conf->float_params[AMP_GAIN] * 0.1F, 0); // pow cache slot 0
+    *value *= cached_exp10f(conf->float_params[AMP_GAIN] * 0.1F, *slot_index); // pow cache slot 0
 #endif
 }
 
@@ -64,7 +70,7 @@ void amp_process(float *value, effect_config_t *conf) {
 #define BRS_LEVEL_DRY FP0
 #define BRS_LEVEL_WET FP1
 
-void brs_process(float *value, effect_config_t *conf) {
+void brs_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
 	float dry = *value;
     int32_t shift = conf->int_params[BRS_REDUCT];
@@ -82,74 +88,137 @@ void brs_process(float *value, effect_config_t *conf) {
 #define BRT_DIVIDER IP0
 #define BRT_LEVEL_DRY FP0
 #define BRT_LEVEL_WET FP1
-//util
-#define BRT_COUNTER IP1
-#define BRT_PAST_DRY FP2
 
-void brt_process(float *value, effect_config_t *conf) {
+#define BRT_COUNTER IC1
+#define BRT_PAST_DRY FC2
+
+void brt_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
 	float dry = *value;
 	// keep the same value until n of ticks
-	if (conf->int_params[BRT_COUNTER] % conf->int_params[BRT_DIVIDER] == 0) {
-		conf->float_params[BRT_PAST_DRY] = *value;
+	cache_t *cache = &caches.slots[*slot_index];
+	if (cache->int_params[BRT_COUNTER] % conf->int_params[BRT_DIVIDER] == 0) {
+		cache->float_params[BRT_PAST_DRY] = *value;
 	} else {
-		*value = conf->float_params[BRT_PAST_DRY];
+		*value = cache->float_params[BRT_PAST_DRY];
 	}
-	conf->int_params[BRT_COUNTER]++;
+	cache->int_params[BRT_COUNTER]++;
     *value = MIX(dry, *value, conf->float_params[BRT_LEVEL_DRY], conf->float_params[BRT_LEVEL_WET]);
 #endif
 }
 
 // BYPASS
 
-void byp_process(float *value, effect_config_t *conf) {}
+void byp_process(float *value, effect_config_t *conf, uint8_t *slot_index) {}
 
 // COMPRESSOR
 
-void cmp_process(float *value, effect_config_t *conf) {
+#define CMP_THRESHOLD FP0
+#define CMP_RATIO FP1
+
+#define CMP_PREV_DERIVATIVE FC0
+#define CMP_CURR_DERIVATIVE FC1
+#define CMP_VOLUME FC2
+#define CMP_PREV_VALUE FC3
+
+void cmp_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
+	float threshold = MAX_VAL * cached_exp10f(conf->float_params[CMP_THRESHOLD]*0.1, *slot_index);
+	// volume calculation (with cache stuff)
+	cache_t *cache = &caches.slots[*slot_index];
+	if (fabsf(*value) > cache->float_params[CMP_VOLUME]) {
+		cache->float_params[CMP_VOLUME] = fabsf(*value);
+	} else {
+		cache->float_params[CMP_CURR_DERIVATIVE] = *value - cache->float_params[CMP_PREV_VALUE];
+		if (cache->float_params[CMP_CURR_DERIVATIVE] >= 0.F && cache->float_params[CMP_PREV_DERIVATIVE] < 0.F) {
+			cache->float_params[CMP_VOLUME] = - *value;
+		} else if (cache->float_params[CMP_CURR_DERIVATIVE] < 0.F && cache->float_params[CMP_PREV_DERIVATIVE] >= 0.F) {
+			cache->float_params[CMP_VOLUME] = *value;
+		}
+	}
+	cache->float_params[CMP_PREV_DERIVATIVE] = cache->float_params[CMP_CURR_DERIVATIVE];
+	// real compressor stuff
+	//cache->float_params[CMP_VOLUME] = fabsf(*value);
+	if (cache->float_params[CMP_VOLUME] > threshold) {
+		if (*value > 0) {
+			*value = (*value - threshold) / conf->float_params[CMP_RATIO] + threshold;
+		} else {
+			*value = (*value + threshold) / conf->float_params[CMP_RATIO] - threshold;
+		}
+	}
 
 #endif
 }
 
-// FUZZ
+// FZZ
+//https://www.youtube.com/watch?v=gj8cT7WEGmo
 
-void fzz_process(float *value, effect_config_t *conf) {
+#define FZZ_GAIN FP0
+#define FZZ_LEVEL_DRY FP1
+#define FZZ_LEVEL_WET FP2
+
+#define FZZ_PREV_DERIVATIVE FC0
+#define FZZ_CURR_DERIVATIVE FC1
+#define FZZ_VOLUME FC2
+#define FZZ_PREV_VALUE FC3
+
+void fzz_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
-	//float dry = *value;
-	// distort and clip the hell out of it
-	//*value = MIX(dry, *value, conf->float_params[FZZ_LEVEL_DRY], conf->float_params[FZZ_LEVEL_WET]);
+	float dry = *value;
+	// volume calculation (with cache stuff)
+	cache_t *cache = &caches.slots[*slot_index];
+	if (fabsf(*value) > cache->float_params[FZZ_VOLUME]) {
+		cache->float_params[FZZ_VOLUME] = fabsf(*value);
+	} else {
+		cache->float_params[FZZ_CURR_DERIVATIVE] = *value - cache->float_params[FZZ_PREV_VALUE];
+		if (cache->float_params[FZZ_CURR_DERIVATIVE] >= 0.F && cache->float_params[FZZ_PREV_DERIVATIVE] < 0.F) {
+			cache->float_params[FZZ_VOLUME] = - *value;
+		} else if (cache->float_params[FZZ_CURR_DERIVATIVE] < 0.F && cache->float_params[FZZ_PREV_DERIVATIVE] >= 0.F) {
+			cache->float_params[FZZ_VOLUME] = *value;
+		}
+	}
+	cache->float_params[FZZ_PREV_DERIVATIVE] = cache->float_params[FZZ_CURR_DERIVATIVE];
+	// fuzz stuff
+	*value *= cached_exp10f(conf->float_params[FZZ_GAIN] * 0.1F, *slot_index); // pow cache slot 0
+	if (*value > cache->float_params[FZZ_VOLUME]) {
+		*value = cache->float_params[FZZ_VOLUME];
+	} else if (*value < -cache->float_params[FZZ_VOLUME]) {
+		*value = -cache->float_params[FZZ_VOLUME];
+	}
+	*value = MIX(dry, *value, conf->float_params[FZZ_LEVEL_DRY], conf->float_params[FZZ_LEVEL_WET]);
 #endif
 }
 
 // HPF
 
 #define HPF_ATTACK FP0
-//util
-#define HPF_PAST_DRY FP1
-#define HPF_PAST_WET FP2
 
-void hpf_process(float *value, effect_config_t *conf) {
+#define HPF_PAST_DRY FC0
+#define HPF_PAST_WET FC1
+
+void hpf_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
 	float dry = *value;
 	// alpha is attack
-	*value = (1.0 - conf->float_params[HPF_ATTACK]) * (conf->float_params[HPF_PAST_WET] + *value - conf->float_params[HPF_PAST_DRY]);
-	conf->float_params[HPF_PAST_DRY] = dry;
-    conf->float_params[HPF_PAST_WET] = *value;
+	cache_t *cache = &caches.slots[*slot_index];
+	*value = (1.0 - conf->float_params[HPF_ATTACK]) * (cache->float_params[HPF_PAST_WET] + *value - cache->float_params[HPF_PAST_DRY]);
+	cache->float_params[HPF_PAST_DRY] = dry;
+    cache->float_params[HPF_PAST_WET] = *value;
 #endif
 }
 
 // LPF
 
 #define LPF_ATTACK FP0
-//util
-#define LPF_PAST_WET FP1
 
-void lpf_process(float *value, effect_config_t *conf) {
+#define LPF_PAST_WET FC0
+
+void lpf_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
 	// alpha is attack
-	*value = conf->float_params[LPF_PAST_WET] + (1.0 - conf->float_params[LPF_ATTACK]) * (*value - conf->float_params[LPF_PAST_WET]);
-    conf->float_params[LPF_PAST_WET] = *value;
+	cache_t *cache = &caches.slots[*slot_index];
+	*value = cache->float_params[LPF_PAST_WET] + (1.0 - conf->float_params[LPF_ATTACK]) * (*value - cache->float_params[LPF_PAST_WET]);
+    cache->float_params[LPF_PAST_WET] = *value;
 #endif
 }
 
@@ -158,15 +227,17 @@ void lpf_process(float *value, effect_config_t *conf) {
 #define NGT_INTENSITY FP0
 #define NGT_THRESHOLD FP1
 #define NGT_HOLD IP0
-//util
-#define NGT_COUNTER IP1
 
-void ngt_process(float *value, effect_config_t *conf) {
+#define NGT_COUNTER IC0
+
+void ngt_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
-	if (fabsf(*value) < MAX_VAL * conf->float_params[NGT_THRESHOLD]) {
-    	conf->int_params[NGT_COUNTER]++;
+	cache_t *cache = &caches.slots[*slot_index];
+	float threshold = MAX_VAL * cached_exp10f(conf->float_params[NGT_THRESHOLD]*0.1, *slot_index);
+	if (fabsf(*value) < threshold) {
+    	cache->int_params[NGT_COUNTER]++;
     } else {
-    	conf->int_params[NGT_COUNTER] = 0;
+    	cache->int_params[NGT_COUNTER] = 0;
     }
 	// x / 48 = y
 	// (x / a) * (a / 48) = y
@@ -174,29 +245,9 @@ void ngt_process(float *value, effect_config_t *conf) {
 	// se a pot. di due allora bitshift e non si fanno divisioni
 	// 4096/48 = 85.333
 	// 4096 = 2^12
-	if ((conf->int_params[NGT_COUNTER] * 85 >> 12) > conf->int_params[NGT_HOLD]) {
+	if ((cache->int_params[NGT_COUNTER] * 85 >> 12) > conf->int_params[NGT_HOLD]) {
 		*value *=  (1.0 - conf->float_params[NGT_INTENSITY]);
 	}
-#endif
-}
-
-// OVERDRIVE
-
-void ovr_process(float *value, effect_config_t *conf) {
-#ifdef F407
-	//float dry = *value;
-	// distort and clip the hell out of it
-	//mix(&dry, value, value, conf);
-#endif
-}
-
-// TREMOLO
-
-void trm_process(float *value, effect_config_t *conf) {
-#ifdef F407
-	//float tone = 440.0F;
-    //wave_gen(value, 's', conf->int_params[COUNTER], tone * conf->float_params[SPEED]);
-    //conf->int_params[COUNTER]++;
 #endif
 }
 
@@ -206,22 +257,21 @@ void trm_process(float *value, effect_config_t *conf) {
 #define WAV_LEVEL_DRY FP1
 #define WAV_LEVEL_WET FP2
 #define WAV_KEY IP0
-//util
-#define WAV_COUNTER IP1
-#define TWO_PI 6.28318530717958F
-#ifdef F407
-void wave_gen(float *out, char t, uint32_t i, float tone);
-#endif
 
-void wav_process(float *value, effect_config_t *conf) {
+#define WAV_COUNTER IC0
+
+#define TWO_PI 6.28318530717958F
+
+void wav_process(float *value, effect_config_t *conf, uint8_t *slot_index) {
 #ifdef F407
 	float wave = 0.F;
+	cache_t *cache = &caches.slots[*slot_index];
 	// 0.000130899694F = 2 * PI / 48000
 	// w=freq*2*pi, t=counter/48000
 	// y=sin(wt)
-	wave = arm_sin_f32(notes[conf->int_params[WAV_KEY]] * conf->int_params[WAV_COUNTER] * 0.000130899694F); // fmodf is stupid, glicthes on 2:25
+	wave = arm_sin_f32(notes[conf->int_params[WAV_KEY]] * cache->int_params[WAV_COUNTER] * 0.000130899694F); // fmodf is stupid, glicthes on 2:25
 	wave *= (conf->float_params[WAV_LEVEL] * MAX_VAL);
-	conf->int_params[WAV_COUNTER]++;
+	cache->int_params[WAV_COUNTER]++;
 	*value = MIX(*value, wave, conf->float_params[WAV_LEVEL_DRY], conf->float_params[WAV_LEVEL_WET]);
 #endif
 }
@@ -268,11 +318,11 @@ float cached_exp10f(float x, uint8_t slot) {
 
 
 // MANIFESTs
-// ----------------------------------------------------------------------------------------------------- active, name, def, min, max, qual, micro s., macro s.
+// ------------------------------------------------------------------------------- active, name, def, min, max, qual, micro s., macro s.
 
 const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[AMP] = (effect_manifest_t){"amp","amplifier"},
-		[AMP].float_params_manifest[AMP_GAIN] = (float_params_manifest_t)			{ 1, "Gain", 0.0, -7.0, 7.0, DB, 0.1, 1 },
+		[AMP].float_params_manifest[AMP_GAIN] = (float_params_manifest_t)			{ 1, "Gain", 0.0, -10.0, 10.0, DB, 0.2, 1 },
 		[AMP].effect_process = amp_process,
 
 		[BRS] = (effect_manifest_t){"brs","bitcrusher rs"},
@@ -291,9 +341,14 @@ const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[BYP].effect_process = byp_process,
 
 		[CMP] = (effect_manifest_t){"cmp","compressor"},
+		[CMP].float_params_manifest[CMP_THRESHOLD] = (float_params_manifest_t)		{ 1, "Threshold", -30.0, -69.0, 0.0, DB, 1, 10 },
+		[CMP].float_params_manifest[CMP_RATIO] = (float_params_manifest_t)			{ 1, "Ratio", 2.0, 1.0, 10.0, VALUE, 0.1, 1.0 },
 		[CMP].effect_process = cmp_process,
 
 		[FZZ] = (effect_manifest_t){"fzz","fuzz"},
+		[FZZ].float_params_manifest[FZZ_GAIN] = (float_params_manifest_t)			{ 1, "Gain", 6.0, 0.0, 14.0, DB, 0.5, 5.0 },
+		[FZZ].float_params_manifest[FZZ_LEVEL_DRY] = (float_params_manifest_t)		{ 1, "Level dry", 0.5, 0.0, 1.0, PERCENTAGE, 0.01, 0.1 },
+		[FZZ].float_params_manifest[FZZ_LEVEL_WET] = (float_params_manifest_t)		{ 1, "Level wet", 0.5, 0.0, 1.0, PERCENTAGE, 0.01, 0.1 },
 		[FZZ].effect_process = fzz_process,
 
 		[HPF] = (effect_manifest_t){"hpf","high pass filter"},
@@ -305,16 +360,10 @@ const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[LPF].effect_process = lpf_process,
 
 		[NGT] = (effect_manifest_t){"ngt","noise gate"},
-		[NGT].float_params_manifest[NGT_THRESHOLD] = (float_params_manifest_t)		{ 1, "Threshold", 0.1, 0.0, 1.0, PERCENTAGE, 0.01, 0.1 },
+		[NGT].float_params_manifest[NGT_THRESHOLD] = (float_params_manifest_t)		{ 1, "Threshold", -30.0, -69.0, 0.0, DB, 1, 10 },
 		[NGT].float_params_manifest[NGT_INTENSITY] = (float_params_manifest_t)		{ 1, "Intensity", 0.5, 0.0, 1.0, PERCENTAGE, 0.01, 0.1 },
 		[NGT].int_params_manifest[NGT_HOLD] = (int_params_manifest_t)				{ 1, "Hold", 500, 0, 5000, TIME, 10, 100 },
 		[NGT].effect_process = ngt_process,
-
-		[OVR] = (effect_manifest_t){"ovr","overdrive"},
-		[OVR].effect_process = ovr_process,
-
-		[TRM] = (effect_manifest_t){"trm","tremolo"},
-		[TRM].effect_process = trm_process,
 
 		[WAV] = (effect_manifest_t){"wav","wave gen."},
 		[WAV].float_params_manifest[WAV_LEVEL] = (float_params_manifest_t)			{ 1, "Amplitude", 0.1, 0.0, 1.0, PERCENTAGE, 0.01, 0.1 },
@@ -324,21 +373,10 @@ const effect_manifest_t Effects_Manifest[EFFECT_TYPES] = {
 		[WAV].effect_process = wav_process
 };
 
-// OTHER
-
-const char mode_manifest[OUTPUT_MODE_TYPES][MODE_STRING_SIZE] = {
-		[TS] = {"ts"},
-		[RS] = {"rs"},
-		[TRS_B] = {"trs bal."},
-		[TRS_UB] = {"trs unb."}
-};
-
 // PEDALBOARD
 
 void Pedalboard_Init(Pedalboard_Handler *p_pb) {
 	p_pb->active = 1;
-	p_pb->input_mode = TS;
-	p_pb->output_mode = TS;
 	for (u_int8_t i = 0; i < EFFECT_SLOTS_COUNT; i++) {
 		p_pb->effects[i].type = BYP;
 	}
@@ -373,11 +411,12 @@ void Pedalboard_DeleteEffect(Pedalboard_Handler *p_pb, uint8_t i) {
 
 void Pedalboard_Process(Pedalboard_Handler *p_pb, float *value) {
 #ifdef F407
+	static uint8_t i;
     if (p_pb->active) {
-    	for (uint8_t i = 0; i < EFFECT_SLOTS_COUNT; i++) {
+    	for (i = 0; i < EFFECT_SLOTS_COUNT; i++) {
     		uint8_t type = p_pb->effects[i].type;
     		if (type != BYP) {
-    			Effects_Manifest[type].effect_process(value, &(p_pb->effects[i].config));
+    			Effects_Manifest[type].effect_process(value, &p_pb->effects[i].config, &i);
     		}
         }
     	if (*value > MAX_VAL) {

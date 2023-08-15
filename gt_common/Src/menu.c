@@ -10,53 +10,61 @@
 #include "menu.h"
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 void Menu_Init(Menu_Data *data, Commander_HandleTypeDef *_hcptr) {
 
 	data->hcptr = _hcptr;
-	Pedalboard_Init(&(data->pedalboard));
 	data->tick = 0;
 	data->debug = 0;
 	data->page = OVERVIEW;
+
+	//Pedalboard_Handler pedalboard;
+	//drum_conf_t drums_conf;
+	//lines_conf_t lines_conf;
 
 	data->overview_data.elapsedus = 0;
 
 	data->plot_data.xscale = 1;
 	data->plot_data.yscale = 1;
 
-	data->edit_data.index1 = 0;
-	data->edit_data.index2 = 0;
-	data->edit_data.active = 0;
-	data->edit_data.oldvalue1 = 0;
-	data->edit_data.oldvalue2 = 0;
-	data->edit_data.initialvalue1 = 0;
-	data->edit_data.initialvalue2 = 0;
+	data->pedals_data.index1 = 0;
+	data->pedals_data.index2 = 0;
+	data->pedals_data.active = 0;
+	data->pedals_data.oldvalue1 = 0;
+	data->pedals_data.oldvalue2 = 0;
+	data->pedals_data.initialvalue1 = 0;
+	data->pedals_data.initialvalue2 = 0;
 
-	data->mode_data.input_active = 0;
-	data->mode_data.input_selected = 0;
-	data->mode_data.output_active = 0;
-	data->mode_data.output_selected = 0;
+	data->lines_data.input_selected = 0;
+	data->lines_data.output_selected = 0;
 
-	data->spectrum_data.xshift = 0;
-	data->spectrum_data.yscale = 1;
+	data->drums_data.index1 = 0;
+	data->drums_data.index2 = 0;
+	data->drums_data.active = 0;
+	data->drums_data.oldvalue1 = 0;
+	data->drums_data.oldvalue2 = 0;
+	data->drums_data.initialvalue1 = 0;
+	data->drums_data.initialvalue2 = 0;
 
 	data->files_data.save_slots = 0;
 	data->files_data.slot_selected = 0;
 	data->files_data.action_selected = 0;
 
 	data->pedalboard_changed = 1; 	// changed by SYNC
+	data->lines_changed = 1;
+	data->drums_changed = 1;
 	data->cursor1_changed = 1; 		// changed by MAIN LOOP
 	data->cursor2_changed = 1; 		// changed by MAIN LOOP
-	data->text_changed = 1; 		// changed by MAIN LOOP and SYNC
 	data->signal_changed = 1;  		// changed by SYNC
 }
 
-const char page_manifest[PAGE_TYPES][20] = {
+const char page_manifest[PAGE_TYPES][10] = {
 		"overview",
 		"plot",
-		"edit",
-		"mode",
-		"spectrum",
+		"pedals",
+		"lines",
+		"drums",
 		"files",
 };
 
@@ -71,54 +79,19 @@ void Menu_Sync(Menu_Data *data, enum Menu_CommandHeader type) {
 
 	if (type == GET_PB) {
 
-		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
-		for (uint8_t i = 0; i <= segments; i++) {
-			out_command->param = i;
-			Commander_SendAndWait(data->hcptr);
-			if (i == segments) {
-				//partial copy
-				memcpy(
-					(uint8_t *)&data->pedalboard + PAYLOAD_BYTESIZE * i,
-					data->hcptr->in_command.payload.bytes,
-					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
-			} else {
-				// full copy
-				memcpy(
-					(uint8_t *)&data->pedalboard + PAYLOAD_BYTESIZE * i,
-					data->hcptr->in_command.payload.bytes,
-					PAYLOAD_BYTESIZE);
-			}
-		}
-
-		data->mode_data.input_active = data->pedalboard.input_mode;
-		data->mode_data.output_active = data->pedalboard.output_mode;
+		// assumes PEDALBOARD_HANDLER_SIZE <= PAYLOAD_BYTESIZE
+		Commander_SendAndWait(data->hcptr);
+		memcpy((uint8_t *)&data->pedalboard, data->hcptr->in_command.payload.bytes, PEDALBOARD_HANDLER_SIZE);
 		// changes
 		data->pedalboard_changed = 1;
 
 	} else if (type == SET_PB) {
 
-		data->pedalboard.input_mode = data->mode_data.input_active;
-		data->pedalboard.output_mode = data->mode_data.output_active;
-
-		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
-		for (uint8_t i = 0; i <= segments; i++) {
-			out_command->param = i;
-			if (i == segments) {
-				//partial copy
-				memcpy(
-					out_command->payload.bytes,
-					(uint8_t *)&data->pedalboard + PAYLOAD_BYTESIZE * i,
-					PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
-			} else {
-				// full copy
-				memcpy(
-					out_command->payload.bytes,
-					(uint8_t *)&data->pedalboard + PAYLOAD_BYTESIZE * i,
-					PAYLOAD_BYTESIZE);
-			}
-			Commander_SendAndWait(data->hcptr);
-		}
-
+		// assumes PEDALBOARD_HANDLER_SIZE <= PAYLOAD_BYTESIZE
+		memcpy(out_command->payload.bytes, (uint8_t *)&data->pedalboard, PEDALBOARD_HANDLER_SIZE );
+		Commander_SendAndWait(data->hcptr);
+		// changes
+		data->pedalboard_changed = 1;
 
 	} else if (type == GET_SIGNALS) {
 
@@ -179,6 +152,38 @@ void Menu_Sync(Menu_Data *data, enum Menu_CommandHeader type) {
 		// changes
 		data->text_changed = 1;
 
+	} else if (type == GET_DRUMS) {
+
+		// assumes DRUMS_CONF_SIZE <= PAYLOAD_BYTESIZE
+		Commander_SendAndWait(data->hcptr);
+		memcpy((uint8_t *)&data->drums_conf, data->hcptr->in_command.payload.bytes, DRUMS_CONF_SIZE);
+		// changes
+		data->drums_changed = 1;
+
+	} else if (type == SET_DRUMS) {
+
+		// assumes DRUMS_CONF_SIZE <= PAYLOAD_BYTESIZE
+		memcpy(out_command->payload.bytes, (uint8_t *)&data->drums_conf, DRUMS_CONF_SIZE );
+		Commander_SendAndWait(data->hcptr);
+		// changes
+		data->drums_changed = 1;
+
+	} else if (type == GET_LINES) {
+
+		// assumes DRUMS_CONF_SIZE <= PAYLOAD_BYTESIZE
+		Commander_SendAndWait(data->hcptr);
+		memcpy((uint8_t *)&data->lines_conf, data->hcptr->in_command.payload.bytes, LINES_CONF_SIZE);
+		// changes
+		data->lines_changed = 1;
+
+	} else if (type == SET_LINES) {
+
+		// assumes LINES_CONF_SIZE <= PAYLOAD_BYTESIZE
+		memcpy(out_command->payload.bytes, (uint8_t *)&data->lines_conf, LINES_CONF_SIZE );
+		Commander_SendAndWait(data->hcptr);
+		// changes
+		data->lines_changed = 1;
+
 	}
 }
 
@@ -204,7 +209,6 @@ uint8_t Menu_GoTo(Menu_Data *data, enum Menu_PageType new_page, uint8_t forced) 
 		// titles
 		LCD_Painter_DrawText(page_manifest[new_page], 20, 10, COLOR_BLACK, COLOR_WHITE, LARGE);
 
-		data->text_changed = 1;
 		data->cursor1_changed = 1;
 		data->cursor2_changed = 1;
 
@@ -227,19 +231,28 @@ void Menu_Render(Menu_Data *data) {
 			for (uint16_t i = 0; i < EFFECT_SLOTS_COUNT; i++) {
 				uint8_t t = data->pedalboard.effects[i].type;
 				if (t == BYP) {
-					ILI9341_Fill_Rect(width * i + 4, 70,  width * (i+1) - 4, 170, COLOR_LGRAY);
+					ILI9341_Fill_Rect(width * i + 4, 66,  width * (i+1) - 4, 156, COLOR_LGRAY);
 				} else {
 					active_pedals++;
-					ILI9341_Fill_Rect(width * i + 4, 70,  width * (i+1) - 4, 170, COLOR_ORANGE);
+					ILI9341_Fill_Rect(width * i + 4, 66,  width * (i+1) - 4, 156, COLOR_ORANGE);
 					for (uint8_t j = 0; j < strlen(Effects_Manifest[t].short_name); j++) {
-						LCD_Painter_DrawChar(Effects_Manifest[t].short_name[j], width * i + width/2 - 6, 80+18*j, COLOR_BLACK, COLOR_ORANGE, LARGE);
+						LCD_Painter_DrawChar(Effects_Manifest[t].short_name[j], width * i + width/2 - 6, 76+18*j, COLOR_BLACK, COLOR_ORANGE, LARGE);
 					}
 				}
 			}
-			sprintf(row, "active %d/%d ", active_pedals, EFFECT_SLOTS_COUNT);
-			LCD_Painter_DrawText(row, 200, 40, COLOR_BLACK, COLOR_WHITE, MEDIUM);
-			sprintf(row, "%s to %s", mode_manifest[data->pedalboard.input_mode], mode_manifest[data->pedalboard.output_mode]);
-			LCD_Painter_DrawText(row, 10, 190, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+
+			sprintf(row, "pedals %d/%d ", active_pedals, EFFECT_SLOTS_COUNT);
+			LCD_Painter_DrawText(row, 210, 40, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+
+			sprintf(row, "%s to %s", input_line_manifest[data->lines_conf.input_line], output_line_manifest[data->lines_conf.output_line]);
+			LCD_Painter_DrawText(row, 10, 180, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+
+			if (data->drums_conf.active) {
+				sprintf(row, "drums on, %.1f bpm", data->drums_conf.float_params[DFP1]);
+				LCD_Painter_DrawText(row, 10, 204, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			} else {
+				LCD_Painter_DrawText("drums off", 10, 204, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			}
 		}
 
 		if (data->text_changed) {
@@ -248,7 +261,7 @@ void Menu_Render(Menu_Data *data) {
 			float load = 100 * us_elapsed / us_per_dsptick;
 
 			sprintf(row, "load %.0f%%  ", load);
-			LCD_Painter_DrawText(row, 230, 190, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			LCD_Painter_DrawText(row, 230, 166, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 		}
 
 	} else if (data->page == PLOT) {
@@ -271,21 +284,32 @@ void Menu_Render(Menu_Data *data) {
 
 		if (data->signal_changed) {
 			Menu_ErasePlotpoints();
+			/*for (uint8_t i = 0; i < EFFECT_SLOTS_COUNT; i++) {
+				if (data->pedalboard.effects[i].type == CMP) {
+					float _threshold = MAX_VAL * powf(10.F, data->pedalboard.effects[i].config.float_params[FP0]*0.1F);
+					uint32_t threshold = _threshold;
+					uint16_t y = ILI9341_WIDTH / 2 - (data->plot_data.yscale * threshold >> 17);
+					if (y >= ILI9341_WIDTH / 2 - 127 && y < ILI9341_WIDTH / 2 + 127) {
+						ILI9341_drawLine(ILI9341_HEIGHT - 2 * SIGNAL_SIZE - 3, y, ILI9341_HEIGHT - 2 * SIGNAL_SIZE - 3 + 127, y, COLOR_BLUE);
+						ILI9341_drawLine(ILI9341_HEIGHT - SIGNAL_SIZE, y, ILI9341_HEIGHT - SIGNAL_SIZE + 127, y, COLOR_BLUE);
+					}
+				}
+			}*/
 			uint16_t x, y;
 			for (uint8_t i = 0; i < SIGNAL_SIZE; i++) {
 				// IN
 				x = (ILI9341_HEIGHT - 2 * SIGNAL_SIZE - 3) + i;
-				y = ILI9341_WIDTH / 2 + data->plot_data.signal_in[i] / 2;
+				y = ILI9341_WIDTH / 2 - data->plot_data.signal_in[i] / 2;
 				Menu_DrawPlotpoint(x, y, COLOR_BLACK, COLOR_WHITE);
 				// OUT
 				x = (ILI9341_HEIGHT - SIGNAL_SIZE) + i;
-				y = ILI9341_WIDTH / 2 + data->plot_data.signal_out[i] / 2;
+				y = ILI9341_WIDTH / 2 - data->plot_data.signal_out[i] / 2;
 				Menu_DrawPlotpoint(x, y, COLOR_BLACK, COLOR_WHITE);
 			}
 			ILI9341_drawLine(ILI9341_HEIGHT - SIGNAL_SIZE - 2, ILI9341_WIDTH / 2 - 64, ILI9341_HEIGHT - SIGNAL_SIZE - 2, ILI9341_WIDTH / 2 + 64, COLOR_LGRAY);
 		}
 
-	} else if (data->page == EDIT) {
+	} else if (data->page == PEDALS) {
 
 		// 0 cursor1, 1 cursor2, 2 content, 3 title
 
@@ -294,7 +318,7 @@ void Menu_Render(Menu_Data *data) {
 		// texts when pb changes
 		// numbers when edit is active
 
-		uint8_t selected = data->edit_data.index2;
+		uint8_t selected = data->pedals_data.index2;
 		uint8_t type = data->pedalboard.effects[selected].type;
 		uint16_t upper = 70;
 		uint8_t height = (ILI9341_WIDTH - upper) / EFFECT_SLOTS_COUNT;
@@ -304,7 +328,7 @@ void Menu_Render(Menu_Data *data) {
 		if (data->cursor2_changed) {
 			// cursor 2
 			Menu_EraseTexts(1);
-			Menu_DrawText(1, "<", 44, upper + height * data->edit_data.index2 + height / 2 - 8, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			Menu_DrawText(1, "<", 44, upper + height * data->pedals_data.index2 + height / 2 - 8, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 		}
 
 		if (data->pedalboard_changed) {
@@ -327,7 +351,7 @@ void Menu_Render(Menu_Data *data) {
 
 		static uint8_t row_index = 0;
 
-		if (data->pedalboard_changed || data->cursor2_changed || (data->cursor1_changed && data->edit_data.active)) {
+		if (data->pedalboard_changed || data->cursor2_changed || (data->cursor1_changed && data->pedals_data.active)) {
 			Menu_EraseTexts(2);
 			// param selection
 			row_index = 0;
@@ -347,7 +371,7 @@ void Menu_Render(Menu_Data *data) {
 							left,
 							upper + row_index * 18,
 							COLOR_BLACK,
-							(data->edit_data.index1 == row_index && data->edit_data.active) ? COLOR_ORANGE :COLOR_WHITE,
+							(data->pedals_data.index1 == row_index && data->pedals_data.active) ? COLOR_ORANGE :COLOR_WHITE,
 							MEDIUM);
 					row_index++;
 				}
@@ -369,7 +393,7 @@ void Menu_Render(Menu_Data *data) {
 							left,
 							upper + row_index * 18,
 							COLOR_BLACK,
-							(data->edit_data.index1 == row_index && data->edit_data.active) ? COLOR_ORANGE :COLOR_WHITE,
+							(data->pedals_data.index1 == row_index && data->pedals_data.active) ? COLOR_ORANGE :COLOR_WHITE,
 							MEDIUM);
 					row_index++;
 				}
@@ -380,19 +404,19 @@ void Menu_Render(Menu_Data *data) {
 		// just cursor 1
 		if (data->pedalboard_changed ||data->cursor1_changed || data->cursor2_changed) {
 			Menu_EraseTexts(0);
-			if (type != BYP && !data->edit_data.active && Pedalboard_CountActiveParamsByType(type) > 0) {
-				Menu_DrawText(0, ">", left - 10, upper + (data->edit_data.index1 % row_index) * 18, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			if (type != BYP && !data->pedals_data.active && Pedalboard_CountActiveParamsByType(type) > 0) {
+				Menu_DrawText(0, ">", left - 10, upper + (data->pedals_data.index1 % row_index) * 18, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			}
 		}
 
 
 
-	} else if (data->page == MODE) {
+	} else if (data->page == LINES) {
 
 		if (data->cursor1_changed) {
 			Menu_EraseTexts(0);
-			for (uint16_t i = 0; i < INPUT_MODE_TYPES; i++) {
-				if (i == data->mode_data.input_selected) {
+			for (uint16_t i = 0; i < INPUT_LINE_TYPES; i++) {
+				if (i == data->lines_data.input_selected) {
 					Menu_DrawText(0, ">", ILI9341_HEIGHT/2 - 100 - 10, i*20+76, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 				}
 			}
@@ -400,69 +424,123 @@ void Menu_Render(Menu_Data *data) {
 
 		if (data->cursor2_changed) {
 			Menu_EraseTexts(1);
-			for (uint16_t i = 0; i < OUTPUT_MODE_TYPES; i++) {
-				if (i == data->mode_data.output_selected) {
+			for (uint16_t i = 0; i < OUTPUT_LINE_TYPES; i++) {
+				if (i == data->lines_data.output_selected) {
 					Menu_DrawText(1, "<", ILI9341_HEIGHT/2 + 100, i*20+76, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 				}
 			}
 		}
 
-		if (data->text_changed) {
+		if (data->lines_changed) {
 			LCD_Painter_DrawText("input", ILI9341_HEIGHT/2 - 5*10 - 30, 50, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			LCD_Painter_DrawText("output", ILI9341_HEIGHT/2 + 30, 50, COLOR_BLACK, COLOR_WHITE, MEDIUM);
-			for (uint16_t i = 0; i < INPUT_MODE_TYPES; i++) {
+			for (uint16_t i = 0; i < INPUT_LINE_TYPES; i++) {
 				LCD_Painter_DrawText(
-						mode_manifest[i],
+						input_line_manifest[i],
 						ILI9341_HEIGHT/2 - 8 * 10 - 15,
 						i*20+76,
 						COLOR_BLACK,
-						(i == data->mode_data.input_active) ? COLOR_ORANGE : COLOR_WHITE,
+						(i == data->lines_conf.input_line) ? COLOR_ORANGE : COLOR_WHITE,
 						MEDIUM);
 			}
-			for (uint16_t i = 0; i < OUTPUT_MODE_TYPES; i++) {
+			for (uint16_t i = 0; i < OUTPUT_LINE_TYPES; i++) {
 				LCD_Painter_DrawText(
-						mode_manifest[i],
+						output_line_manifest[i],
 						ILI9341_HEIGHT/2 + 15,
 						i*20+76,
 						COLOR_BLACK,
-						(i == data->mode_data.output_active) ? COLOR_ORANGE : COLOR_WHITE,
+						(i == data->lines_conf.output_line) ? COLOR_ORANGE : COLOR_WHITE,
 						MEDIUM);
 			}
 		}
 
 
 
-	} else if (data->page == SPECTRUM) {
+	} else if (data->page == DRUMS) {
 
-		/*
-		// content
-		uint16_t x, y;
-		for (uint16_t i = 0; i < PAYLOAD_BYTESIZE; i++) {
-			x = PAYLOAD_BYTESIZE - i + (CANVAS_HEIGHT - PAYLOAD_BYTESIZE) / 2;
-			for (uint16_t j = 0; j < hm->spectrum[i] / 2; j++) {
-				y = j;
-				Painter_TogglePixel(image, &x, &y, TOP_RIGHT);
+		// 0 cursor1, 1 cursor2, 2 content, 3 title
+
+		// cursors move and disapper when the edit is active
+		// rectangles changes color when pb changes
+		// texts when pb changes
+		// numbers when edit is active
+
+		uint16_t upper = 76;
+		uint16_t left = ILI9341_HEIGHT/2 - 120;
+
+		static uint8_t row_index = 0;
+
+		if (data->drums_changed || (data->cursor2_changed && data->drums_data.active) || (data->cursor1_changed && data->drums_data.active)) {
+			Menu_EraseTexts(2);
+			// param selection
+			row_index = 0;
+			for (uint8_t j = 0; j < DRUM_INT_PARAMS_COUNT; j++) {
+				const drum_int_params_manifest_t *manifest = &(drum_params_manifest.int_params_manifest[j]);
+				int32_t value = data->drums_conf.int_params[j];
+				if (manifest->qual == DRUM_VALUE) 		sprintf(row, "%s: %ld", manifest->name, value);
+				else if (manifest->qual == DRUM_DB)		sprintf(row, "n/a");
+				else if (manifest->qual == DRUM_PS)		sprintf(row, "%s: %s", manifest->name, drum_presets_manifest[value].name);
+				Menu_DrawText(
+						2,
+						row,
+						left,
+						upper + row_index * 20,
+						COLOR_BLACK,
+						(data->drums_data.index1 == row_index && data->drums_data.active) ? COLOR_ORANGE :COLOR_WHITE,
+						MEDIUM);
+				row_index++;
+			}
+
+			for (uint8_t j = 0; j < DRUM_FLOAT_PARAMS_COUNT; j++) {
+				const drum_float_params_manifest_t *manifest = &(drum_params_manifest.float_params_manifest[j]);
+				float value = data->drums_conf.float_params[j];
+				if (manifest->qual == DRUM_VALUE) 		sprintf(row, "%s: %.2f", manifest->name, value);
+				else if (manifest->qual == DRUM_DB)		sprintf(row, "%s: %.1f dB", manifest->name, value);
+				else if (manifest->qual == DRUM_PS)		sprintf(row, "n/a");
+				Menu_DrawText(
+						2,
+						row,
+						left,
+						upper + row_index * 20,
+						COLOR_BLACK,
+						(data->drums_data.index1 == row_index && data->drums_data.active) ? COLOR_ORANGE :COLOR_WHITE,
+						MEDIUM);
+				row_index++;
+			}
+			//recomm bpm
+			sprintf(row, "rec. %.1f", drum_presets_manifest[data->drums_conf.int_params[DIP0]].default_bpm);
+			Menu_DrawText(2, row, 180, upper + 40, COLOR_LGRAY, COLOR_WHITE, MEDIUM);
+		}
+
+
+		// just cursor 1
+		if (data->drums_changed || data->cursor1_changed) {
+			Menu_EraseTexts(0);
+			if (!data->drums_data.active) {
+				Menu_DrawText(0, ">", left - 10, upper + (data->drums_data.index1 % row_index) * 20, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 			}
 		}
-		*/
 
-		/*
-		 *
-		 *
-		 * // content
-		uint16_t x, y;
-		for (uint8_t i = 0; i < SIGNAL_SIZE; i++) {
-			// IN
-			x = (CANVAS_HEIGHT - 2 * SIGNAL_SIZE - 3) + i;
-			y = CANVAS_WIDTH / 2 + hm->signal_in[i] / 2;
-			Painter_TogglePixel(image, &x, &y, BOT_LEFT);
-			// OUT
-			x = (CANVAS_HEIGHT - SIGNAL_SIZE) + i;
-			y = CANVAS_WIDTH / 2 + hm->signal_out[i] / 2;
-			Painter_TogglePixel(image, &x, &y, BOT_LEFT);
+		// on and off
+		if (data->drums_changed) {
+			Menu_EraseTexts(3);
+			Menu_DrawText(
+				3, "off", ILI9341_HEIGHT-80, 180, COLOR_BLACK,
+				(!data->drums_conf.active && !data->drums_data.active) ? COLOR_ORANGE :COLOR_WHITE,
+				MEDIUM);
+			Menu_DrawText(
+				3, "on", ILI9341_HEIGHT-80, 200, COLOR_BLACK,
+				(data->drums_conf.active && !data->drums_data.active) ? COLOR_ORANGE :COLOR_WHITE,
+				MEDIUM);
 		}
-		Painter_ToggleDottedRectangle(image, CANVAS_HEIGHT - SIGNAL_SIZE - 2, 0, CANVAS_HEIGHT - SIGNAL_SIZE - 1, CANVAS_WIDTH, BOT_LEFT);
-		 */
+
+		// just cursor 2
+		if (data->cursor2_changed) {
+			Menu_EraseTexts(1);
+			if (!data->drums_data.active) {
+				Menu_DrawText(1, "<", ILI9341_HEIGHT-80+30, 180 + (data->drums_data.index2 % 2) * 20, COLOR_BLACK, COLOR_WHITE, MEDIUM);
+			}
+		}
 
 
 	} else if (data->page == FILES) {
@@ -482,7 +560,7 @@ void Menu_Render(Menu_Data *data) {
 			for (uint8_t i = 0; i < data->files_data.save_slots; i++) {
 				if (data->files_data.full[i]) {
 					for (uint8_t j = 0; j < EFFECT_SLOTS_COUNT; j++) {
-						uint8_t type = data->files_data.saves[i][j];
+						uint8_t type = data->files_data.saves[i][j] % EFFECT_TYPES;
 						Menu_DrawText(2, Effects_Manifest[type].short_name, 30+j*(40+4), 50+20*i, COLOR_BLACK, COLOR_WHITE, MEDIUM);
 					}
 				} else {
@@ -498,16 +576,37 @@ void Menu_Render(Menu_Data *data) {
 	}
 
 	data->pedalboard_changed = 0;
+	data->lines_changed = 0;
+	data->drums_changed = 0;
 	data->cursor1_changed = 0;
 	data->cursor2_changed = 0;
 	data->text_changed = 0;
 	data->signal_changed = 0;
 }
 
+
+void Menu_UpdateFloatValue(float *value, float value_min, float value_max, float micro_step, float macro_step, int32_t micro_counter_curr, int32_t *micro_counter_old, int32_t macro_counter_curr, int32_t *macro_counter_old) {
+	*value += micro_step * (float)(micro_counter_curr - *micro_counter_old);
+	*value += macro_step * (float)(macro_counter_curr - *macro_counter_old);
+	if (*value > value_max) *value = value_max;
+	if (*value < value_min) *value = value_min;
+	*micro_counter_old = micro_counter_curr;
+	*macro_counter_old = macro_counter_curr;
+}
+
+void Menu_UpdateIntValue(int32_t *value, int32_t value_min, int32_t value_max, int32_t micro_step, int32_t macro_step, int32_t micro_counter_curr, int32_t *micro_counter_old, int32_t macro_counter_curr, int32_t *macro_counter_old) {
+	*value += micro_step * (micro_counter_curr - *micro_counter_old);
+	*value += macro_step * (macro_counter_curr - *macro_counter_old);
+	if (*value > value_max) *value = value_max;
+	if (*value < value_min) *value = value_min;
+	*micro_counter_old = micro_counter_curr;
+	*macro_counter_old = macro_counter_curr;
+}
+
 uint16_t texts_count[TEXT_CLASSES];
 Menu_TextToErase texts_to_erase[TEXT_CLASSES][MAX_TEXTS];
 
-void Menu_DrawText(uint8_t class, char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font) {
+void Menu_DrawText(uint8_t class, const char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font) {
 
 	LCD_Painter_DrawText(text, x, y, color, bg_color, font);
 	if (class < TEXT_CLASSES && texts_count[class] < MAX_TEXTS) {

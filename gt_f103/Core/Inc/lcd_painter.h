@@ -21,7 +21,7 @@ enum Font {
 
 void LCD_Painter_DrawChar(char c, uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font);
 
-void LCD_Painter_DrawText(char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font);
+void LCD_Painter_DrawText(const char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font);
 
 void LCD_Painter_EraseText(uint16_t chars, uint16_t x, uint16_t y, uint16_t bg_color, enum Font font);
 

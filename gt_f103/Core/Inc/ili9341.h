@@ -126,8 +126,8 @@ void ILI9341_Fill(uint16_t color); //Fill entire ILI9341 with color
 void ILI9341_Fill_Rect(unsigned int x0, unsigned int y0, unsigned int x1, unsigned int y1, uint16_t color);
 //8. Circle drawing functions
 void ILI9341_drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
-static void drawCircleHelper( int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint16_t color);
-static void fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, int16_t delta, uint16_t color);
+//static void drawCircleHelper( int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint16_t color);
+//static void fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, int16_t delta, uint16_t color);
 void ILI9341_fillCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
 //9. Line drawing functions
 void ILI9341_drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);

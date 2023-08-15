@@ -18,12 +18,16 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "fatfs.h"
+#include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "commander.h"
 #include "AUDIO.h"
 #include "pedalboard.h"
+#include "lines.h"
+#include "drummachine.h"
 #include "menu.h"
 #include "w25qxx.h"
 
@@ -48,6 +52,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 I2C_HandleTypeDef hi2c1;
 
 I2S_HandleTypeDef hi2s2;
@@ -57,12 +63,18 @@ DMA_HandleTypeDef hdma_spi3_tx;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim6;
+TIM_HandleTypeDef htim7;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
+
+// VOLUME KNOV
+volatile float volume_knob;
+volatile float knob_rot;
 
 // TIMER MICROSECOND COUNTER
 uint16_t timer_start;
@@ -75,8 +87,12 @@ uint16_t timer_elapsed;
 // COMMANDER
 Commander_HandleTypeDef hcommander;
 
+// LINES
+lines_conf_t lines;
 // PEDALBOARD
 Pedalboard_Handler hpedalboard;
+// DRUM MACHINE
+drum_conf_t drummachine;
 
 #define SAMPLES_QUANTITY 128 // two halves combined
 #define HALF_QUANTITY 64 // which 32 are left and 32 are right
@@ -100,7 +116,7 @@ float32_t frequency;
 arm_cfft_radix4_instance_f32 S;
 
 // DAC
-extern AUDIO_DrvTypeDef cs43l22_drv;
+//extern AUDIO_DrvTypeDef cs43l22_drv;
 int16_t DAC_BUFF[SAMPLES_QUANTITY + SAMPLES_QUANTITY];
 // second SAMPLES_QUANTITY is just padding because DMA stuff
 
@@ -121,6 +137,22 @@ union _ADC_BUFF {
 } ADC_BUFF;
 int32_t BUFF_CONV[4];
 
+// USB
+extern ApplicationTypeDef Appli_state;
+//File IO Variables
+FIL myFile;
+FRESULT res;
+uint32_t byteswritten, bytesread;
+char rwtext[100];
+uint8_t usb_mounted;
+uint8_t usb_ready;
+FATFS myUsbFatFS;
+
+// TEST PER AUDIO STREAM
+uint8_t dummy_1[4096];
+uint8_t dummy_2[4096];
+uint32_t start, stop, elapsed;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,12 +166,82 @@ static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM7_Init(void);
+void MX_USB_HOST_Process(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint8_t copy_usb_to_flash3(void)
+{
+	//Open file for Reading
+	if(f_open(&myFile, "SAMPLES.BIN", FA_READ) != FR_OK)
+	{
+		return 0; //error
+	}
+	else
+	{
+		//Read text from files until NULL
+		for(uint8_t i=0; i<100; i++)
+		{
+			res = f_read(&myFile, (uint8_t*)&rwtext[i], 1, &bytesread);
+			if(rwtext[i] == 0x00)
+			{
+				bytesread = i;
+				break;
+			}
+		}
+		//Reading error handling
+		if(bytesread==0) return 0;
+	}
+
+	//Close file
+	f_close(&myFile);
+	return 1; //success
+}
+
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim == &htim2) {
+
+		static uint32_t samples[5];
+
+		for (uint8_t i = 0; i < 5; i++) {
+			HAL_ADC_Start(&hadc1);
+			if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK) {
+				samples[i] = HAL_ADC_GetValue(&hadc1);
+			}
+			HAL_ADC_Stop(&hadc1);
+		}
+
+		for (uint8_t i = 1; i < 5; i++) {
+			uint8_t j = i;
+			while (j > 0 && samples[j-1] > samples[j]) {
+				uint32_t support = samples[j];
+				samples[j] = samples[j-1];
+				samples[j-1] = support;
+				j -= 1;
+			}
+		}
+
+		volume_knob = (float)samples[2];
+
+		//float x = - (volume_knob - 4095.3F) / 66.3F;
+		knob_rot = log10f(- (volume_knob - 4095.3F) / 66.3F);
+
+		// -135 -> 4095 = B + A 10^(-135)
+		// 0    -> 4029 = B + A 10^(0)
+		// +135 -> 2979 = B + A 10^(+135)
+
+	}
+}
 
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -197,38 +299,14 @@ void command_callback() {
 
 	if (in_command->header == GET_PB) {
 
-		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
-		if (in_command->param == segments) {
-			//partial copy
-			memcpy(
-				out_command->payload.bytes,
-				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-				PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
-		} else {
-			// full copy
-			memcpy(
-				out_command->payload.bytes,
-				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-				PAYLOAD_BYTESIZE);
-		}
+		// assumes PEDALBOARD_HANDLER_SIZE <= PAYLOAD_BYTESIZE
+		memcpy(out_command->payload.bytes, (uint8_t *)&hpedalboard, PEDALBOARD_HANDLER_SIZE);
 		Commander_Send(&hcommander);
 
 	} else if (in_command->header == SET_PB) {
 
-		uint16_t segments = PEDALBOARD_HANDLER_SIZE / PAYLOAD_BYTESIZE;
-		if (in_command->param == segments) {
-			//partial copy
-			memcpy(
-				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-				in_command->payload.bytes,
-				PEDALBOARD_HANDLER_SIZE % PAYLOAD_BYTESIZE);
-		} else {
-			// full copy
-			memcpy(
-				(uint8_t *)&hpedalboard + PAYLOAD_BYTESIZE * in_command->param,
-				in_command->payload.bytes,
-				PAYLOAD_BYTESIZE);
-		}
+		// assumes PEDALBOARD_HANDLER_SIZE <= PAYLOAD_BYTESIZE
+		memcpy((uint8_t *)&hpedalboard, in_command->payload.bytes, PEDALBOARD_HANDLER_SIZE);
 		Commander_Send(&hcommander);
 
 	} else if (in_command->header == GET_SIGNALS) {
@@ -318,6 +396,26 @@ void command_callback() {
 		flash_delete(in_command->subheader);
 		Commander_Send(&hcommander);
 
+	} else if (in_command->header == GET_DRUMS) {
+
+		memcpy(out_command->payload.bytes, (uint8_t *)&drummachine, DRUMS_CONF_SIZE);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == SET_DRUMS) {
+
+		memcpy((uint8_t *)&drummachine, in_command->payload.bytes, DRUMS_CONF_SIZE);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == GET_LINES) {
+
+		memcpy(out_command->payload.bytes, (uint8_t *)&lines, LINES_CONF_SIZE);
+		Commander_Send(&hcommander);
+
+	} else if (in_command->header == SET_LINES) {
+
+		memcpy((uint8_t *)&lines, in_command->payload.bytes, LINES_CONF_SIZE);
+		Commander_Send(&hcommander);
+
 	}
 
 	// surely faulty command
@@ -349,6 +447,7 @@ void DSP(uint8_t * buf, int16_t * out) {
 
 	// processing intermediate value
 	Pedalboard_Process(&hpedalboard, &mid);
+	Drum_Playback(&mid, &drummachine);
 
 	// casting float to 16bits
 	*out = (int16_t)(mid / 256);
@@ -378,35 +477,35 @@ void DSP(uint8_t * buf, int16_t * out) {
 
 void Mode_N_DSP(uint8_t * buf_tip, uint8_t * buf_ring, int16_t * out_tip, int16_t * out_ring) {
 
-	if (hpedalboard.input_mode == TS && hpedalboard.output_mode == TS) {
+	if (lines.input_line == TS && lines.output_line == TS) {
 		DSP(buf_tip, out_tip);
 		*out_ring = 0;
 
-	} else if (hpedalboard.input_mode == TS && hpedalboard.output_mode == RS) {
+	} else if (lines.input_line == TS && lines.output_line == RS) {
 		DSP(buf_tip, out_ring);
 		*out_tip = 0;
 
-	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == TS) {
+	} else if (lines.input_line == RS && lines.output_line == TS) {
 		DSP(buf_ring, out_tip);
 		*out_ring = 0;
 
-	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == RS) {
+	} else if (lines.input_line == RS && lines.output_line == RS) {
 		DSP(buf_ring, out_ring);
 		*out_tip = 0;
 
-	} else if (hpedalboard.input_mode == TS && hpedalboard.output_mode == TRS_B) {
+	} else if (lines.input_line == TS && lines.output_line == TRS_B) {
 		DSP(buf_tip, out_tip);
 		*out_ring = - *out_tip;
 
-	} else if (hpedalboard.input_mode == TS && hpedalboard.output_mode == TRS_UB) {
+	} else if (lines.input_line == TS && lines.output_line == TRS_U) {
 		DSP(buf_tip, out_tip);
 		*out_ring = *out_tip;
 
-	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == TRS_B) {
+	} else if (lines.input_line == RS && lines.output_line == TRS_B) {
 		DSP(buf_ring, out_tip);
 		*out_ring = *out_tip;
 
-	} else if (hpedalboard.input_mode == RS && hpedalboard.output_mode == TRS_UB) {
+	} else if (lines.input_line == RS && lines.output_line == TRS_U) {
 		DSP(buf_ring, out_tip);
 		*out_ring = *out_tip;
 	}
@@ -494,22 +593,35 @@ int main(void)
   MX_I2S2_Init();
   MX_TIM6_Init();
   MX_SPI1_Init();
+  MX_ADC1_Init();
+  MX_TIM2_Init();
+  MX_TIM7_Init();
+  MX_FATFS_Init();
+  MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
+
+	// LINES
+	Lines_Init(&lines);
+
+	// PEDALBOARD
+	Pedalboard_Init(&hpedalboard);
+
+	// DRUM MACHINE
+	Drum_Init(&drummachine);
 
 	// COMMANDER
 	Commander_Init(&hcommander, &huart1, &hdma_usart1_rx, command_callback);
 	Commander_Start(&hcommander);
 
-	// PEDALBOARD
-	Pedalboard_Init(&hpedalboard);
-	//Pedalboard_SetEffect(&hpedalboard, NOISE_GATE, 0);
-
 	// DAC
 	HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, RESET);
-	cs43l22_Init(0x94, OUTPUT_DEVICE_HEADPHONE, 200, AUDIO_FREQUENCY_48K);
+	cs43l22_Init(AUDIO_I2C_ADDRESS, OUTPUT_DEVICE_HEADPHONE, 200, AUDIO_FREQUENCY_48K);
 	cs43l22_Play(AUDIO_I2C_ADDRESS, (uint16_t *)DAC_BUFF, SAMPLES_QUANTITY);
 	HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)DAC_BUFF, SAMPLES_QUANTITY);
 	cs43l22_SetVolume(AUDIO_I2C_ADDRESS, 220);
+
+	// VOLUME KNOB
+	//HAL_TIM_Base_Start_IT(&htim2);
 
 	// ADC
 	HAL_I2S_Receive_DMA(&hi2s2, ADC_BUFF.ADC16, 4);
@@ -523,6 +635,7 @@ int main(void)
 
 	// TIMER
 	HAL_TIM_Base_Start(&htim6);
+	HAL_TIM_Base_Start(&htim7);
 
   /* USER CODE END 2 */
 
@@ -531,10 +644,48 @@ int main(void)
 	while (1)
 	{
     /* USER CODE END WHILE */
+    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
 
 		Commander_ProcessIncoming(&hcommander);
+
+		for (uint8_t i = 0; i < 10; i++) {
+			uint32_t offset = 26;
+
+			if (W25qxx_IsEmptySector(offset + i, 0, PEDALBOARD_HANDLER_SIZE)) {
+				W25qxx_WriteSector((uint8_t *)dummy_1, offset + i, 0, 4096);
+			}
+
+			start = __HAL_TIM_GET_COUNTER(&htim7);
+			W25qxx_ReadSector((uint8_t *)dummy_2, offset + i, 0, 4096);
+			stop = __HAL_TIM_GET_COUNTER(&htim7);
+			elapsed = stop - start;
+
+			if (!W25qxx_IsEmptySector(offset + i, 0, PEDALBOARD_HANDLER_SIZE)) {
+				W25qxx_EraseSector(offset + i);
+			}
+
+		}
+
+		if (Appli_state == APPLICATION_START) {
+
+			if(f_mount(&myUsbFatFS, (TCHAR const*)USBHPath, 0) == FR_OK) {
+				usb_mounted = 1;
+			}
+
+		} else if (Appli_state == APPLICATION_READY) {
+
+			usb_ready = 1;
+
+			// do the thing
+
+		} else if (Appli_state == APPLICATION_DISCONNECT) {
+
+			usb_mounted = 0;
+			usb_ready = 0;
+
+		} // APPLICATION_IDLE
 
 		/* USER CODE END WHILE */
 
@@ -625,6 +776,58 @@ void PeriphCommonClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_15;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
@@ -768,6 +971,51 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 168-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 100000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief TIM6 Initialization Function
   * @param None
   * @retval None
@@ -802,6 +1050,44 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 168-1;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 65535;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
 
 }
 
@@ -850,13 +1136,13 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
 
 }
@@ -869,19 +1155,31 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(USBPower_GPIO_Port, USBPower_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SPKRPower_GPIO_Port, SPKRPower_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, FLASH_CS_Pin|LD1_Pin|LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : USBPower_Pin */
+  GPIO_InitStruct.Pin = USBPower_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(USBPower_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SPKRPower_Pin */
   GPIO_InitStruct.Pin = SPKRPower_Pin;
@@ -897,6 +1195,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

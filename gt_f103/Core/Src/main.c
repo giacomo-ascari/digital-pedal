@@ -216,7 +216,10 @@ int main(void)
 	enum Menu_PageType new_page;
 	Menu_Init(&menu_data, &hcommander);
 	Menu_Sync(&menu_data, GET_PB);
-	Menu_Sync(&menu_data, GET_LOAD);
+	Menu_Sync(&menu_data, GET_LINES);
+	Menu_Sync(&menu_data, GET_DRUMS);
+
+	//Menu_Sync(&menu_data, GET_LOAD);
 
 	Menu_GoTo(&menu_data, OVERVIEW, 1);
 	Menu_Render(&menu_data);
@@ -257,14 +260,16 @@ int main(void)
 			// PAGE CHANGE EVENT (one time)
 			if (menu_data.page == OVERVIEW) {
 				Menu_Sync(&menu_data, GET_PB);
+				Menu_Sync(&menu_data, GET_LINES);
+				Menu_Sync(&menu_data, GET_DRUMS);
 			} else if (menu_data.page == PLOT) {
 				// nothin'
-			} else if (menu_data.page == EDIT) {
+			} else if (menu_data.page == PEDALS) {
 				Menu_Sync(&menu_data, GET_PB);
-			} else if (menu_data.page == MODE) {
-				Menu_Sync(&menu_data, GET_PB);
-			} else if (menu_data.page == SPECTRUM) {
-				// nothin'
+			} else if (menu_data.page == LINES) {
+				Menu_Sync(&menu_data, GET_LINES);
+			} else if (menu_data.page == DRUMS) {
+				Menu_Sync(&menu_data, GET_DRUMS);
 			} else if (menu_data.page == FILES) {
 				Menu_Sync(&menu_data, GET_FLASH);
 			}
@@ -293,124 +298,160 @@ int main(void)
 			menu_data.plot_data.xscale = RE_GetCount(&hre1, 100) + 1;
 			menu_data.plot_data.yscale = RE_GetCount(&hre2, 100) + 1;
 
-
 			// periodic
 			if (HAL_GetTick() > menu_data.tick + sync_interval[PLOT]) {
 				menu_data.tick = HAL_GetTick();
 				Menu_Sync(&menu_data, GET_SIGNALS);
 			}
 
-		} else if (menu_data.page == EDIT) {
-
-			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
-			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+		} else if (menu_data.page == PEDALS) {
 
 			// user event (to and from edit mode)
 			if (btn_flags[6]) {
 				// if low btn pressed
 				btn_flags[6] = 0;
 				btn_flags[7] = 0;
-				if (!menu_data.edit_data.active) {
+				if (!menu_data.pedals_data.active) {
 					// going to edit mode
-					menu_data.edit_data.active = 1;
-					menu_data.edit_data.oldvalue1 = hre1.counter;
-					menu_data.edit_data.oldvalue2 = hre2.counter;
-					menu_data.edit_data.initialvalue1 = hre1.counter;
-					menu_data.edit_data.initialvalue2 = hre2.counter;
+					menu_data.pedals_data.active = 1;
+					menu_data.pedals_data.oldvalue1 = hre1.counter;
+					menu_data.pedals_data.oldvalue2 = hre2.counter;
+					menu_data.pedals_data.initialvalue1 = hre1.counter;
+					menu_data.pedals_data.initialvalue2 = hre2.counter;
 					menu_data.cursor1_changed = 1;
 					menu_data.cursor2_changed = 1;
 				} else {
 					// exiting edit mode
-					menu_data.edit_data.active = 0;
-					hre1.counter = menu_data.edit_data.initialvalue1;
-					hre2.counter = menu_data.edit_data.initialvalue2;
+					menu_data.pedals_data.active = 0;
+					hre1.counter = menu_data.pedals_data.initialvalue1;
+					hre2.counter = menu_data.pedals_data.initialvalue2;
 					Menu_Sync(&menu_data, SET_PB);
 					menu_data.cursor1_changed = 1;
 					menu_data.cursor2_changed = 1;
-					menu_data.pedalboard_changed = 1;
 				}
 			}
 
 			// user event (if edit mode is active)
-			if (menu_data.edit_data.active) {
+			if (menu_data.pedals_data.active) {
 				// if edit is active
-				uint8_t type = menu_data.pedalboard.effects[menu_data.edit_data.index2].type;
+				uint8_t type = menu_data.pedalboard.effects[menu_data.pedals_data.index2].type;
 				uint8_t index, _int;
-				Pedalboard_GetActiveParamsByType(menu_data.edit_data.index1, type, &_int, &index);
-				effect_config_t *conf = &(menu_data.pedalboard.effects[menu_data.edit_data.index2].config);
+				Pedalboard_GetActiveParamsByType(menu_data.pedals_data.index1, type, &_int, &index);
+				effect_config_t *conf = &(menu_data.pedalboard.effects[menu_data.pedals_data.index2].config);
 				if (_int) {
-					// integer parameter
 					const int_params_manifest_t *manifest = &(Effects_Manifest[type].int_params_manifest[index]);
-					int32_t micro_step = manifest->micro_step;
-					int32_t macro_step = manifest->macro_step;
-					conf->int_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
-					conf->int_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
-					if (conf->int_params[index] > manifest->max) conf->int_params[index] = manifest->max;
-					if (conf->int_params[index] < manifest->min) conf->int_params[index] = manifest->min;
-					menu_data.edit_data.oldvalue1 = hre1.counter;
-					menu_data.edit_data.oldvalue2 = hre2.counter;
+					Menu_UpdateIntValue(
+							&conf->int_params[index], manifest->min, manifest->max, manifest->micro_step, manifest->macro_step,
+							hre1.counter, &menu_data.pedals_data.oldvalue1, hre2.counter, &menu_data.pedals_data.oldvalue2
+					);
 				} else {
-					// float parameter
 					const float_params_manifest_t *manifest = &(Effects_Manifest[type].float_params_manifest[index]);
-					float micro_step = manifest->micro_step;
-					float macro_step = manifest->macro_step;
-					conf->float_params[index] += micro_step * (hre1.counter - menu_data.edit_data.oldvalue1);
-					conf->float_params[index] += macro_step * (hre2.counter - menu_data.edit_data.oldvalue2);
-					if (conf->float_params[index] > manifest->max) conf->float_params[index] = manifest->max;
-					if (conf->float_params[index] < manifest->min) conf->float_params[index] = manifest->min;
-					menu_data.edit_data.oldvalue1 = hre1.counter;
-					menu_data.edit_data.oldvalue2 = hre2.counter;
+					Menu_UpdateFloatValue(
+							&conf->float_params[index], manifest->min, manifest->max, manifest->micro_step, manifest->macro_step,
+							hre1.counter, &menu_data.pedals_data.oldvalue1, hre2.counter, &menu_data.pedals_data.oldvalue2
+					);
 				}
 			} else {
 				// update indexes
-				menu_data.edit_data.index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(menu_data.pedalboard.effects[menu_data.edit_data.index2].type));
-				menu_data.edit_data.index2 = RE_GetCount(&hre2, EFFECT_SLOTS_COUNT);
+				menu_data.pedals_data.index1 = RE_GetCount(&hre1, Pedalboard_CountActiveParamsByType(menu_data.pedalboard.effects[menu_data.pedals_data.index2].type));
+				menu_data.pedals_data.index2 = RE_GetCount(&hre2, EFFECT_SLOTS_COUNT);
 				if (btn_flags[7]) {
 					// go to next effect
 					btn_flags[7] = 0;
 					Pedalboard_SetEffect(
 							&(menu_data.pedalboard),
-							(menu_data.pedalboard.effects[menu_data.edit_data.index2].type + 1) % EFFECT_TYPES,
-							menu_data.edit_data.index2);
+							(menu_data.pedalboard.effects[menu_data.pedals_data.index2].type + 1) % EFFECT_TYPES,
+							menu_data.pedals_data.index2);
 					Menu_Sync(&menu_data, SET_PB);
-					menu_data.pedalboard_changed = 1;
 				}
 			}
 
-		} else if (menu_data.page == MODE) {
+		} else if (menu_data.page == LINES) {
 
 			// user event
-			menu_data.mode_data.input_selected = RE_GetCount(&hre1, INPUT_MODE_TYPES);
-			menu_data.mode_data.output_selected = RE_GetCount(&hre2, OUTPUT_MODE_TYPES);
-			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
-			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
+			menu_data.lines_data.input_selected = RE_GetCount(&hre1, INPUT_LINE_TYPES);
+			menu_data.lines_data.output_selected = RE_GetCount(&hre2, OUTPUT_LINE_TYPES);
 			if (btn_flags[6]) {
 				btn_flags[6] = 0;
-				menu_data.mode_data.input_active = menu_data.mode_data.input_selected;
-				Menu_Sync(&menu_data, SET_PB);
-				menu_data.text_changed = 1;
+				menu_data.lines_conf.input_line = menu_data.lines_data.input_selected;
+				Menu_Sync(&menu_data, SET_LINES);
 			}
 			if (btn_flags[7]) {
 				btn_flags[7] = 0;
-				menu_data.mode_data.output_active = menu_data.mode_data.output_selected;
-				Menu_Sync(&menu_data, SET_PB);
-				menu_data.text_changed = 1;
+				menu_data.lines_conf.output_line = menu_data.lines_data.output_selected;
+				Menu_Sync(&menu_data, SET_LINES);
 			}
 
-		} else if (menu_data.page == SPECTRUM) {
+		} else if (menu_data.page == DRUMS) {
 
-			//if (HAL_GetTick() > menu_data.tick + sync_interval[OVERVIEW]) {
-			//	menu_data.tick = HAL_GetTick();
-			//	Menu_Sync(&menu_data, GET_SPECTRUM);
-			//}
+			// user event (to and from edit mode)
+			if (btn_flags[6]) {
+				// if low btn pressed
+				btn_flags[6] = 0;
+				btn_flags[7] = 0;
+				if (!menu_data.drums_data.active) {
+					// going to edit mode
+					menu_data.drums_data.active = 1;
+					menu_data.drums_data.oldvalue1 = hre1.counter;
+					menu_data.drums_data.oldvalue2 = hre2.counter;
+					menu_data.drums_data.initialvalue1 = hre1.counter;
+					menu_data.drums_data.initialvalue2 = hre2.counter;
+					menu_data.cursor1_changed = 1;
+					menu_data.cursor2_changed = 1;
+				} else {
+					// exiting edit mode
+					menu_data.drums_data.active = 0;
+					hre1.counter = menu_data.drums_data.initialvalue1;
+					hre2.counter = menu_data.drums_data.initialvalue2;
+					Menu_Sync(&menu_data, SET_DRUMS);
+					menu_data.cursor1_changed = 1;
+					menu_data.cursor2_changed = 1;
+				}
+			}
+			// user event 2
+			if (btn_flags[7]) {
+				btn_flags[7] = 0;
+				if (!menu_data.drums_data.active) {
+					if (menu_data.drums_data.index2 == 0) {
+						menu_data.drums_conf.active = 0;
+					} else {
+						menu_data.drums_conf.active = 1;
+					}
+					Menu_Sync(&menu_data, SET_DRUMS);
+				}
+			}
+
+			// user event (if edit mode is active)
+			if (menu_data.drums_data.active) {
+				// if edit is active
+				uint8_t index, _int;
+				Drums_GetParamsByType(menu_data.drums_data.index1, &_int, &index);
+				drum_conf_t *conf = &menu_data.drums_conf;
+				if (_int) {
+					const drum_int_params_manifest_t *manifest = &(drum_params_manifest.int_params_manifest[index]);
+					Menu_UpdateIntValue(
+							&conf->int_params[index], manifest->min, manifest->max, manifest->micro_step, manifest->macro_step,
+							hre1.counter, &menu_data.drums_data.oldvalue1, hre2.counter, &menu_data.drums_data.oldvalue2
+					);
+				} else {
+					const drum_float_params_manifest_t *manifest = &(drum_params_manifest.float_params_manifest[index]);
+					Menu_UpdateFloatValue(
+							&conf->float_params[index], manifest->min, manifest->max, manifest->micro_step, manifest->macro_step,
+							hre1.counter, &menu_data.drums_data.oldvalue1, hre2.counter, &menu_data.drums_data.oldvalue2
+					);
+				}
+			} else {
+				// update indexes
+				menu_data.drums_data.index1 = RE_GetCount(&hre1, DRUMS_PARAMS_COUNT);
+
+				menu_data.drums_data.index2 = RE_GetCount(&hre2, 2);
+			}
 
 		} else if (menu_data.page == FILES) {
 
 			// user event
 			menu_data.files_data.slot_selected = RE_GetCount(&hre1, menu_data.files_data.save_slots);
 			menu_data.files_data.action_selected = RE_GetCount(&hre2, 3);
-			//if (RE_ChangeFromLastChange(&hre1)) menu_data.cursor1_changed = 1;
-			//if (RE_ChangeFromLastChange(&hre2)) menu_data.cursor2_changed = 1;
 			if (btn_flags[7]) {
 				btn_flags[7] = 0;
 				if (menu_data.files_data.action_selected == 0) {
@@ -421,7 +462,6 @@ int main(void)
 					Menu_Sync(&menu_data, DEL_FLASH);
 				}
 				Menu_Sync(&menu_data, GET_FLASH);
-				menu_data.text_changed = 1;
 			}
 		}
 
@@ -655,6 +695,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -731,6 +773,8 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

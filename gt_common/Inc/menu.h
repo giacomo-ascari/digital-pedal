@@ -14,6 +14,8 @@
 
 #include "pedalboard.h"
 #include "commander.h"
+#include "drummachine.h"
+#include "lines.h"
 
 #include "ili9341.h"
 #include "lcd_painter.h"
@@ -28,29 +30,33 @@
 // Commands are from F103 (ui) perspective
 enum Menu_CommandHeader {
 	OTHER = 0,
-	GET_PB,
-	SET_PB,
-	GET_SIGNALS,
-	GET_SPECTRUM,
-	GET_LOAD,
-	GET_FLASH,
-	SAVE_FLASH,
-	LOAD_FLASH,
-	DEL_FLASH
+	GET_PB = 1,
+	SET_PB = 2,
+	GET_SIGNALS = 3,
+	GET_SPECTRUM = 4,
+	GET_LOAD = 5,
+	GET_FLASH = 6,
+	SAVE_FLASH = 7,
+	LOAD_FLASH = 8,
+	DEL_FLASH = 9,
+	GET_DRUMS = 10,
+	SET_DRUMS = 11,
+	GET_LINES = 12,
+	SET_LINES = 13
 };
 
 enum Menu_PageType {
 	OVERVIEW = 0,
 	PLOT = 1,
-	EDIT = 2,
-	MODE = 3,
-	SPECTRUM = 4,
+	PEDALS = 2,
+	LINES = 3,
+	DRUMS = 4,
 	FILES = 5
 };
 
 #ifdef F103
 
-extern const char page_manifest[PAGE_TYPES][20];
+extern const char page_manifest[PAGE_TYPES][10];
 
 // interval in ms for each page to issue a new command
 extern const uint16_t sync_interval[PAGE_TYPES];
@@ -66,28 +72,30 @@ typedef struct _Menu_Plot_Data {
 	int8_t signal_out[SIGNAL_SIZE];
 } Menu_Plot_Data;
 
-typedef struct _Menu_Edit_Data {
+typedef struct _Menu_Pedals_Data {
 	uint8_t index1;
 	uint8_t index2;
 	uint8_t active;
-	int16_t oldvalue1;
-	int16_t oldvalue2;
-	int16_t initialvalue1;
-	int16_t initialvalue2;
-} Menu_Edit_Data;
+	int32_t oldvalue1;
+	int32_t oldvalue2;
+	int32_t initialvalue1;
+	int32_t initialvalue2;
+} Menu_Pedals_Data;
 
-typedef struct _Menu_Mode_Data {
-	uint8_t input_active;
+typedef struct _Menu_Lines_Data {
 	uint8_t input_selected;
-	uint8_t output_active;
 	uint8_t output_selected;
-} Menu_Mode_Data;
+} Menu_Lines_Data;
 
-typedef struct _Menu_Spectrum_Data {
-	uint8_t yscale;
-	uint8_t xshift;
-	uint8_t signal[PAYLOAD_BYTESIZE];
-} Menu_Spectrum_Data;
+typedef struct _Menu_Drums_Data {
+	uint8_t index1;
+	uint8_t index2;
+	uint8_t active;
+	int32_t oldvalue1;
+	int32_t oldvalue2;
+	int32_t initialvalue1;
+	int32_t initialvalue2;
+} Menu_Drums_Data;
 
 typedef struct _Menu_Files_Data {
 	uint8_t save_slots;
@@ -101,18 +109,22 @@ typedef struct _Menu_Data {
 	// common stuff
 	Commander_HandleTypeDef *hcptr;
 	Pedalboard_Handler pedalboard;
+	drum_conf_t drums_conf;
+	lines_conf_t lines_conf;
 	uint32_t tick;
 	uint32_t debug;
 	enum Menu_PageType page;
 	// data for each page type
 	Menu_Overview_Data overview_data;
 	Menu_Plot_Data plot_data;
-	Menu_Edit_Data edit_data;
-	Menu_Mode_Data mode_data;
-	Menu_Spectrum_Data spectrum_data;
+	Menu_Pedals_Data pedals_data;
+	Menu_Lines_Data lines_data;
+	Menu_Drums_Data drums_data;
 	Menu_Files_Data files_data;
 	// stuff that changed
 	uint8_t pedalboard_changed;
+	uint8_t lines_changed;
+	uint8_t drums_changed;
 	uint8_t cursor1_changed;
 	uint8_t cursor2_changed;
 	uint8_t text_changed;
@@ -135,6 +147,22 @@ void Menu_Sync(Menu_Data *data, enum Menu_CommandHeader type);
 
 void Menu_Render(Menu_Data *data);
 
+// update values
+
+void Menu_UpdateFloatValue(
+		float *value,
+		float value_min, float value_max,
+		float micro_step, float macro_step,
+		int32_t micro_counter_curr, int32_t *micro_counter_old,
+		int32_t macro_counter_curr, int32_t *macro_counter_old);
+
+void Menu_UpdateIntValue(
+		int32_t *value,
+		int32_t value_min, int32_t value_max,
+		int32_t micro_step, int32_t macro_step,
+		int32_t micro_counter_curr, int32_t *micro_counter_old,
+		int32_t macro_counter_curr, int32_t *macro_counter_old);
+
 // smart draw and erase
 
 #define TEXT_CLASSES 5
@@ -147,7 +175,7 @@ typedef struct _Menu_TextToErase {
 } Menu_TextToErase;
 
 
-void Menu_DrawText(uint8_t class, char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font);
+void Menu_DrawText(uint8_t class, const char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font);
 void Menu_EraseTexts(uint8_t class);
 
 #define MAX_PLOTPOINTS 300

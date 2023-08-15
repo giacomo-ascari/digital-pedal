@@ -125,7 +125,7 @@ vertically 13,3 chars
 
  */
 
-void LCD_Painter_DrawText(char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font) {
+void LCD_Painter_DrawText(const char text[], uint16_t x, uint16_t y, uint16_t color, uint16_t bg_color, enum Font font) {
 	uint16_t i = 0;
 	uint16_t fwidth = 0;
 	if (font == SMALL) {

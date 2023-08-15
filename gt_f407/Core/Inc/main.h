@@ -61,6 +61,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define USBPower_Pin GPIO_PIN_0
+#define USBPower_GPIO_Port GPIOC
 #define SPKRPower_Pin GPIO_PIN_14
 #define SPKRPower_GPIO_Port GPIOB
 #define FLASH_CS_Pin GPIO_PIN_1
